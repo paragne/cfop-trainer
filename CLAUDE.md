@@ -1,0 +1,82 @@
+# CFOP Trainer
+
+Flashcard trainer for Rubik's Cube CFOP: F2L, 2-look OLL, 2-look PLL.
+Static site. No backend. Deployed to Cloudflare Workers static assets at cfop.paragone.dev.
+
+## Stack
+
+- TypeScript, strict mode, no `any`.
+- Vite. Vanilla DOM. No React, no Vue, no Svelte, no framework.
+- No state management library. No UI component library. No CSS framework.
+- Vitest for tests.
+- Total production dependencies target: zero. Ask before adding any.
+
+## Architecture
+
+Module boundaries are load-bearing. Do not cross them.
+
+- `src/data/algorithms.ts` — the 57 case definitions. Pure data. Never inline case
+  data anywhere else. Never generate case data at runtime.
+- `src/lib/cube.ts` — facelet model and move engine. Pure functions only.
+  No DOM access, no imports from src/ui or src/data. This module must be
+  independently testable.
+- `src/lib/notation.ts` — parses move strings into move tokens. Pure.
+- `src/lib/render.ts` — takes a cube state, returns an SVG string. No app state.
+- `src/lib/srs.ts` — SM-2 scheduling. Pure functions. Takes a card record and a
+  grade, returns a new card record. Never reads or writes storage itself.
+- `src/lib/storage.ts` — the only module in the repo that touches localStorage.
+  Exposes load(), save(), exportJson(), importJson(). If any other file
+  references `localStorage`, that is a bug.
+- `src/ui/` — DOM. The only place querySelector and addEventListener appear.
+- `src/main.ts` — wiring only.
+
+Case images are computed, never stored. A case is defined by its solution
+algorithm plus a mask. The displayed state is the solved state with the inverse
+of the solution applied, with unmasked facelets rendered gray.
+
+## Rules
+
+- No file over 200 lines. Split before you exceed it.
+- No file named utils, helpers, common, shared, misc, or index (except entry points).
+- No `any`, no `as` casts to silence the compiler, no `@ts-ignore`.
+- No abstraction with a single caller. Inline it.
+- No options object parameters with fewer than three fields.
+- No error handling for states that cannot occur. Throw on programmer error,
+  handle only genuine runtime conditions (corrupt localStorage, bad import file).
+- Comments explain why, never what. Delete any comment that restates the code.
+- No dead code, no commented-out code, no TODO comments. Open an issue instead.
+- Prefer deleting code over adding a flag to preserve old behavior.
+- No console.log in committed code.
+
+## Testing
+
+`src/lib/cube.ts` is the module with provable correctness. Test it hard:
+
+- Every move applied 4 times returns to identity.
+- (R U R' U') applied 6 times returns to identity.
+- Sune applied 3 times returns to identity.
+- For every one of the 57 cases: apply the inverse of the solution to a solved
+  cube, then apply the solution. The result must be solved. This test validates
+  the entire data file and must pass before any case is considered correct.
+- Notation parser round-trips: parse then stringify equals the input.
+
+`src/lib/srs.ts`: test that a failed card resets interval to 1, that ease factor
+floors at 1.3, and that intervals grow monotonically on repeated success.
+
+## Workflow
+
+- Propose a plan before writing code for anything over roughly 50 lines.
+  Wait for approval.
+- One logical change per commit. Conventional commit format.
+- Run `npm run check` (typecheck + lint + test) before claiming a task is done.
+  Do not report success on a failing check.
+- Never run `git push`. Never run `wrangler deploy`. I deploy.
+- Do not modify `src/data/algorithms.ts` without telling me explicitly which
+  case you changed and why. That file is hand-verified.
+
+## Accessibility and scope
+
+- Keyboard first: space reveals solution, 1 marks unknown, 2 marks known,
+  n hides/shows the case name.
+- Works offline after first load.
+- No analytics, no telemetry, no external requests at runtime.
