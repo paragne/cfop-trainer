@@ -178,7 +178,12 @@ silent overwrite.
 - OLL/PLL: flat top-down view of the U face plus the top row of each adjacent
   side face.
 - Unmasked facelets render in a neutral gray.
-- SVG generated as a string from the facelet array. No canvas, no WebGL.
+- Colors: yellow-up scheme (U yellow, D white, F green, B blue, R orange, L red).
+  R orange, not red, is what keeps the picture from being a mirror image: with
+  U yellow and F green the right face is orange.
+- v1 renderer: SVG generated as a string from the facelet array, no canvas or
+  WebGL. See the 3D animation note under Non-goals for the planned alternative
+  renderer.
 
 ## Deployment
 
@@ -205,3 +210,29 @@ silent overwrite.
 - No timer, no scramble generator, no solve reconstruction.
 - No webcam or bluetooth cube input.
 - No 1-look OLL/PLL. The data model supports adding them without schema change.
+- No 3D animation in v1. Planned for a later version: an optional mode that
+  renders the cube in 3D and animates each move of an algorithm as a visible
+  layer rotation, primarily to teach F2L pair intuition rather than
+  memorization.
+
+  Camera: locked by default, following whole-cube rotations (y, x, z) and the
+  rotation component of wide moves, so the viewer experiences a reorientation
+  the way a solver does. Optional free-cam mode: orbit by drag at a fixed
+  radius, radius adjustable by slider.
+
+  Technology undecided. Evaluate CSS transform-style: preserve-3d first, since
+  it needs no dependency and animates a layer turn with a single transition.
+  Its known limitation is painter's-algorithm sorting rather than a z-buffer,
+  which can misorder faces mid-rotation and at some orbit angles; mitigate by
+  rendering 54 outward stickers rather than 26 solid cubies. If sorting proves
+  unacceptable under free cam, move to WebGL, preferring a minimal library such
+  as OGL or a raw WebGL2 context over Three.js, since none of Three.js's
+  loaders, materials or lighting are needed here.
+
+  The hard part either way is decomposing wide moves, slices and whole-cube
+  rotations into which cubies turn about which axis, since the engine stores
+  these as composed permutations rather than layer descriptions.
+
+  Design constraint for v1: keep cube state and rendering separate enough that
+  an animated view can be swapped in as an alternative renderer without
+  touching cube.ts or case-state.ts.
