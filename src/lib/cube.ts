@@ -53,6 +53,16 @@ const STICKERS = FACES.flatMap((face) =>
 const key = (position: Vec, normal: Vec) => `${position}|${normal}`;
 const INDEX = new Map(STICKERS.map((s, i) => [key(s.position, s.normal), i]));
 
+const cubies = new Map<string, number[]>();
+STICKERS.forEach((s, i) => {
+  const id = String(s.position);
+  cubies.set(id, [...(cubies.get(id) ?? []), i]);
+});
+
+// Sticker indices grouped by the cubie they sit on. Group size is the piece
+// kind: 1 center, 2 edge, 3 corner.
+export const PIECES: readonly (readonly number[])[] = [...cubies.values()];
+
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 // Quarter turn clockwise as seen from the tip of `axis`.
