@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { setupCube } from "../lib/case-state.ts";
 import { applyMoves, normalize, SOLVED } from "../lib/cube.ts";
 import type { Cube } from "../lib/cube.ts";
-import { invert, parse } from "../lib/notation.ts";
+import { parse } from "../lib/notation.ts";
 import { F2L_CASES, OLL_CASES, PLL_CASES } from "./algorithms.ts";
-import type { Case } from "./algorithms.ts";
 
 // Unlike the inverse-then-solution round trip, these checks can fail on a
 // mistyped alg: each one asserts what the case's group says must be true.
@@ -24,10 +24,6 @@ const SLOT = { FR: [29, 26, 15, 23, 12], FL: [27, 24, 44, 21, 41] };
 const unsolved = (cube: Cube, indices: number[]) =>
   indices.filter((i) => cube[i] !== SOLVED[i]);
 
-// Normalized so that cases containing d or y' compare against home colors.
-const setup = (c: Case) =>
-  normalize(applyMoves(SOLVED, invert(parse(c.setup ?? c.algs[0].moves))));
-
 const orientedEdges = (cube: Cube) => U_EDGES.filter((i) => cube[i] === "U");
 
 // Edges 1 and 7, and 3 and 5, are opposite, so opposite pairs sum to 8.
@@ -41,7 +37,7 @@ describe("F2L", () => {
   it.each(F2L_CASES)("$id: only the target slot is unsolved", (c) => {
     if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
     const slot = SLOT[c.mask.slot];
-    const cube = setup(c);
+    const cube = setupCube(c);
     expect(
       unsolved(cube, F2L_STICKERS).filter((i) => !slot.includes(i)),
     ).toEqual([]);
@@ -52,7 +48,7 @@ describe("F2L", () => {
     "$id: every alternate alg also solves the pair",
     (c) => {
       for (const alt of c.algs.slice(1)) {
-        const after = normalize(applyMoves(setup(c), parse(alt.moves)));
+        const after = normalize(applyMoves(setupCube(c), parse(alt.moves)));
         expect(unsolved(after, F2L_STICKERS)).toEqual([]);
       }
     },
@@ -61,7 +57,7 @@ describe("F2L", () => {
 
 describe("OLL", () => {
   it.each(OLL_CASES)("$id: the alg orients the last layer over intact F2L", (c) => {
-    const cube = setup(c);
+    const cube = setupCube(c);
     expect(unsolved(cube, F2L_STICKERS)).toEqual([]);
     expect(unsolved(cube, U_FACE)).not.toEqual([]);
 
@@ -72,21 +68,21 @@ describe("OLL", () => {
   it.each(OLL_CASES.filter((c) => c.mask.kind === "oll-edges"))(
     "$id: has the cross shape its name claims",
     (c) => {
-      expect(CROSS_SHAPE[c.id](orientedEdges(setup(c)))).toBe(true);
+      expect(CROSS_SHAPE[c.id](orientedEdges(setupCube(c)))).toBe(true);
     },
   );
 
   it.each(OLL_CASES.filter((c) => c.mask.kind === "oll-full"))(
     "$id: starts with the cross already made",
     (c) => {
-      expect(orientedEdges(setup(c))).toHaveLength(4);
+      expect(orientedEdges(setupCube(c))).toHaveLength(4);
     },
   );
 });
 
 describe("PLL", () => {
   it.each(PLL_CASES)("$id: only the permutation is wrong", (c) => {
-    const cube = setup(c);
+    const cube = setupCube(c);
     expect(unsolved(cube, F2L_STICKERS)).toEqual([]);
     expect(unsolved(cube, U_FACE)).toEqual([]);
     expect(unsolved(cube, EVERYTHING)).not.toEqual([]);

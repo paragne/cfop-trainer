@@ -21,6 +21,8 @@ Module boundaries are load-bearing. Do not cross them.
   No DOM access, no imports from src/ui or src/data. This module must be
   independently testable.
 - `src/lib/notation.ts` — parses move strings into move tokens. Pure.
+- `src/lib/case-state.ts` — turns a Case into the cube state to display: setup,
+  normalize, then mask. Pure. May import types from src/data; no DOM, no storage.
 - `src/lib/render.ts` — takes a cube state, returns an SVG string. No app state.
 - `src/lib/srs.ts` — SM-2 scheduling. Pure functions. Takes a card record and a
   grade, returns a new card record. Never reads or writes storage itself.

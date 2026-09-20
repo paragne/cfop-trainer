@@ -46,10 +46,14 @@ function keptIndices(cube: Cube, mask: Mask): number[] {
   }
 }
 
-export function caseState(c: Case): CaseState {
+export function setupCube(c: Case): Cube {
   const setup =
     c.setup === null ? invert(parse(c.algs[0].moves)) : parse(c.setup);
-  const cube = normalize(applyMoves(SOLVED, setup));
+  return normalize(applyMoves(SOLVED, setup));
+}
+
+export function caseState(c: Case): CaseState {
+  const cube = setupCube(c);
   const kept = new Set(keptIndices(cube, c.mask));
   return cube.map((color, i): Facelet => (kept.has(i) ? color : "masked"));
 }

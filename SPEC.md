@@ -23,7 +23,7 @@ type Case = {
   aliases: string[];       // ["OLL 27", "Double Sune"]
   algs: Alg[];             // one or more; algs[0] is primary
   mask: Mask;              // which pieces are colored; rest render gray
-  setup: string | null;    // optional override; if null, setup = inverse(algs[0])
+  setup: string | null;    // optional override, played on a solved cube as-is; if null, setup = inverse(algs[0])
   videoUrl: string | null; // J Perm timestamp link, supplied later
 };
 
@@ -41,7 +41,9 @@ type Mask =
 ```
 
 The displayed cube state is computed at load time:
-`state = applyMoves(SOLVED, invert(setup ?? algs[0].moves))`, then masked.
+`state = applyMoves(SOLVED, setup ?? invert(algs[0].moves))`, then normalized,
+then masked. A non-null `setup` is never inverted; it must be solved by
+`algs[0]` up to an AUF, which is what lets it pin a different presentation angle.
 
 Rationale: 57 hand-authored sticker layouts are 57 opportunities for a silent
 mismatch between the picture and the algorithm. Deriving the picture makes the
