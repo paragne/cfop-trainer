@@ -70,6 +70,10 @@ meaningful.
 Inverting an algorithm: reverse the token order, then invert each token
 (`R` to `R'`, `R'` to `R`, `R2` to `R2`).
 
+A y rotation moves the centers, so normalize() undoes it. The display
+layer must not call normalize after applying a presentation rotation.
+AUF (U, U', U2) is safe because U turns leave centers home.
+
 ## Modes
 
 ### 1. Flashcard (default)
