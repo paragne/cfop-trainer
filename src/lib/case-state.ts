@@ -40,7 +40,11 @@ function keptIndices(cube: Cube, mask: Mask): number[] {
     case "oll-full":
       return LAST_LAYER.flat().filter((i) => cube[i] === "U");
     case "pll-corners":
-      return LAST_LAYER.filter((piece) => piece.length !== 2).flat();
+      // The second look is what places the edges, so their side stickers stay
+      // gray, but the last layer is oriented and its top face reads solid.
+      return LAST_LAYER.flatMap((piece) =>
+        piece.length === 2 ? piece.filter((i) => i < 9) : piece,
+      );
     case "pll-full":
       return LAST_LAYER.flat();
   }

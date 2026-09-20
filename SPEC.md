@@ -36,7 +36,7 @@ type Mask =
   | { kind: "f2l"; slot: "FR" | "FL" }   // color the slot's corner+edge only
   | { kind: "oll-edges" }                // color U edges only, corners gray
   | { kind: "oll-full" }                 // color all U-layer orientation stickers
-  | { kind: "pll-corners" }              // color corners only, edges gray
+  | { kind: "pll-corners" }              // color corners and the full U face; edge side stickers gray
   | { kind: "pll-full" };                // color full last layer
 ```
 

@@ -10,6 +10,8 @@ const colored = (state: CaseState) =>
 
 const U_FACE = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const U_EDGES = [1, 3, 5, 7];
+// Middle sticker of the top row of R, F, L and B.
+const EDGE_SIDES = [10, 19, 37, 46];
 // Edges 1 and 7, and 3 and 5, are opposite, so oriented edges are counted by name.
 const ORIENTED_EDGES: Record<string, number> = {
   "oll-cross-dot": 0,
@@ -71,11 +73,14 @@ describe("OLL masks", () => {
 
 describe("PLL masks", () => {
   it.each(PLL_CASES.filter((c) => c.mask.kind === "pll-corners"))(
-    "$id: colors the corners and center of an oriented last layer",
+    "$id: colors the corners and a solid U face, leaving edge side stickers gray",
     (c) => {
-      const kept = colored(caseState(c));
-      expect(kept).toHaveLength(13);
-      expect(kept.filter((i) => U_FACE.includes(i))).toEqual([0, 2, 4, 6, 8]);
+      const state = caseState(c);
+      const kept = colored(state);
+      expect(kept).toHaveLength(17);
+      expect(kept.filter((i) => U_FACE.includes(i))).toEqual(U_FACE);
+      expect(U_FACE.every((i) => state[i] === "U")).toBe(true);
+      expect(EDGE_SIDES.some((i) => kept.includes(i))).toBe(false);
     },
   );
 

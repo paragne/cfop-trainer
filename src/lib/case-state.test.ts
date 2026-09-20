@@ -37,7 +37,7 @@ describe("masks on a solved cube", () => {
     ["FL", FL, [21, 24, 27, 41, 44]],
     ["oll-full", { kind: "oll-full" }, range(0, 9)],
     ["oll-edges", { kind: "oll-edges" }, [1, 3, 4, 5, 7]],
-    ["pll-corners", { kind: "pll-corners" }, [0, 2, 4, 6, 8, 9, 11, 18, 20, 36, 38, 45, 47]],
+    ["pll-corners", { kind: "pll-corners" }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 18, 20, 36, 38, 45, 47]],
     ["pll-full", { kind: "pll-full" }, LAST_LAYER.toSorted((a, b) => a - b)],
   ])("%s", (_, mask, expected) => {
     expect(colored(caseState(caseWith(mask, "")))).toEqual(expected);
