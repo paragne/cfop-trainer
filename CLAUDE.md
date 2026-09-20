@@ -36,7 +36,8 @@ of the solution applied, with unmasked facelets rendered gray.
 
 ## Rules
 
-- No file over 200 lines. Split before you exceed it.
+- No file over 200 lines. Split before you exceed it. Exempt: src/data/, which
+  holds flat case records and is capped by hand-verification, not by line count.
 - No file named utils, helpers, common, shared, misc, or index (except entry points).
 - No `any`, no `as` casts to silence the compiler, no `@ts-ignore`.
 - No abstraction with a single caller. Inline it.
@@ -47,6 +48,11 @@ of the solution applied, with unmasked facelets rendered gray.
 - No dead code, no commented-out code, no TODO comments. Open an issue instead.
 - Prefer deleting code over adding a flag to preserve old behavior.
 - No console.log in committed code.
+- If a test fails, diagnose before editing. State whether the code or the test
+  is wrong and why, and wait for my decision before changing a test to make it pass.
+- A test that cannot fail is not a test. If an assertion is true for any possible
+  implementation, say so rather than counting it as coverage.
+- Do not add Co-Authored-By trailers to commit messages.
 
 ## Testing
 
@@ -54,11 +60,14 @@ of the solution applied, with unmasked facelets rendered gray.
 
 - Every move applied 4 times returns to identity.
 - (R U R' U') applied 6 times returns to identity.
-- Sune applied 3 times returns to identity.
+- Sune has order 6: applied 6 times it returns to identity, and 3 times it does not.
 - For every one of the 57 cases: apply the inverse of the solution to a solved
   cube, then apply the solution. The result must be solved. This test validates
   the entire data file and must pass before any case is considered correct.
 - Notation parser round-trips: parse then stringify equals the input.
+- F2L structural tests cannot detect a wrong or missing U turn, since deleting a
+  U turn yields a different but valid F2L case. U turns in src/data/algorithms.ts
+  are verified by hand only.
 
 `src/lib/srs.ts`: test that a failed card resets interval to 1, that ease factor
 floors at 1.3, and that intervals grow monotonically on repeated success.

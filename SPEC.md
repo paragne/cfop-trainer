@@ -59,7 +59,8 @@ A move is a permutation table applied to the array. Required move set:
 - Wide: r f (and u d l b for completeness), each with ', 2
 - Slices: M E S, each with ', 2
 - Rotations: x y z, each with ', 2
-- Lowercase `d` in the source algorithms is a wide down move, equal to `D y'`.
+- Lowercase `d` in the source algorithms is a wide down move, equal to `D E`, 
+  equivalently `y' U`. It is not `D y'`.
 
 `(X)*3` in the source set expands to `X X X`. The parser handles this.
 Parentheses and square brackets are memorization grouping only. The parser
