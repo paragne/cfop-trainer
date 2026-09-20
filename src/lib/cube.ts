@@ -2,14 +2,12 @@
  * 54-facelet cube: U(0-8) R(9-17) F(18-26) D(27-35) L(36-44) B(45-53),
  * row-major within a face. Centers are at 4, 13, 22, 31, 40, 49.
  *
- * Frame: x toward R, y toward U, z toward F. A face's (row r, column c)
- * sits at:
- *   U  (c-1,  1, r-1)  viewed from above, B edge at the top
- *   R  ( 1, 1-r, 1-c)  viewed head-on, U at the top
- *   F  (c-1, 1-r,  1)
- *   D  (c-1, -1, 1-r)  viewed from below, F edge at the top
- *   L  (-1, 1-r, c-1)
- *   B  (1-c, 1-r, -1)
+ * Frame: x toward R, y toward U, z toward F, in cubie units, so the cube spans
+ * [-1.5, 1.5] on every axis. FACE_GEOMETRY is the one definition of where a
+ * face's stickers sit: read the face from `origin`, with each column stepping
+ * along `column` and each row along `row`. U is viewed from above with its B
+ * edge at the top, D from below with its F edge at the top, and the other four
+ * head-on with U at the top.
  *
  * A move table lists, for each destination index, the index its sticker comes
  * from. Nine layer turns are generated from this geometry; wide moves and
@@ -20,7 +18,8 @@ import type { Move, MoveName } from "./notation.ts";
 export type Color = "U" | "R" | "F" | "D" | "L" | "B";
 export type Cube = readonly Color[];
 
-type Vec = readonly [number, number, number];
+export type Vec = readonly [number, number, number];
+export type FaceGeometry = { origin: Vec; column: Vec; row: Vec };
 type Sticker = { position: Vec; normal: Vec };
 type Table = readonly number[];
 
@@ -29,21 +28,37 @@ const CENTERS = [4, 13, 22, 31, 40, 49];
 
 export const SOLVED: Cube = FACES.flatMap((face) => Array<Color>(9).fill(face));
 
+// Every renderer reads this table. A second copy of these constants is a
+// second place for a hand-derived sign error.
+export const FACE_GEOMETRY: Record<Color, FaceGeometry> = {
+  U: { origin: [-1.5, 1.5, -1.5], column: [1, 0, 0], row: [0, 0, 1] },
+  R: { origin: [1.5, 1.5, 1.5], column: [0, 0, -1], row: [0, -1, 0] },
+  F: { origin: [-1.5, 1.5, 1.5], column: [1, 0, 0], row: [0, -1, 0] },
+  D: { origin: [-1.5, -1.5, 1.5], column: [1, 0, 0], row: [0, 0, -1] },
+  L: { origin: [-1.5, 1.5, -1.5], column: [0, 0, 1], row: [0, -1, 0] },
+  B: { origin: [1.5, 1.5, -1.5], column: [-1, 0, 0], row: [0, -1, 0] },
+};
+
+const cross = (a: Vec, b: Vec): Vec => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+// Outward from the cube. `row` points down the face and `column` across it, so
+// row x column comes out toward the viewer.
+export function faceNormal(face: Color): Vec {
+  const { column, row } = FACE_GEOMETRY[face];
+  return cross(row, column);
+}
+
+// A cubie's position is where its center sits, half a unit inside the face.
 function stickerAt(face: Color, r: number, c: number): Sticker {
-  switch (face) {
-    case "U":
-      return { position: [c - 1, 1, r - 1], normal: [0, 1, 0] };
-    case "R":
-      return { position: [1, 1 - r, 1 - c], normal: [1, 0, 0] };
-    case "F":
-      return { position: [c - 1, 1 - r, 1], normal: [0, 0, 1] };
-    case "D":
-      return { position: [c - 1, -1, 1 - r], normal: [0, -1, 0] };
-    case "L":
-      return { position: [-1, 1 - r, c - 1], normal: [-1, 0, 0] };
-    case "B":
-      return { position: [1 - c, 1 - r, -1], normal: [0, 0, -1] };
-  }
+  const { origin, column, row } = FACE_GEOMETRY[face];
+  const normal = faceNormal(face);
+  const at = (k: 0 | 1 | 2) =>
+    origin[k] + (c + 0.5) * column[k] + (r + 0.5) * row[k] - 0.5 * normal[k];
+  return { position: [at(0), at(1), at(2)], normal };
 }
 
 const STICKERS = FACES.flatMap((face) =>
