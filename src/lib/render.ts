@@ -14,7 +14,9 @@ type Poly = { index: number; corners: Point[] };
 // swaps U/D and R/L and leaves F/B alone, so red ends up on the left. Keeping
 // R red under a yellow U draws a mirror-image cube, and every PLL case would
 // render as its own mirror.
-const FILL: Record<Facelet, string> = {
+export type Palette = Readonly<Record<Facelet, string>>;
+
+const FILL: Palette = {
   U: "#ffd500",
   D: "#ffffff",
   F: "#009b48",
@@ -23,6 +25,10 @@ const FILL: Record<Facelet, string> = {
   L: "#c8102e",
   masked: "#8a8f98",
 };
+
+// Shared with the icon rasterizer so both draw the same outline.
+export const STROKE = "#1a1a1a";
+export const STROKE_WIDTH = 1;
 
 const K = 30; // pixels per cubie
 const PAD = 4;
@@ -111,10 +117,12 @@ export function viewFor(mask: Mask): View {
   return mask.slot === "FR" ? "iso-fr" : "iso-fl";
 }
 
-export function renderCase(state: CaseState, view: View): string {
+export const cellsFor = (view: View) => LAYOUT[view];
+
+export function renderCase(state: CaseState, view: View, palette: Palette = FILL): string {
   const { viewBox, cells } = LAYOUT[view];
   const polygons = cells
-    .map(({ index, points }) => `<polygon data-i="${index}" points="${points}" fill="${FILL[state[index]]}"/>`)
+    .map(({ index, points }) => `<polygon data-i="${index}" points="${points}" fill="${palette[state[index]]}"/>`)
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" role="img" aria-label="Cube case" stroke="#1a1a1a" stroke-width="1" stroke-linejoin="round">${polygons}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" role="img" aria-label="Cube case" stroke="${STROKE}" stroke-width="${STROKE_WIDTH}" stroke-linejoin="round">${polygons}</svg>`;
 }
