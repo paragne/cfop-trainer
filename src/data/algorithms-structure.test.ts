@@ -26,6 +26,21 @@ const unsolved = (cube: Cube, indices: number[]) =>
 
 const orientedEdges = (cube: Cube) => U_EDGES.filter((i) => cube[i] === "U");
 
+// The U face plus the top row of each side face: everything OLL can see.
+const LAST_LAYER_SIDES = [9, 10, 11, 18, 19, 20, 36, 37, 38, 45, 46, 47];
+
+function orientationPattern(cube: Cube): string {
+  const patterns: string[] = [];
+  let turned = cube;
+  for (let turn = 0; turn < 4; turn++) {
+    patterns.push(
+      [...U_FACE, ...LAST_LAYER_SIDES].map((i) => (turned[i] === "U" ? "1" : "0")).join(""),
+    );
+    turned = applyMoves(turned, parse("U"));
+  }
+  return patterns.toSorted()[0];
+}
+
 // Edges 1 and 7, and 3 and 5, are opposite, so opposite pairs sum to 8.
 const CROSS_SHAPE: Record<string, (oriented: number[]) => boolean> = {
   "oll-cross-dot": (o) => o.length === 0,
@@ -71,6 +86,24 @@ describe("OLL", () => {
       expect(CROSS_SHAPE[c.id](orientedEdges(setupCube(c)))).toBe(true);
     },
   );
+
+  it.each(OLL_CASES.filter((c) => c.algs.length > 1))(
+    "$id: every alternate alg also orients the last layer",
+    (c) => {
+      for (const alt of c.algs.slice(1)) {
+        const after = normalize(applyMoves(setupCube(c), parse(alt.moves)));
+        expect(unsolved(after, [...F2L_STICKERS, ...U_FACE])).toEqual([]);
+      }
+    },
+  );
+
+  // A misnumbered or duplicated transcription would land two ids on one case.
+  it("gives every Full OLL case its own orientation pattern up to a U turn", () => {
+    const patterns = OLL_CASES.filter((c) => c.sets.includes("Full OLL")).map((c) =>
+      orientationPattern(setupCube(c)),
+    );
+    expect(new Set(patterns).size).toBe(patterns.length);
+  });
 
   // A 2-Look OLL fact, not an oll-full one: Full OLL holds cases with no cross.
   it.each(

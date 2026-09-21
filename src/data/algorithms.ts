@@ -2,7 +2,8 @@
  * Case definitions for the CFOP trainer.
  *
  * Source: Cube Academy algorithm sheets (F2L 41, 2-look OLL, 2-look PLL),
- * transcribed 2026-09-20 and pending manual verification.
+ * transcribed 2026-09-20 and pending manual verification. Full OLL comes from
+ * the same site's full sheet, transcribed 2026-09-21.
  *
  * `display` preserves the original parenthesis and bracket grouping because the
  * grouping is a memorization aid. `moves` is the flat token string the parser
@@ -54,6 +55,24 @@ function f2l(
 
 function a(display: string, moves: string): Alg {
   return { display, moves };
+}
+
+// The full sheet carries no case names, so these are named by their standard
+// number. The number was derived by matching orientation patterns against two
+// public tables, not read off the sheet.
+function oll(id: string, section: string, algs: Alg[]): Case {
+  return {
+    id,
+    group: "OLL",
+    sets: ["Full OLL"],
+    section,
+    name: `OLL ${id.slice("oll-".length)}`,
+    aliases: [],
+    algs,
+    mask: { kind: "oll-full" },
+    setup: null,
+    videoUrl: null,
+  };
 }
 
 export const F2L_CASES: Case[] = [
@@ -290,7 +309,10 @@ export const OLL_CASES: Case[] = [
     section: "Finish OLL",
     name: "Chameleon",
     aliases: ["OLL 24"],
-    algs: [a("(r U R' U') (r' F R F')", "r U R' U' r' F R F'")],
+    algs: [
+      a("(r U R' U') (r' F R F')", "r U R' U' r' F R F'"),
+      a("U (R U R) D (R' U' R) D' R2", "U R U R D R' U' R D' R2"),
+    ],
     mask: { kind: "oll-full" },
     setup: null,
     videoUrl: null,
@@ -302,7 +324,10 @@ export const OLL_CASES: Case[] = [
     section: "Finish OLL",
     name: "Bowtie",
     aliases: ["OLL 25"],
-    algs: [a("F' (r U R' U') (r' F R)", "F' r U R' U' r' F R")],
+    algs: [
+      a("F' (r U R' U') (r' F R)", "F' r U R' U' r' F R"),
+      a("U R2 D' (R U' R') D (R U R)", "U R2 D' R U' R' D R U R"),
+    ],
     mask: { kind: "oll-full" },
     setup: null,
     videoUrl: null,
@@ -319,6 +344,112 @@ export const OLL_CASES: Case[] = [
     setup: null,
     videoUrl: null,
   },
+
+  // --- T Shapes (2) --------------------------------------------------------
+  oll("oll-45", "T Shapes", [a("F (R U R' U') F'", "F R U R' U' F'")]),
+  oll("oll-33", "T Shapes", [a("(R U R' U') (R' F R F')", "R U R' U' R' F R F'")]),
+
+  // --- Block Shapes (2) ----------------------------------------------------
+  oll("oll-6", "Block Shapes", [a("(r U2 R') U' R U' r'", "r U2 R' U' R U' r'")]),
+  oll("oll-5", "Block Shapes", [a("(r' U2 R) U R' U r", "r' U2 R U R' U r")]),
+
+  // --- Edges Only (2) ------------------------------------------------------
+  oll("oll-28", "Edges Only", [a("(r U R' U') M (U R U' R')", "r U R' U' M U R U' R'")]),
+  oll("oll-57", "Edges Only", [a("(R U R' U') M' (U R U' r')", "R U R' U' M' U R U' r'")]),
+
+  // --- Lightning Shapes (6) ------------------------------------------------
+  oll("oll-7", "Lightning Shapes", [a("r U R' U (R U2 r')", "r U R' U R U2 r'")]),
+  oll("oll-8", "Lightning Shapes", [a("R' F' (r U' r') F2 R", "R' F' r U' r' F2 R")]),
+  oll("oll-11", "Lightning Shapes", [
+    a("r' (R2 U R' U R U2 R') U M'", "r' R2 U R' U R U2 R' U M'"),
+  ]),
+  oll("oll-12", "Lightning Shapes", [
+    a("r (R2 U' R U' R' U2 R) U' M", "r R2 U' R U' R' U2 R U' M"),
+  ]),
+  oll("oll-40", "Lightning Shapes", [a("(f R' F' R) (U R U' R') S'", "f R' F' R U R U' R' S'")]),
+  oll("oll-39", "Lightning Shapes", [a("f' (r U r' U') (r' F r S)", "f' r U r' U' r' F r S")]),
+
+  // --- P Shapes (4) --------------------------------------------------------
+  oll("oll-44", "P Shapes", [a("F (U R U' R') F'", "F U R U' R' F'")]),
+  oll("oll-43", "P Shapes", [a("R' (U' F' U F) R", "R' U' F' U F R")]),
+  oll("oll-31", "P Shapes", [a("R' U' F (U R U' R') F' R", "R' U' F U R U' R' F' R")]),
+  oll("oll-32", "P Shapes", [a("S (R U R' U') (R' F R f')", "S R U R' U' R' F R f'")]),
+
+  // --- C Shapes (2) --------------------------------------------------------
+  oll("oll-46", "C Shapes", [a("R' U' (R' F R F') U R", "R' U' R' F R F' U R")]),
+  oll("oll-34", "C Shapes", [a("f R f' U' r' U' R U M'", "f R f' U' r' U' R U M'")]),
+
+  // --- Fish Shapes (4) -----------------------------------------------------
+  oll("oll-37", "Fish Shapes", [a("(F R' F' R) (U R U' R')", "F R' F' R U R U' R'")]),
+  oll("oll-35", "Fish Shapes", [a("R U2 R2' (F R F' R) U2 R'", "R U2 R2' F R F' R U2 R'")]),
+  oll("oll-9", "Fish Shapes", [
+    a("(R U R' U') R' F (R2 U R' U') F'", "R U R' U' R' F R2 U R' U' F'"),
+  ]),
+  oll("oll-10", "Fish Shapes", [a("R U R' U (R' F R F') R U2 R'", "R U R' U R' F R F' R U2 R'")]),
+
+  // --- W Shapes (2) --------------------------------------------------------
+  oll("oll-38", "W Shapes", [
+    a("(R U R' U) R U' R' U' (R' F R F')", "R U R' U R U' R' U' R' F R F'"),
+  ]),
+  oll("oll-36", "W Shapes", [
+    a("(L' U' L U') L' U L U (r U' r' F)", "L' U' L U' L' U L U r U' r' F"),
+  ]),
+
+  // --- Hook Shapes (6) -----------------------------------------------------
+  oll("oll-48", "Hook Shapes", [a("F (R U R' U') (R U R' U') F'", "F R U R' U' R U R' U' F'")]),
+  oll("oll-47", "Hook Shapes", [
+    a("(F R' F' R) U2 (R U' R' U) R U2 R'", "F R' F' R U2 R U' R' U R U2 R'"),
+  ]),
+  oll("oll-54", "Hook Shapes", [a("r U R' U (R U' R' U) R U2 r'", "r U R' U R U' R' U R U2 r'")]),
+  oll("oll-53", "Hook Shapes", [
+    a("r' U' R U' (R' U R U') R' U2 r", "r' U' R U' R' U R U' R' U2 r"),
+  ]),
+  oll("oll-49", "Hook Shapes", [a("r U' (r2' U) (r2 U) r2' U' r", "r U' r2' U r2 U r2' U' r")]),
+  oll("oll-50", "Hook Shapes", [a("r' U (r2 U') (r2' U') r2 U r'", "r' U r2 U' r2' U' r2 U r'")]),
+
+  // --- Line Shapes (4) -----------------------------------------------------
+  oll("oll-51", "Line Shapes", [a("F (U R U' R') (U R U' R') F'", "F U R U' R' U R U' R' F'")]),
+  oll("oll-52", "Line Shapes", [a("R' (F' U' F U') R U R' U R", "R' F' U' F U' R U R' U R")]),
+  oll("oll-56", "Line Shapes", [
+    a("r U r' (U R U' R') (U R U' R') r U' r'", "r U r' U R U' R' U R U' R' r U' r'"),
+  ]),
+  oll("oll-55", "Line Shapes", [
+    a("R' F (R U R U') R2 F' R2 U' R' U (R U R')", "R' F R U R U' R2 F' R2 U' R' U R U R'"),
+  ]),
+
+  // --- L Shapes (4) --------------------------------------------------------
+  oll("oll-16", "L Shapes", [a("r U r' (R U R' U') r U' r'", "r U r' R U R' U' r U' r'")]),
+  oll("oll-15", "L Shapes", [a("R' F' R (L' U' L U) R' F R", "R' F' R L' U' L U R' F R")]),
+  oll("oll-13", "L Shapes", [a("(F U R U') R2 F' R (U R U' R')", "F U R U' R2 F' R U R U' R'")]),
+  oll("oll-14", "L Shapes", [a("R' F (R U R') F' R (F U' F')", "R' F R U R' F' R F U' F'")]),
+
+  // --- Awkward Shapes (4) --------------------------------------------------
+  oll("oll-29", "Awkward Shapes", [
+    a("r2 D' (r U r') D r2 U' (r' U' r)", "r2 D' r U r' D r2 U' r' U' r"),
+  ]),
+  oll("oll-30", "Awkward Shapes", [
+    a("F U (R U2 R' U')(R U2 R' U') F'", "F U R U2 R' U' R U2 R' U' F'"),
+  ]),
+  oll("oll-41", "Awkward Shapes", [
+    a("(R U R' U R U2 R')F (R U R' U') F'", "R U R' U R U2 R' F R U R' U' F'"),
+  ]),
+  oll("oll-42", "Awkward Shapes", [a("R' U' F2 u' (R U R') D R2 B", "R' U' F2 u' R U R' D R2 B")]),
+
+  // --- Dot Cases (8) -------------------------------------------------------
+  oll("oll-1", "Dot Cases", [a("R U2 (R2 F R F') U2 (R' F R F')", "R U2 R2 F R F' U2 R' F R F'")]),
+  oll("oll-2", "Dot Cases", [a("f (U R U' R') S' (U R U' R') F'", "f U R U' R' S' U R U' R' F'")]),
+  oll("oll-17", "Dot Cases", [a("(F R' F' R) U S' (R U' R') S", "F R' F' R U S' R U' R' S")]),
+  oll("oll-19", "Dot Cases", [a("S' (R U R') S U' (R' F R F')", "S' R U R' S U' R' F R F'")]),
+  oll("oll-18", "Dot Cases", [
+    a("(r U R' U R U2 r')(r' U' R U' R' U2 r)", "r U R' U R U2 r' r' U' R U' R' U2 r"),
+  ]),
+  oll("oll-4", "Dot Cases", [
+    a("(R' F2 R2 U2 R') F'(R U2 R2 F2 R)", "R' F2 R2 U2 R' F' R U2 R2 F2 R"),
+  ]),
+  oll("oll-3", "Dot Cases", [
+    a("(R' F2 R2 U2 R') F (R U2 R2 F2 R)", "R' F2 R2 U2 R' F R U2 R2 F2 R"),
+  ]),
+  oll("oll-20", "Dot Cases", [a("S R' U' (R U) (R U) R U' R' S'", "S R' U' R U R U R U' R' S'")]),
 ];
 
 export const PLL_CASES: Case[] = [
