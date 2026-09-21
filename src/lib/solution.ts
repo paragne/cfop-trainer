@@ -1,0 +1,18 @@
+import type { Case } from "../data/algorithms.ts";
+
+const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+
+// Every string is escaped, including videoUrl inside its attribute, so the
+// caller can assign the result with innerHTML.
+const escape = (text: string) => text.replace(/[&<>"]/g, (ch) => ESCAPES[ch]);
+
+export function renderSolution(c: Case): string {
+  const [primary, ...alternates] = c.algs;
+  const algs = [
+    `<p class="alg primary">${escape(primary.display)}</p>`,
+    ...alternates.map((alg) => `<p class="alg alt">${escape(alg.display)}</p>`),
+  ].join("");
+  if (c.videoUrl === null) return algs;
+  const link = `<a class="video" href="${escape(c.videoUrl)}" target="_blank" rel="noopener noreferrer">J Perm video</a>`;
+  return algs + link;
+}
