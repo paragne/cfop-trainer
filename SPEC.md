@@ -248,29 +248,84 @@ silent overwrite.
 - No timer, no scramble generator, no solve reconstruction.
 - No webcam or bluetooth cube input.
 - No 1-look OLL/PLL. The data model supports adding them without schema change.
-- No 3D animation in v1. Planned for a later version: an optional mode that
+- No 3D animation in v1. Planned as its own version: an optional mode that
   renders the cube in 3D and animates each move of an algorithm as a visible
-  layer rotation, primarily to teach F2L pair intuition rather than
-  memorization.
+  layer rotation, primarily to teach F2L pair intuition.
 
-  Camera: locked by default, following whole-cube rotations (y, x, z) and the
-  rotation component of wide moves, so the viewer experiences a reorientation
-  the way a solver does. Optional free-cam mode: orbit by drag at a fixed
-  radius, radius adjustable by slider.
+  Available in every mode, via a play button at the top right with a speed
+  slider. Speed is a persisted pref. The play button reveals the solution, so
+  it is unavailable until the solution is revealed in Learn and Drill, and
+  until after the attempt in Verify.
+
+  Camera: locked by default, following whole-cube rotations and the rotation
+  component of wide moves. Optional free cam: orbit by drag at a fixed radius,
+  radius adjustable by slider.
 
   Technology undecided. Evaluate CSS transform-style: preserve-3d first, since
-  it needs no dependency and animates a layer turn with a single transition.
-  Its known limitation is painter's-algorithm sorting rather than a z-buffer,
-  which can misorder faces mid-rotation and at some orbit angles; mitigate by
-  rendering 54 outward stickers rather than 26 solid cubies. If sorting proves
-  unacceptable under free cam, move to WebGL, preferring a minimal library such
-  as OGL or a raw WebGL2 context over Three.js, since none of Three.js's
-  loaders, materials or lighting are needed here.
+  it needs no dependency. Its known limitation is painter's-algorithm sorting
+  rather than a z-buffer, which can misorder faces mid-rotation and at some
+  orbit angles; mitigate by rendering 54 outward stickers rather than 26
+  solid cubies. If sorting proves unacceptable under free cam, move to WebGL,
+  preferring OGL or a raw WebGL2 context over Three.js.
 
   The hard part either way is decomposing wide moves, slices and whole-cube
   rotations into which cubies turn about which axis, since the engine stores
-  these as composed permutations rather than layer descriptions.
+  these as composed permutations.
 
-  Design constraint for v1: keep cube state and rendering separate enough that
-  an animated view can be swapped in as an alternative renderer without
-  touching cube.ts or case-state.ts.
+  Keep cube state and rendering separate so an animated view can be swapped in
+  without touching cube.ts or case-state.ts.
+
+## v2
+
+### Case sets
+
+Five sets, selectable independently: F2L, 2-Look OLL, 2-Look PLL, Full OLL,
+Full PLL. A set is a membership tag and a case may belong to several. A case
+exists once, with one id, one mask and one SRS record, however many sets
+include it.
+
+- OLL 21-27 belong to both 2-Look OLL and Full OLL.
+- Ua, Ub, H and Z belong to both 2-Look PLL and Full PLL.
+- pll-corners-adjacent and pll-corners-diagonal are separate from full-PLL T
+  and Y: different mask, different recognition task.
+- The three cross cases belong to 2-Look OLL only.
+- Existing case ids are frozen. They key real stored progress.
+
+### Modes
+
+- Learn: the existing SRS flashcard mode.
+- Drill: endless random cycling over the chosen sets. Same card screen, with
+  the grade buttons replaced by Next. No immediate repeats. Nothing graded,
+  scheduled or recorded.
+- Verify: start from solved. For each OLL/PLL case, the user performs the alg
+  on a physical cube and compares against the computed expected state.
+  Excludes F2L.
+- Each mode remembers its own set selection.
+
+### Layout
+
+No sidebar. The home screen is the navigation.
+
+- Top bar: logo centered, returns home. One data icon at right, opening export
+  and import. Leaving a session via the logo needs no confirmation, since
+  grades save on each tap.
+- Home: mode selector, set toggles for the chosen mode, one Start button in
+  the accent color, stats below.
+- The Learn selector shows the due count ("Learn · 7 due").
+- Verify disables the F2L toggle.
+- Stats, per set: cases seen out of total, accuracy (known over seen), due
+  count.
+
+### Brand
+
+Logo: solved 3x3 in the F2L isometric projection, faces in three purples:
+lavender on top, violet and a mid shade on the sides. Generated from
+render.ts so it matches in-app cubes exactly. Used in the top bar, as the SVG
+favicon, and as a PNG apple-touch-icon. The accent color matches the logo's
+violet.
+
+### Contact sheet
+
+Permanent debug page, no longer throwaway. Shipped in every build at
+/contact-sheet.html, unlinked, with a noindex meta tag. Shows every case in
+every set.
