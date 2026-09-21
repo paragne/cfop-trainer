@@ -85,8 +85,12 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 - Controls: reveal/hide solution, reveal/hide case name, edit notes.
 - Grade: "Know it" or "Don't know it".
 - Grading feeds the scheduler. Next case is drawn from the due queue.
-- Name visibility and solution visibility are sticky per session and stored
-  as user preferences.
+- Name visibility is a sticky stored preference: it is the visible state, and
+  toggling it carries across cards.
+- Solution auto-reveal is a sticky stored preference, off by default. Revealing
+  the solution for the current card is per-card state that resets on every new
+  card. Revealing must never write the preference, or one reveal would show
+  every later solution and defeat honor-code recall.
 
 ### 2. Verify (no honor code)
 
@@ -118,12 +122,12 @@ hook that lets you recall the alg without seeing it.
 
 ## Scheduling (SM-2)
 
-Per-case record:
+Per-case record, stored under the case id in `cards`, so it carries no id of
+its own:
 
 ```ts
 type CardState = {
-  caseId: string;
-  ease: number;        // starts 2.5, floor 1.3
+  ease: number;        // starts 2.5, floor 1.3, cap 3.0
   interval: number;    // days
   reps: number;
   due: number;         // epoch ms
@@ -134,14 +138,45 @@ type CardState = {
 ```
 
 On "know it": reps += 1. Interval becomes 1 on first success, 6 on second,
-otherwise `round(interval * ease)`. Ease increases slightly, capped.
+otherwise `round(interval * ease)`, using the ease from before this grade. Then
+ease increases by 0.05, capped at 3.0.
 On "don't know it": reps = 0, interval = 1, ease -= 0.2, floor 1.3.
 Due = now + interval days.
 
-Session queue: all cases with `due <= now`, shuffled. If the due queue is empty
-or shorter than the requested session length, fill with the cases having the
-lowest `known / seen` ratio. Never show the same case twice in one session
-unless the user has fewer cases selected than the session length.
+Session queue: all cases with `due <= now` (including cases never seen),
+shuffled. If the due queue is empty or shorter than the session length (20, or
+the number of selected cases if that is smaller), fill with the not-due cases
+having the lowest `known / seen` ratio. The initial queue never contains a case
+twice.
+
+### Learning step
+
+A failed case is not finished for the session. Failing a case and not seeing it
+for 24 hours discards the moment the case is actually being learned, so it comes
+back while the cube is still in hand.
+
+- "Don't know it" reinserts the card four positions later in the queue, or at
+  the end if fewer remain. A card is reinserted at most twice per session, so it
+  appears at most three times. After the third failure it is let go, so a case
+  that cannot be done yet does not trap the session.
+- The first grade a card receives in a session is the only one that can change
+  its long-term schedule:
+  - First attempt, "know it", card due or never seen: the full update above.
+  - First attempt, "know it", card not yet due (a fill card): counters only. The
+    scheduler updates `seen`, `known` and `lastGrade`, and leaves `interval`,
+    `ease`, `reps` and `due` alone. Otherwise drilling ahead grows intervals
+    until nothing is ever due and the scheduler stops mattering.
+  - First attempt, "don't know it": the full failure update, due or not.
+  - Any later attempt in the same session: counters only.
+- So repeated in-session failures do not lower ease again, and a later "know
+  it" does not undo the first failure. `seen` and `lastGrade` still move on
+  every attempt, so raw accuracy stays honest.
+- The session counter shows completed cases over the number of unique cases the
+  session started with.
+
+The learning step means a session can present the same case more than once. This
+supersedes the earlier rule that no case is shown twice in one session; only the
+initial queue is duplicate-free.
 
 Expose raw accuracy per case and per section in a stats view. The user asked
 for stats tracking; SM-2 is how those stats get used, not a replacement for
@@ -155,11 +190,14 @@ showing them.
 {
   "version": 1,
   "updatedAt": 0,
-  "prefs": { "showNames": true, "showSolutions": false, "randomRotation": false },
+  "prefs": { "showNames": true, "showSolutions": false, "groups": ["F2L", "OLL", "PLL"] },
   "cards": { "f2l-easy-1": { "ease": 2.5, "interval": 1, "...": null } },
   "notes": { "f2l-easy-1": "insert from the back, don't rotate" }
 }
 ```
+
+`prefs.randomRotation` is added when Mode 3 lands. A missing pref loads as its
+default, so adding one needs no version bump.
 
 Not cookies. Cookies cap at 4KB per domain and are transmitted on every request
 for no benefit here. localStorage gives 5MB+ and the same zero-backend property.
