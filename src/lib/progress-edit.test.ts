@@ -3,13 +3,29 @@ import { ALL_CASES } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { setNote, setPref, toggleSet } from "./progress-edit.ts";
+import { setMode, setNote, setPref, toggleSet } from "./progress-edit.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
 
 const progress = (notes: Record<string, string> = {}): Progress => ({
   ...defaultProgress(),
   notes,
+});
+
+describe("setMode", () => {
+  it("changes only the mode", () => {
+    const before = progress({ [A]: "keep" });
+    const after = setMode(before, "drill");
+    expect(after.prefs).toEqual({ ...before.prefs, mode: "drill" });
+    expect(after.notes).toBe(before.notes);
+    expect(after.cards).toBe(before.cards);
+  });
+
+  it("survives a save and reload", () => {
+    const saved = serialize(setMode(progress(), "drill"), 1);
+    const loaded = parseProgress(saved, ALL_CASES);
+    expect(loaded.ok && loaded.progress.prefs.mode).toBe("drill");
+  });
 });
 
 describe("setNote", () => {

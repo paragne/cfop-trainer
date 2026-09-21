@@ -19,6 +19,10 @@ export function setPref(
   return { ...progress, prefs: { ...progress.prefs, [key]: value } };
 }
 
+export function setMode(progress: Progress, mode: Mode): Progress {
+  return { ...progress, prefs: { ...progress.prefs, mode } };
+}
+
 // Returns the same object when the last set would be switched off, so the
 // caller can tell nothing changed and an empty session never arises.
 export function toggleSet(progress: Progress, mode: Mode, set: CaseSet): Progress {

@@ -47,6 +47,7 @@ describe("the frozen v1 blob", () => {
         prefs: {
           showNames: false,
           showSolutions: true,
+          mode: "learn",
           sets: {
             learn: ["F2L", "2-Look PLL"],
             drill: ["F2L", "2-Look OLL", "2-Look PLL"],

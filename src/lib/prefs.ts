@@ -4,9 +4,14 @@ import { isRecord, reject } from "./blob.ts";
 
 export type Mode = "learn" | "drill" | "verify";
 
+// Only modes that exist can be remembered as the last one used. Verify joins
+// this list when it ships.
+export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill"];
+
 export type Prefs = {
   showNames: boolean;
   showSolutions: boolean;
+  mode: Mode;
   sets: Record<Mode, CaseSet[]>;
 };
 
@@ -16,6 +21,7 @@ export function defaultPrefs(): Prefs {
   return {
     showNames: true,
     showSolutions: false,
+    mode: "learn",
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -42,6 +48,14 @@ function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
   return { learn: list("learn"), drill: list("drill"), verify: list("verify") };
 }
 
+function readMode(value: unknown, fallback: Mode): Mode {
+  if (value === undefined) return fallback;
+  return (
+    SHIPPED_MODES.find((mode) => mode === value) ??
+    reject(`prefs.mode must be one of ${SHIPPED_MODES.join(", ")}`)
+  );
+}
+
 // A missing pref takes its default, which is what lets a new pref ship
 // without bumping the version.
 export function readPrefs(raw: Record<string, unknown>): Prefs {
@@ -54,6 +68,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
   return {
     showNames: flag("showNames"),
     showSolutions: flag("showSolutions"),
+    mode: readMode(raw.mode, defaults.mode),
     sets: raw.sets === undefined ? defaults.sets : readSets(raw.sets, defaults.sets),
   };
 }

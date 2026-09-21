@@ -47,7 +47,12 @@ const parse = (obj: unknown) => parseProgress(JSON.stringify(obj), ALL_CASES);
 describe("serialize and parseProgress", () => {
   it("round-trips progress, and reports updatedAt with nothing dropped", () => {
     const original = progress({
-      prefs: { showNames: false, showSolutions: true, sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] } },
+      prefs: {
+        showNames: false,
+        showSolutions: true,
+        mode: "drill",
+        sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
+      },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },
     });
@@ -63,7 +68,7 @@ describe("serialize and parseProgress", () => {
   it("writes exactly the persisted keys, so UI state cannot leak in unnoticed", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
-    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "sets"]);
+    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "mode", "sets"]);
   });
 });
 
@@ -82,6 +87,9 @@ describe("parseProgress rejects", () => {
     ["a missing notes section", without(blob(), "notes"), '"notes"'],
     ["a cards section that is a list", bad({ cards: [] }), '"cards"'],
     ["a non-boolean pref", bad({ prefs: { showNames: "yes" } }), "prefs.showNames"],
+    ["a mode that has not shipped", bad({ prefs: { mode: "verify" } }), "prefs.mode"],
+    ["an unknown mode", bad({ prefs: { mode: "ZBLL" } }), "prefs.mode"],
+    ["a mode that is not a string", bad({ prefs: { mode: 1 } }), "prefs.mode"],
     ["sets that is not an object", bad({ prefs: { sets: ["F2L"] } }), "prefs.sets"],
     ["an empty learn list", bad({ prefs: { sets: { learn: [] } } }), "prefs.sets.learn"],
     ["an empty verify list", bad({ prefs: { sets: { verify: [] } } }), "prefs.sets.verify"],
@@ -130,6 +138,17 @@ describe("parseProgress tolerates", () => {
     expect(result.ok && result.progress.prefs).toEqual({
       showNames: false,
       showSolutions: false,
+      mode: "learn",
+      sets: SETS,
+    });
+  });
+
+  it("a mode given on its own, keeping the other prefs' defaults", () => {
+    const result = parse(blob({ prefs: { mode: "drill" } }));
+    expect(result.ok && result.progress.prefs).toEqual({
+      showNames: true,
+      showSolutions: false,
+      mode: "drill",
       sets: SETS,
     });
   });
