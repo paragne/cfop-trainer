@@ -22,6 +22,22 @@ body {
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0.5rem 0.75rem 0;
+}
+.group-toggles, .pref-toggles { display: flex; gap: 0.25rem; }
+
+/* Pressed is inverted grayscale, so the accent stays on the primary action. */
+.toggle { min-height: 2.25rem; padding: 0.25rem 0.75rem; font-size: 0.875rem; }
+.toggle[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+
 .notice {
   margin: 0;
   padding: 0.5rem 0.75rem;
