@@ -19,3 +19,10 @@ export function keyedButton(className: string, label: string, key: string, onCli
   node.addEventListener("click", onClick);
   return { node, text };
 }
+
+export function toggleButton(label: string, onClick: () => void): HTMLButtonElement {
+  const node = el("button", "toggle", label);
+  node.type = "button";
+  node.addEventListener("click", onClick);
+  return node;
+}

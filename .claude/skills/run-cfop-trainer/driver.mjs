@@ -134,7 +134,8 @@ async function connect() {
 
 const READ = `(() => { const q = (s) => document.querySelector(s); return {
   count: q('.count')?.textContent, alg: q('.solution')?.textContent, revealed: !q('.solution')?.hidden,
-  note: q('.note')?.value, summary: !q('.summary').hidden }; })()`;
+  note: q('.note')?.value, summary: !q('.summary').hidden, home: !q('.home').hidden,
+  modes: [...document.querySelectorAll('.modes .toggle')].map((t) => t.textContent), startVisible: !!q('.start button') }; })()`;
 const STORED = "JSON.parse(localStorage.getItem('cfop-trainer-v1') ?? 'null')";
 const CLICK_TOGGLE = (label) => `[...document.querySelectorAll('.toggle')].find((t) => (t.querySelector('span') ?? t).firstChild.textContent === ${JSON.stringify(label)}).click()`;
 
@@ -148,7 +149,12 @@ async function smoke() {
   await b.goto(APP); await b.eval("localStorage.clear()"); await b.goto(APP);
 
   let now = await s();
-  check("loads a 20-card session with the solution hidden", now.count === "0 / 20" && !now.revealed, now.count);
+  check("opens on the home screen, Learn only, with the due count", now.home && now.modes.join() === "Learn · 57 due", now.modes.join());
+  check("home shows a Start button", now.startVisible);
+  console.log("shot:", await b.shot("phone-home"));
+  await b.key(" ");
+  now = await s();
+  check("space on home starts a 20-card session with the solution hidden", !now.home && now.count === "0 / 20" && !now.revealed, now.count);
   await b.key(" ");
   check("space reveals the solution", (await s()).revealed);
   await b.key(" ");
@@ -185,10 +191,15 @@ async function smoke() {
   await b.goto(APP);
   check("a reload keeps the cards", JSON.stringify((await b.eval(STORED)).cards) === stored);
 
-  await b.eval(CLICK_TOGGLE("F2L")); await b.eval(CLICK_TOGGLE("OLL"));
+  await b.eval("document.querySelector('.logo').click()");
+  check("the logo returns home mid-session", (await s()).home);
+  await b.eval(CLICK_TOGGLE("F2L")); await b.eval(CLICK_TOGGLE("2-Look OLL"));
+  const sets = (await b.eval(STORED)).prefs.sets;
+  check("set toggles rewrite only the Learn selection", sets.learn.join() === "2-Look PLL" && sets.drill.join() === "F2L,2-Look OLL,2-Look PLL", JSON.stringify(sets));
+  await b.eval(CLICK_TOGGLE("2-Look PLL"));
+  check("the last set cannot be switched off", (await b.eval(STORED)).prefs.sets.learn.join() === "2-Look PLL");
+  await b.key(" ");
   check("PLL only gives a 6-card session", (await s()).count === "0 / 6");
-  await b.eval(CLICK_TOGGLE("PLL"));
-  check("the last group cannot be switched off", (await b.eval(STORED)).prefs.groups.join() === "PLL");
   console.log("shot:", await b.shot("phone-pll"));
   await b.key(" ");
   console.log("shot:", await b.shot("phone-revealed"));

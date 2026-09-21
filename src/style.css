@@ -39,17 +39,15 @@ body {
 .icon { justify-self: end; display: grid; place-items: center; width: 2.75rem; padding: 0; }
 .icon[aria-expanded="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
 
-.bar {
+.prefs {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.25rem;
   width: 100%;
   max-width: 40rem;
   margin: 0 auto;
   padding: 0.5rem 0.75rem 0;
 }
-.set-toggles, .pref-toggles { display: flex; gap: 0.25rem; }
+.set-toggles, .modes { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 
 /* Pressed is inverted grayscale, so the accent stays on the primary action. */
 .toggle { min-height: 2.25rem; padding: 0.25rem 0.75rem; font-size: 0.875rem; }
@@ -63,7 +61,7 @@ body {
   font-size: 0.875rem;
 }
 
-.card, .summary {
+.card, .summary, .home {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -73,6 +71,31 @@ body {
   margin: 0 auto;
   padding: 0.75rem;
 }
+
+.modes .toggle { flex: 1; min-height: 2.75rem; }
+.set-toggles .toggle { flex: 1 1 auto; }
+
+.stats {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--dim);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+.stats th, .stats td { padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
+.stats th { font-weight: 400; text-align: left; }
+.stats th:not(:first-child), .stats td { text-align: right; }
+.stats tbody th { color: var(--fg); }
+
+/* Thumb range, like the card's action bar. */
+.start {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+.start button { width: 100%; }
 
 .meta {
   display: flex;
@@ -182,7 +205,7 @@ kbd {
 .result { margin: 0; color: var(--dim); }
 
 @media (min-width: 48rem) {
-  .card, .summary { padding: 1.5rem; gap: 1rem; }
+  .card, .summary, .home { padding: 1.5rem; gap: 1rem; }
   .case svg { max-height: 60vh; }
   .actions { position: static; grid-template-columns: 1fr 1fr 1fr; }
   .actions .primary { grid-column: auto; }
