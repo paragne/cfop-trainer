@@ -18,6 +18,7 @@ A case is defined by its solution, not by a picture.
 type Case = {
   id: string;              // "f2l-disconnected-3", stable, never reused
   group: Group;            // "F2L" | "OLL" | "PLL"
+  sets: CaseSet[];         // v2: membership tags, see v2 Case sets. One case, one id, one SRS record, however many sets list it
   section: string;         // "Disconnected Pairs", "Finish OLL", "Finish PLL"
   name: string | null;     // "Sune", "Ua Perm". null where no standard name exists.
   aliases: string[];       // ["OLL 27", "Double Sune"]
@@ -26,6 +27,8 @@ type Case = {
   setup: string | null;    // optional override, played on a solved cube as-is; if null, setup = inverse(algs[0])
   videoUrl: string | null; // J Perm timestamp link, supplied later
 };
+
+type CaseSet = "F2L" | "2-Look OLL" | "2-Look PLL" | "Full OLL" | "Full PLL";
 
 type Alg = {
   display: string;         // "U' (R U R') [U2 R U' R']" — parens preserved
