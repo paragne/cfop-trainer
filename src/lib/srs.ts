@@ -10,7 +10,7 @@ export type Card = {
 
 const DAY_MS = 86_400_000;
 const EASE_START = 2.5;
-const EASE_FLOOR = 1.3;
+export const EASE_FLOOR = 1.3;
 const EASE_CAP = 3.0;
 const EASE_STEP_UP = 0.05;
 const EASE_STEP_DOWN = 0.2;
