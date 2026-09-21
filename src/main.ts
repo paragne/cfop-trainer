@@ -12,6 +12,7 @@ import type { KeyAction } from "./ui/keys.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
 import { createToolbar } from "./ui/toolbar.ts";
+import { createTopbar } from "./ui/topbar.ts";
 
 const NOT_SAVING = "Progress can't be saved in this browser. Export it to keep it.";
 const SET_ASIDE = "Saved progress could not be read and was set aside. Starting fresh.";
@@ -21,6 +22,7 @@ let progress = loaded.progress;
 let session = startSession(ALL_CASES, progress, Date.now(), Math.random);
 
 const status = createStatus();
+const topbar = createTopbar({ onHome: () => restart(), onData: () => dataPanel.toggle() });
 const flashcard = createFlashcard({
   onReveal: () => handle("reveal"),
   onDontKnow: () => handle("dontKnow"),
@@ -54,6 +56,7 @@ const dataPanel = createDataPanel({
     return result;
   },
   notify: (message) => status.show(message),
+  onOpenChange: (open) => topbar.setDataOpen(open),
 });
 
 function persist(next: Progress): void {
@@ -101,11 +104,12 @@ function handle(action: KeyAction): void {
 }
 
 document.body.append(
-  toolbar.element,
+  topbar.element,
+  dataPanel.element,
   status.element,
+  toolbar.element,
   flashcard.element,
   summary.element,
-  dataPanel.element,
 );
 bindKeys(handle);
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);

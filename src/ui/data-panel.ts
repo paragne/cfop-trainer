@@ -10,6 +10,7 @@ type Handlers = {
   onExport: () => { filename: string; text: string };
   onImport: (text: string, mode: ImportMode) => ImportResult;
   notify: (message: string | null) => void;
+  onOpenChange: (open: boolean) => void;
 };
 
 const noun = (record: Progress["cards"] | Progress["notes"], word: string) => {
@@ -17,11 +18,11 @@ const noun = (record: Progress["cards"] | Progress["notes"], word: string) => {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 };
 
-// Collapsed by default and edited in place: no dialog, and the merge or
-// replace choice appears right where the file was picked.
-export function createDataPanel({ cases, cardCount, onExport, onImport, notify }: Handlers) {
-  const element = el("details", "data");
-  const summary = el("summary", "", "Data");
+// Hidden until the top bar's data icon opens it, and edited in place: no
+// dialog, and the merge or replace choice appears right where the file was picked.
+export function createDataPanel({ cases, cardCount, onExport, onImport, notify, onOpenChange }: Handlers) {
+  const element = el("section", "data");
+  element.hidden = true;
 
   const input = el("input", "");
   input.type = "file";
@@ -40,7 +41,7 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify }
   const replace = el("button", "");
   const cancel = el("button", "", "Cancel");
   strip.append(description, merge, replace, cancel);
-  element.append(summary, actions, strip);
+  element.append(actions, strip);
 
   let pending: string | null = null;
 
@@ -100,5 +101,12 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify }
   replace.addEventListener("click", () => apply("replace"));
   cancel.addEventListener("click", close);
 
-  return { element };
+  return {
+    element,
+    toggle(): void {
+      element.hidden = !element.hidden;
+      if (element.hidden) close();
+      onOpenChange(!element.hidden);
+    },
+  };
 }
