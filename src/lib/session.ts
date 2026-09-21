@@ -1,6 +1,7 @@
 import type { Case } from "../data/algorithms.ts";
 import type { Progress } from "./progress.ts";
 import { buildQueue } from "./queue.ts";
+import { inSets } from "./selection.ts";
 import { grade, recount } from "./srs.ts";
 import type { Card } from "./srs.ts";
 
@@ -29,8 +30,7 @@ export function startSession(
   now: number,
   random: () => number,
 ): Session {
-  const chosen = progress.prefs.sets.learn;
-  const selected = cases.filter((c) => c.sets.some((set) => chosen.includes(set)));
+  const selected = inSets(cases, progress.prefs.sets.learn);
   const queue = buildQueue(selected, progress.cards, now, SESSION_LENGTH, random);
   return {
     queue,
