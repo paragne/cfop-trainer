@@ -13,7 +13,10 @@ function figure(c: Case): HTMLElement {
   const alg = document.createElement("div");
   alg.className = "alg";
   alg.textContent = c.algs[0].display;
-  fig.append(id, alg);
+  const sets = document.createElement("div");
+  sets.className = "sets";
+  sets.textContent = c.sets.join(" · ");
+  fig.append(id, alg, sets);
   return fig;
 }
 
