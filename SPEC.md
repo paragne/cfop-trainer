@@ -188,20 +188,53 @@ showing them.
 
 ## Persistence
 
-`localStorage`, single key `cfop-trainer-v1`, single JSON blob:
+`localStorage`, single key `cfop-trainer-v1` (a name, not a version; the version
+lives in the blob), single JSON blob:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": 0,
-  "prefs": { "showNames": true, "showSolutions": false, "groups": ["F2L", "OLL", "PLL"] },
+  "prefs": {
+    "showNames": true,
+    "showSolutions": false,
+    "sets": {
+      "learn": ["F2L", "2-Look OLL", "2-Look PLL"],
+      "drill": ["F2L", "2-Look OLL", "2-Look PLL"],
+      "verify": ["2-Look OLL", "2-Look PLL"]
+    }
+  },
   "cards": { "f2l-easy-1": { "ease": 2.5, "interval": 1, "...": null } },
   "notes": { "f2l-easy-1": "insert from the back, don't rotate" }
 }
 ```
 
+`prefs.sets` holds one selection per mode, each a non-empty list of case sets.
+The values above are the defaults, and a missing mode takes its default. The
+full sets are opt-in, since they add about a hundred cases to a session queue of
+twenty. Verify never offers F2L.
+
 `prefs.randomRotation` is added when Mode 3 lands. A missing pref loads as its
 default, so adding one needs no version bump.
+
+### Version 1 to 2
+
+Version 2 replaced `prefs.groups` (one list of `F2L`, `OLL`, `PLL`) with
+`prefs.sets`. `migrateV1toV2` maps the groups to the Learn selection: `F2L` to
+`F2L`, `OLL` to `2-Look OLL`, `PLL` to `2-Look PLL`, since the full sets did not
+exist. Drill and Verify take their defaults. `cards`, `notes` and `updatedAt`
+pass through untouched. Malformed groups are passed through unmapped, so the
+ordinary v2 reader rejects them and there is one definition of valid.
+
+Migration runs in `parseProgress`, so both a stored blob and an imported v1
+export file go through it, and the first save writes version 2.
+
+Before that first save, `load()` copies the raw v1 text to
+`cfop-trainer-v1:pre-v2`, once: an existing copy is never replaced. localStorage
+is per browser, so an Export file only protects the device it came from. Like the
+`:unreadable` stash, the copy is best effort, and importing a file does not write
+it. A blob with any other version is set aside under `:unreadable` and progress
+starts fresh; it is never overwritten.
 
 Not cookies. Cookies cap at 4KB per domain and are transmitted on every request
 for no benefit here. localStorage gives 5MB+ and the same zero-backend property.
