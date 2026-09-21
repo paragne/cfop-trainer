@@ -39,9 +39,9 @@ const FROZEN_IDS = [
 const idsIn = (set: CaseSet) => ALL_CASES.filter((c) => c.sets.includes(set)).map((c) => c.id);
 
 describe("case data", () => {
-  it("has 41 F2L, 60 OLL and 6 PLL cases", () => {
+  it("has 41 F2L, 60 OLL and 23 PLL cases", () => {
     expect([F2L_CASES.length, OLL_CASES.length, PLL_CASES.length]).toEqual([
-      41, 60, 6,
+      41, 60, 23,
     ]);
   });
 
@@ -61,7 +61,7 @@ describe("case data", () => {
 
 describe("set membership", () => {
   it("sizes each set", () => {
-    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 10, 6, 57, 4]);
+    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 10, 6, 57, 21]);
   });
 
   it("makes Full OLL exactly oll-1 to oll-57", () => {
@@ -69,6 +69,23 @@ describe("set membership", () => {
       Array.from({ length: 57 }, (_, i) => `oll-${i + 1}`).toSorted(),
     );
   });
+
+  it("makes Full PLL exactly the 21 named perms", () => {
+    const names = ALL_CASES.filter((c) => c.sets.includes("Full PLL")).map((c) => c.name);
+    expect(names.toSorted()).toEqual(
+      [
+        "Aa", "Ab", "E", "F", "Ga", "Gb", "Gc", "Gd", "H", "Ja", "Jb",
+        "Na", "Nb", "Ra", "Rb", "T", "Ua", "Ub", "V", "Y", "Z",
+      ].map((perm) => `${perm} Perm`).toSorted(),
+    );
+  });
+
+  it.each(ALL_CASES.filter((c) => c.sets.includes("Full PLL")))(
+    "$id is named for its own id",
+    (c) => {
+      expect(c.name?.split(" ")[0].toLowerCase()).toBe(c.id.replace("pll-", ""));
+    },
+  );
 
   it.each(ALL_CASES.filter((c) => c.sets.includes("Full OLL")))(
     "$id carries its own number as a name or alias",

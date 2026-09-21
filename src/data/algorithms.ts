@@ -3,7 +3,7 @@
  *
  * Source: Cube Academy algorithm sheets (F2L 41, 2-look OLL, 2-look PLL),
  * transcribed 2026-09-20 and pending manual verification. Full OLL comes from
- * the same site's full sheet, transcribed 2026-09-21.
+ * the same site's full sheet, transcribed 2026-09-21, as is Full PLL.
  *
  * `display` preserves the original parenthesis and bracket grouping because the
  * grouping is a memorization aid. `moves` is the flat token string the parser
@@ -70,6 +70,23 @@ function oll(id: string, section: string, algs: Alg[]): Case {
     aliases: [],
     algs,
     mask: { kind: "oll-full" },
+    setup: null,
+    videoUrl: null,
+  };
+}
+
+// The full PLL sheet names every case, so these keep the sheet's names. Its
+// pictures pin each case exactly, and the algs were checked against them.
+function pll(id: string, section: string, name: string, algs: Alg[], aliases: string[] = []): Case {
+  return {
+    id,
+    group: "PLL",
+    sets: ["Full PLL"],
+    section,
+    name,
+    aliases,
+    algs,
+    mask: { kind: "pll-full" },
     setup: null,
     videoUrl: null,
   };
@@ -499,6 +516,10 @@ export const PLL_CASES: Case[] = [
     aliases: ["U Perm (a)"],
     algs: [
       a("(R2 U' R') U' R (U R) (U R) U' R", "R2 U' R' U' R U R U R U' R"),
+      a(
+        "(R U R' U) R' U' (R2 U' R') U R' U R U2",
+        "R U R' U R' U' R2 U' R' U R' U R U2",
+      ),
     ],
     mask: { kind: "pll-full" },
     setup: null,
@@ -544,6 +565,83 @@ export const PLL_CASES: Case[] = [
     setup: null,
     videoUrl: null,
   },
+
+  // --- Corners Only (3) --------------------------------------------------
+  pll("pll-aa", "Corners Only", "Aa Perm", [
+    a("x (R' U R') D2 (R U' R') D2 R2 x'", "x R' U R' D2 R U' R' D2 R2 x'"),
+  ]),
+  pll("pll-ab", "Corners Only", "Ab Perm", [
+    a("x R2 D2 (R U R') D2(R U' R) x'", "x R2 D2 R U R' D2 R U' R x'"),
+  ]),
+  pll("pll-e", "Corners Only", "E Perm", [
+    a(
+      "x' (R U' R') D (R U R') D' (R U R') D (R U' R') D' x",
+      "x' R U' R' D R U R' D' R U R' D R U' R' D' x",
+    ),
+  ]),
+
+  // --- Adjacent Swap (6) -------------------------------------------------
+  pll("pll-t", "Adjacent Swap", "T Perm", [
+    a("(R U R' U') R' F (R2 U' R')U' (R U R' F')", "R U R' U' R' F R2 U' R' U' R U R' F'"),
+  ]),
+  pll("pll-f", "Adjacent Swap", "F Perm", [
+    a(
+      "R' U' F' (R U R' U') R' F (R2 U' R') U' (R U R') U R",
+      "R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R",
+    ),
+  ]),
+  pll("pll-jb", "Adjacent Swap", "Jb Perm", [
+    a("R U R' F' (R U R' U') R' F (R2 U' R')", "R U R' F' R U R' U' R' F R2 U' R'"),
+  ]),
+  pll("pll-ja", "Adjacent Swap", "Ja Perm", [
+    a("x R2 (F R F' R) U2 (r' U r) U2 x'", "x R2 F R F' R U2 r' U r U2 x'"),
+  ], ["L Perm"]),
+  pll("pll-ra", "Adjacent Swap", "Ra Perm", [
+    a("(R U' R' U') R U R D (R' U' R D') R' U2 R'", "R U' R' U' R U R D R' U' R D' R' U2 R'"),
+  ]),
+  pll("pll-rb", "Adjacent Swap", "Rb Perm", [
+    a("(R' U2 R U2) R' F (R U R' U') R' F' R2", "R' U2 R U2 R' F R U R' U' R' F' R2"),
+  ]),
+
+  // --- Diagonal Swap (4) -------------------------------------------------
+  pll("pll-y", "Diagonal Swap", "Y Perm", [
+    a(
+      "F (R U' R' U') R U R' F' (R U R' U') R' F R F'",
+      "F R U' R' U' R U R' F' R U R' U' R' F R F'",
+    ),
+  ]),
+  pll("pll-na", "Diagonal Swap", "Na Perm", [
+    a(
+      "(R U R' U) R U R' F' (R U R' U') R' F (R2 U' R') U2 R U' R'",
+      "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
+    ),
+  ]),
+  pll("pll-nb", "Diagonal Swap", "Nb Perm", [
+    a(
+      "(R' U R U') R' (F' U' F) R U (R' U' R U') f R f'",
+      "R' U R U' R' F' U' F R U R' U' R U' f R f'",
+    ),
+  ]),
+  pll("pll-v", "Diagonal Swap", "V Perm", [
+    a(
+      "(R' U R' U') R D' R' D R' (U D') R2 U' R2 D R2",
+      "R' U R' U' R D' R' D R' U D' R2 U' R2 D R2",
+    ),
+  ]),
+
+  // --- G-Perms (4) -------------------------------------------------------
+  pll("pll-ga", "G-Perms", "Ga Perm", [
+    a("R2 (U R' U R') U' R U' R2 (D U') R' U R D'", "R2 U R' U R' U' R U' R2 D U' R' U R D'"),
+  ]),
+  pll("pll-gb", "G-Perms", "Gb Perm", [
+    a("D R' U' R (U D') R2 U R' U (R U' R U') R2", "D R' U' R U D' R2 U R' U R U' R U' R2"),
+  ]),
+  pll("pll-gc", "G-Perms", "Gc Perm", [
+    a("D R2 (U' R U' R) U R' U R2 (D' U) R U' R'", "D R2 U' R U' R U R' U R2 D' U R U' R'"),
+  ]),
+  pll("pll-gd", "G-Perms", "Gd Perm", [
+    a("R U R' (U' D) R2 U' R U' (R' U R' U) R2 D'", "R U R' U' D R2 U' R U' R' U R' U R2 D'"),
+  ]),
 ];
 
 export const ALL_CASES: Case[] = [...F2L_CASES, ...OLL_CASES, ...PLL_CASES];

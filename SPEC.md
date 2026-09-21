@@ -52,6 +52,19 @@ Rationale: 57 hand-authored sticker layouts are 57 opportunities for a silent
 mismatch between the picture and the algorithm. Deriving the picture makes the
 data self-validating, and the test suite in CLAUDE.md proves every case.
 
+Apart from a `setup` override, every displayed alg must solve the displayed
+picture exactly, with no AUF tolerance. A source alg for an existing case can
+solve the picture only up to AUF, since sheets often write one U turn off from
+the picture. That alg is added as an alternate with the missing U turns
+prepended and/or appended, in both `display` and `moves`. For PLL this includes
+a trailing AUF, because a PLL alg must leave the cube solved. `algs[0]` of an
+existing case is never changed, and every added U turn is stated in the commit
+message.
+
+A source picture that shows a physically impossible state is a defect in the
+source, not in the data. Report it with the reasoning and do not adjust the
+case to match it.
+
 ## Cube engine
 
 54-facelet array, index order U(0-8) R(9-17) F(18-26) D(27-35) L(36-44) B(45-53),

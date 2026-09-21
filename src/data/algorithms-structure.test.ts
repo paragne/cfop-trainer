@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { setupCube } from "../lib/case-state.ts";
 import { applyMoves, normalize, SOLVED } from "../lib/cube.ts";
 import type { Cube } from "../lib/cube.ts";
-import { parse } from "../lib/notation.ts";
+import { invert, parse } from "../lib/notation.ts";
 import { F2L_CASES, OLL_CASES, PLL_CASES } from "./algorithms.ts";
 
 // Unlike the inverse-then-solution round trip, these checks can fail on a
@@ -116,11 +116,53 @@ describe("OLL", () => {
   );
 });
 
+const AUFS = ["", "U", "U2", "U'"];
+
+// Two algs are one case when their inverses, played on a solved cube, differ
+// only by U turns before and after.
+function caseSignature(alg: string): string {
+  const inverse = invert(parse(alg));
+  return AUFS.flatMap((before) =>
+    AUFS.map((after) =>
+      normalize(
+        applyMoves(SOLVED, [...parse(before), ...inverse, ...parse(after)]),
+      ).join(""),
+    ),
+  ).toSorted()[0];
+}
+
 describe("PLL", () => {
   it.each(PLL_CASES)("$id: only the permutation is wrong", (c) => {
     const cube = setupCube(c);
     expect(unsolved(cube, F2L_STICKERS)).toEqual([]);
     expect(unsolved(cube, U_FACE)).toEqual([]);
     expect(unsolved(cube, EVERYTHING)).not.toEqual([]);
+  });
+
+  // A displayed alg must leave the cube solved, so a sheet alg that ends one
+  // AUF short gets the turn appended rather than a tolerance here.
+  it.each(PLL_CASES.filter((c) => c.algs.length > 1))(
+    "$id: every alternate alg solves the picture exactly",
+    (c) => {
+      for (const alt of c.algs.slice(1)) {
+        const after = normalize(applyMoves(setupCube(c), parse(alt.moves)));
+        expect(after).toEqual(SOLVED);
+      }
+    },
+  );
+
+  it("treats an alg and the same alg with AUFs around it as one case", () => {
+    const ua = "R2 U' R' U' R U R U R U' R";
+    expect(caseSignature(`U ${ua} U2`)).toBe(caseSignature(ua));
+    const ub = "R' U R' U' R' U' R' U R U R2";
+    expect(caseSignature(ub)).not.toBe(caseSignature(ua));
+  });
+
+  // A misnumbered or duplicated transcription would land two ids on one case.
+  it("gives every Full PLL case its own signature up to AUF", () => {
+    const signatures = PLL_CASES.filter((c) => c.sets.includes("Full PLL")).map((c) =>
+      caseSignature(c.algs[0].moves),
+    );
+    expect(new Set(signatures).size).toBe(signatures.length);
   });
 });
