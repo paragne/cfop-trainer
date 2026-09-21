@@ -1,60 +1,71 @@
-import './style.css'
-import heroImg from './assets/hero.png'
-import typescriptLogo from './assets/typescript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.ts'
+import "./style.css";
+import { ALL_CASES } from "./data/algorithms.ts";
+import type { Progress } from "./lib/progress.ts";
+import { setNote, setPref } from "./lib/progress-edit.ts";
+import { answer, current, startSession, toggleReveal } from "./lib/session.ts";
+import { load, save } from "./lib/storage.ts";
+import { createFlashcard } from "./ui/flashcard.ts";
+import { bindKeys } from "./ui/keys.ts";
+import type { KeyAction } from "./ui/keys.ts";
+import { createStatus } from "./ui/status.ts";
+import { createSummary } from "./ui/summary.ts";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+const NOT_SAVING = "Progress can't be saved in this browser. Export it to keep it.";
+const SET_ASIDE = "Saved progress could not be read and was set aside. Starting fresh.";
 
-<div class="ticks"></div>
+const loaded = load(ALL_CASES);
+let progress = loaded.progress;
+let session = startSession(ALL_CASES, progress, Date.now(), Math.random);
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://www.typescriptlang.org" target="_blank">
-          <img class="button-icon" src="${typescriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+const status = createStatus();
+const flashcard = createFlashcard({
+  onReveal: () => handle("reveal"),
+  onDontKnow: () => handle("dontKnow"),
+  onKnow: () => handle("know"),
+  onNote: (text) => {
+    const c = current(session);
+    if (c === null) throw new Error("note edited with no current case");
+    persist(setNote(progress, c.id, text));
+  },
+});
+const summary = createSummary(() => restart());
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+function persist(next: Progress): void {
+  progress = next;
+  status.show(save(progress, Date.now()) ? null : NOT_SAVING);
+}
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+function restart(): void {
+  session = startSession(ALL_CASES, progress, Date.now(), Math.random);
+  render();
+}
+
+function render(): void {
+  const finished = current(session) === null;
+  flashcard.element.hidden = finished;
+  summary.element.hidden = !finished;
+  if (finished) summary.render(session);
+  else flashcard.render(session, progress);
+}
+
+function handle(action: KeyAction): void {
+  if (action === "toggleNames") {
+    persist(setPref(progress, "showNames", !progress.prefs.showNames));
+  } else if (current(session) === null) {
+    if (action === "reveal") restart();
+    return;
+  } else if (action === "reveal") {
+    session = toggleReveal(session);
+  } else {
+    const result = answer(session, progress, action === "know", Date.now());
+    session = result.session;
+    persist(result.progress);
+  }
+  render();
+}
+
+document.body.append(status.element, flashcard.element, summary.element);
+bindKeys(handle);
+if (loaded.problem === "unreadable") status.show(SET_ASIDE);
+if (loaded.problem === "unavailable") status.show(NOT_SAVING);
+render();
