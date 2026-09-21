@@ -81,6 +81,9 @@ floors at 1.3, and that intervals grow monotonically on repeated success.
 - One logical change per commit. Conventional commit format.
 - Run `npm run check` (typecheck + lint + test) before claiming a task is done.
   Do not report success on a failing check.
+- Never pipe a verification command through tail, head, or grep in a way that
+  discards its exit code. Run `npm run check` on its own and report the real
+  exit status before committing.
 - Never run `git push`. Never run `wrangler deploy`. I deploy.
 - Do not modify `src/data/algorithms.ts` without telling me explicitly which
   case you changed and why. That file is hand-verified.
@@ -91,3 +94,21 @@ floors at 1.3, and that intervals grow monotonically on repeated success.
   n hides/shows the case name.
 - Works offline after first load.
 - No analytics, no telemetry, no external requests at runtime.
+
+## Visual design
+
+Dense, fast, high-contrast. This is a drilling tool used with a cube in one
+hand, not a marketing page.
+
+- Dark background, near-black. The cube renders bright against it.
+- One accent color, used only for the primary action. Everything else is
+  grayscale.
+- System font stack. No web fonts, no font loading.
+- Sharp or minimally rounded corners. No shadows, no gradients, no glass
+  effects, no animated transitions except where they convey state change.
+- The case picture is the largest element on screen by a wide margin.
+  Everything else is chrome.
+- Primary actions sit in the lower third, reachable by thumb on a phone.
+- No modal dialogs. Notes edit in place.
+- Design mobile-first, single column, then let it breathe on desktop. Do not
+  design a desktop layout and shrink it.
