@@ -1,6 +1,6 @@
 # CFOP Trainer
 
-Flashcard trainer for Rubik's Cube CFOP: F2L, 2-look OLL, 2-look PLL.
+Flashcard trainer for Rubik's Cube CFOP: F2L, 2-look OLL, 2-look PLL, Full OLL, Full PLL.
 Static site. No backend. Deployed to Cloudflare Workers static assets at cfop.paragone.dev.
 
 ## Stack
@@ -15,8 +15,9 @@ Static site. No backend. Deployed to Cloudflare Workers static assets at cfop.pa
 
 Module boundaries are load-bearing. Do not cross them.
 
-- `src/data/algorithms.ts` — the 57 case definitions. Pure data. Never inline case
-  data anywhere else. Never generate case data at runtime.
+- `src/data/algorithms.ts` — every case definition. Pure data. Never inline case
+  data anywhere else. Never generate case data at runtime. A case exists once;
+  set membership is a tag on it, never a copy.
 - `src/lib/cube.ts` — facelet model and move engine. Pure functions only.
   No DOM access, no imports from src/ui or src/data. This module must be
   independently testable.
@@ -63,7 +64,7 @@ of the solution applied, with unmasked facelets rendered gray.
 - Every move applied 4 times returns to identity.
 - (R U R' U') applied 6 times returns to identity.
 - Sune has order 6: applied 6 times it returns to identity, and 3 times it does not.
-- For every one of the 57 cases: apply the inverse of the solution to a solved
+- For every case in the data file: apply the inverse of the solution to a solved
   cube, then apply the solution. The result must be solved. This test validates
   the entire data file and must pass before any case is considered correct.
 - Notation parser round-trips: parse then stringify equals the input.
