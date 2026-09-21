@@ -47,7 +47,7 @@ export function current(s: Session): Case | null {
   return s.index < s.queue.length ? s.queue[s.index] : null;
 }
 
-export function toggleReveal(s: Session): Session {
+export function toggleReveal<T extends { revealed: boolean }>(s: T): T {
   return { ...s, revealed: !s.revealed };
 }
 
