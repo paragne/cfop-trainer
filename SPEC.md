@@ -211,6 +211,7 @@ lives in the blob), single JSON blob:
   "prefs": {
     "showNames": true,
     "showSolutions": false,
+    "mode": "learn",
     "sets": {
       "learn": ["F2L", "2-Look OLL", "2-Look PLL"],
       "drill": ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -226,6 +227,9 @@ lives in the blob), single JSON blob:
 The values above are the defaults, and a missing mode takes its default. The
 full sets are opt-in, since they add about a hundred cases to a session queue of
 twenty. Verify never offers F2L.
+
+`prefs.mode` is the last mode used, and the home screen opens on it. It holds
+only a mode that has shipped, so it is `learn` or `drill` until Verify exists.
 
 `prefs.randomRotation` is added when Mode 3 lands. A missing pref loads as its
 default, so adding one needs no version bump.
@@ -344,8 +348,11 @@ include it.
 
 - Learn: the existing SRS flashcard mode.
 - Drill: endless random cycling over the chosen sets. Same card screen, with
-  the grade buttons replaced by Next. No immediate repeats. Nothing graded,
-  scheduled or recorded.
+  the grade buttons replaced by Next, which is key `2`. No immediate repeats.
+  Nothing graded, scheduled or recorded; notes stay editable, since a note is
+  the user's own text and not a grade. Cards come from a shuffle bag: every
+  case in the chosen sets once in random order, then a reshuffle whose first
+  card is never the one just shown.
 - Verify: start from solved. For each OLL/PLL case, the user performs the alg
   on a physical cube and compares against the computed expected state.
   Excludes F2L.
@@ -356,14 +363,18 @@ include it.
 No sidebar. The home screen is the navigation.
 
 - Top bar: logo centered, returns home. One data icon at right, opening export
-  and import. Leaving a session via the logo needs no confirmation, since
-  grades save on each tap.
-- Home: mode selector, set toggles for the chosen mode, one Start button in
-  the accent color, stats below.
-- The Learn selector shows the due count ("Learn · 7 due").
+  and import in place under the bar, with no dialog. Leaving a session via the
+  logo needs no confirmation, since grades save on each tap.
+- Home: mode selector, set toggles for the chosen mode, stats, and one Start
+  button in the accent color, pinned at the bottom where a thumb reaches it.
+  The selector lists only modes that exist, so Verify is absent until it ships.
+- The Learn selector shows the due count ("Learn · 7 due"). Due counts every
+  case the session queue would take: never seen, or `due <= now`.
 - Verify disables the F2L toggle.
-- Stats, per set: cases seen out of total, accuracy (known over seen), due
-  count.
+- Stats, per set: cases seen out of total, accuracy (known over seen, summed
+  over the set's cases), due count. A case in two sets counts in both.
+- The card screens carry the Names and Auto-reveal toggles. Set toggles live
+  only on the home screen.
 
 ### Brand
 
