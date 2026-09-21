@@ -4,7 +4,8 @@ import type { Group } from "./data/algorithms.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setNote, setPref, toggleGroup } from "./lib/progress-edit.ts";
 import { answer, current, startSession, toggleReveal } from "./lib/session.ts";
-import { load, save } from "./lib/storage.ts";
+import { exportJson, importJson, load, save } from "./lib/storage.ts";
+import { createDataPanel } from "./ui/data-panel.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
 import { bindKeys } from "./ui/keys.ts";
 import type { KeyAction } from "./ui/keys.ts";
@@ -39,6 +40,20 @@ const toolbar = createToolbar({
     persist(setPref(progress, "showSolutions", !progress.prefs.showSolutions));
     render();
   },
+});
+const dataPanel = createDataPanel({
+  cases: ALL_CASES,
+  cardCount: () => Object.keys(progress.cards).length,
+  onExport: () => exportJson(progress, Date.now()),
+  onImport: (text, mode) => {
+    const result = importJson(text, mode, progress, ALL_CASES, Date.now());
+    if (result.ok) {
+      progress = result.progress;
+      restart();
+    }
+    return result;
+  },
+  notify: (message) => status.show(message),
 });
 
 function persist(next: Progress): void {
@@ -85,7 +100,13 @@ function handle(action: KeyAction): void {
   render();
 }
 
-document.body.append(toolbar.element, status.element, flashcard.element, summary.element);
+document.body.append(
+  toolbar.element,
+  status.element,
+  flashcard.element,
+  summary.element,
+  dataPanel.element,
+);
 bindKeys(handle);
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);
 if (loaded.problem === "unavailable") status.show(NOT_SAVING);
