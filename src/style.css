@@ -32,7 +32,7 @@ body {
   margin: 0 auto;
   padding: 0.5rem 0.75rem 0;
 }
-.group-toggles, .pref-toggles { display: flex; gap: 0.25rem; }
+.set-toggles, .pref-toggles { display: flex; gap: 0.25rem; }
 
 /* Pressed is inverted grayscale, so the accent stays on the primary action. */
 .toggle { min-height: 2.25rem; padding: 0.25rem 0.75rem; font-size: 0.875rem; }

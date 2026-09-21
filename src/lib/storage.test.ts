@@ -4,6 +4,7 @@ import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
 import type { Card } from "./srs.ts";
 import { exportJson, importJson, load, save } from "./storage.ts";
+import { stubStorage } from "./storage-stub.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
 const NOW = 1_800_000_000_000;
@@ -22,30 +23,16 @@ const card = (over: Partial<Card> = {}): Card => ({
 });
 
 const progress = (over: Partial<Progress> = {}): Progress => ({
-  ...defaultProgress(ALL_CASES),
+  ...defaultProgress(),
   ...over,
 });
-
-// Tests my logic against a Map. It cannot say how a real browser behaves at
-// quota or in private mode.
-function stubStorage(seed: Record<string, string> = {}, failWrites = false) {
-  const data = new Map(Object.entries(seed));
-  vi.stubGlobal("localStorage", {
-    getItem: (k: string) => data.get(k) ?? null,
-    setItem: (k: string, v: string) => {
-      if (failWrites) throw new DOMException("full", "QuotaExceededError");
-      data.set(k, v);
-    },
-  });
-  return data;
-}
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("load", () => {
   it("starts from defaults when nothing is stored", () => {
     stubStorage();
-    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(ALL_CASES), problem: null });
+    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(), problem: null });
   });
 
   it("reads back what save wrote, under the single key", () => {
@@ -65,10 +52,10 @@ describe("load", () => {
 
   it.each([
     ["corrupt JSON", "{not json"],
-    ["a blob from a newer version", JSON.stringify({ ...JSON.parse(serialize(progress(), NOW)), version: 2 })],
+    ["a blob from a newer version", JSON.stringify({ ...JSON.parse(serialize(progress(), NOW)), version: 3 })],
   ])("sets aside %s and starts fresh", (_name, raw) => {
     const data = stubStorage({ [KEY]: raw });
-    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(ALL_CASES), problem: "unreadable" });
+    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(), problem: "unreadable" });
     expect(data.get(UNREADABLE)).toBe(raw);
   });
 
@@ -86,7 +73,7 @@ describe("load", () => {
         throw new DOMException("blocked", "SecurityError");
       },
     });
-    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(ALL_CASES), problem: "unavailable" });
+    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(), problem: "unavailable" });
   });
 
   it("reports unavailable storage when merely touching the global throws", () => {
@@ -121,7 +108,7 @@ describe("importJson", () => {
   const local = progress({ cards: { [A]: card({ seen: 2 }) }, notes: { [A]: "mine" } });
   const file = serialize(
     progress({
-      prefs: { showNames: false, showSolutions: true, groups: ["PLL"] },
+      prefs: { ...defaultProgress().prefs, showNames: false, sets: { ...defaultProgress().prefs.sets, learn: ["Full PLL"] } },
       cards: { [A]: card({ seen: 9 }), [B]: card() },
       notes: { [A]: "theirs" },
     }),
@@ -144,7 +131,7 @@ describe("importJson", () => {
   it("replaces everything, prefs included", () => {
     stubStorage();
     const result = importJson(file, "replace", local, ALL_CASES, NOW);
-    expect(result.ok && result.progress.prefs.groups).toEqual(["PLL"]);
+    expect(result.ok && result.progress.prefs.sets.learn).toEqual(["Full PLL"]);
     expect(result.ok && result.progress.notes).toEqual({ [A]: "theirs" });
   });
 
@@ -154,7 +141,7 @@ describe("importJson", () => {
     expect(importJson(withGhost, "merge", local, ALL_CASES, NOW)).toMatchObject({ ok: true, dropped: 1 });
   });
 
-  it.each([["not json"], [JSON.stringify({ ...JSON.parse(file), version: 2 })]])(
+  it.each([["not json"], [JSON.stringify({ ...JSON.parse(file), version: 3 })]])(
     "refuses a bad file and writes nothing",
     (text) => {
       const data = stubStorage();

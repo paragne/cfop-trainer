@@ -19,7 +19,7 @@ const card = (over: Partial<Card> = {}): Card => ({
 });
 
 const progress = (over: Partial<Progress> = {}): Progress => ({
-  ...defaultProgress(ALL_CASES),
+  ...defaultProgress(),
   ...over,
 });
 
@@ -54,8 +54,9 @@ describe("mergeProgress", () => {
   });
 
   it("keeps local prefs", () => {
-    const local = progress({ prefs: { showNames: false, showSolutions: false, groups: ["PLL"] } });
-    const imported = progress({ prefs: { showNames: true, showSolutions: true, groups: ["F2L"] } });
+    const prefs = defaultProgress().prefs;
+    const local = progress({ prefs: { ...prefs, showNames: false, sets: { ...prefs.sets, learn: ["Full PLL"] } } });
+    const imported = progress({ prefs: { ...prefs, showSolutions: true, sets: { ...prefs.sets, learn: ["F2L"] } } });
     expect(mergeProgress(local, imported).prefs).toEqual(local.prefs);
   });
 

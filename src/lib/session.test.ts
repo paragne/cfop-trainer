@@ -1,42 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Case, CaseSet, Group } from "../data/algorithms.ts";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { answer, current, startSession, toggleReveal } from "./session.ts";
+import { answer, current, toggleReveal } from "./session.ts";
 import type { Session } from "./session.ts";
 import type { Card } from "./srs.ts";
-
-const NOW = 1_800_000_000_000;
-const DAY = 86_400_000;
-
-const SET_OF: Record<Group, CaseSet> = { F2L: "F2L", OLL: "2-Look OLL", PLL: "2-Look PLL" };
-
-const mk = (id: string, group: Group = "F2L"): Case => ({
-  id,
-  group,
-  sets: [SET_OF[group]],
-  section: "",
-  name: null,
-  aliases: [],
-  algs: [{ display: "U", moves: "U" }],
-  mask: { kind: "f2l", slot: "FR" },
-  setup: null,
-  videoUrl: null,
-});
-
-const card = (over: Partial<Card> = {}): Card => ({
-  ease: 2.5,
-  interval: 6,
-  reps: 2,
-  due: NOW - 1,
-  seen: 4,
-  known: 3,
-  lastGrade: 1,
-  ...over,
-});
+import { card, DAY, ids, mk, NOW } from "./session.fixture.ts";
 
 const progress = (cards: Record<string, Card> = {}, show = false): Progress => {
-  const base = defaultProgress([mk("x")]);
+  const base = defaultProgress();
   return { ...base, prefs: { ...base.prefs, showSolutions: show }, cards };
 };
 
@@ -51,7 +22,6 @@ const sessionOf = (ids: string[], over: Partial<Session> = {}): Session => ({
   ...over,
 });
 
-const ids = (s: Session) => s.queue.map((c) => c.id);
 
 // Plays a list of grades, returning the final session and progress.
 function play(s: Session, p: Progress, grades: boolean[]) {
@@ -59,35 +29,6 @@ function play(s: Session, p: Progress, grades: boolean[]) {
   for (const know of grades) state = answer(state.session, state.progress, know, NOW);
   return state;
 }
-
-describe("startSession", () => {
-  const cases = [mk("f1"), mk("f2"), mk("f3"), mk("o1", "OLL"), mk("p1", "PLL")];
-  const all = (over: Partial<Progress> = {}): Progress => ({ ...defaultProgress(cases), ...over });
-
-  it("queues only the selected groups", () => {
-    const base = defaultProgress(cases);
-    const groups: Group[] = ["OLL", "PLL"];
-    const p = all({ prefs: { ...base.prefs, groups } });
-    expect(ids(startSession(cases, p, NOW, () => 0.5)).sort()).toEqual(["o1", "p1"]);
-  });
-
-  it.each([true, false])("starts revealed from the auto-reveal pref (%s)", (show) => {
-    const base = defaultProgress(cases);
-    const p = all({ prefs: { ...base.prefs, showSolutions: show } });
-    expect(startSession(cases, p, NOW, () => 0.5).revealed).toBe(show);
-  });
-
-  it("counts the unique cases as total, with nothing done", () => {
-    const s = startSession(cases, all(), NOW, () => 0.5);
-    expect(s).toMatchObject({ total: 5, done: 0, index: 0, firstTry: 0 });
-  });
-
-  it("puts never-seen cases before graded ones that are not yet due", () => {
-    const cards = { f1: card({ due: NOW + DAY, seen: 5, known: 1 }), f2: card({ due: NOW + DAY, seen: 2, known: 1 }) };
-    const s = startSession(cases, all({ cards }), NOW, () => 0.5);
-    expect(ids(s).slice(3)).toEqual(["f1", "f2"]);
-  });
-});
 
 describe("toggleReveal", () => {
   it("toggles both ways", () => {

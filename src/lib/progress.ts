@@ -1,12 +1,10 @@
-import type { Case, Group } from "../data/algorithms.ts";
+import type { Case } from "../data/algorithms.ts";
+import { Invalid, isRecord, reject } from "./blob.ts";
+import { migrateV1toV2 } from "./migrate.ts";
+import { defaultPrefs, readPrefs } from "./prefs.ts";
+import type { Prefs } from "./prefs.ts";
 import { EASE_FLOOR } from "./srs.ts";
 import type { Card } from "./srs.ts";
-
-export type Prefs = {
-  showNames: boolean;
-  showSolutions: boolean;
-  groups: Group[];
-};
 
 export type Progress = {
   prefs: Prefs;
@@ -15,21 +13,13 @@ export type Progress = {
 };
 
 export type ParseResult =
-  | { ok: true; progress: Progress; updatedAt: number; dropped: number }
+  | { ok: true; progress: Progress; updatedAt: number; dropped: number; migrated: boolean }
   | { ok: false; error: string };
 
-const VERSION = 1;
+const VERSION = 2;
 
-const groupsOf = (cases: readonly Case[]): Group[] => [
-  ...new Set(cases.map((c) => c.group)),
-];
-
-export function defaultProgress(cases: readonly Case[]): Progress {
-  return {
-    prefs: { showNames: true, showSolutions: false, groups: groupsOf(cases) },
-    cards: {},
-    notes: {},
-  };
+export function defaultProgress(): Progress {
+  return { prefs: defaultPrefs(), cards: {}, notes: {} };
 }
 
 export function serialize(progress: Progress, now: number): string {
@@ -54,15 +44,6 @@ export function exportName(now: Date): string {
   return `cfop-progress-${date}.json`;
 }
 
-class Invalid extends Error {}
-
-function reject(message: string): never {
-  throw new Invalid(message);
-}
-
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
-
 function section(raw: Record<string, unknown>, key: string): Record<string, unknown> {
   const value = raw[key];
   return isRecord(value) ? value : reject(`"${key}" must be an object`);
@@ -79,31 +60,6 @@ function count(value: unknown, where: string, min: number): number {
   const n = finite(value, where, min);
   if (!Number.isInteger(n)) reject(`${where} must be a whole number`);
   return n;
-}
-
-function readGroups(value: unknown, known: readonly Group[]): Group[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    return reject("prefs.groups must be a non-empty list");
-  }
-  return value.map(
-    (g: unknown) =>
-      known.find((k) => k === g) ?? reject(`prefs.groups has unknown group ${JSON.stringify(g)}`),
-  );
-}
-
-// A missing pref takes its default, which is what lets a new pref ship
-// without bumping the version.
-function readPrefs(raw: Record<string, unknown>, defaults: Prefs): Prefs {
-  const flag = (key: "showNames" | "showSolutions"): boolean => {
-    const value = raw[key];
-    if (value === undefined) return defaults[key];
-    return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
-  };
-  return {
-    showNames: flag("showNames"),
-    showSolutions: flag("showSolutions"),
-    groups: raw.groups === undefined ? defaults.groups : readGroups(raw.groups, defaults.groups),
-  };
 }
 
 // seen >= 1 because a record only exists once the card has been graded, and the
@@ -128,18 +84,20 @@ function readCard(id: string, raw: unknown): Card {
 }
 
 function read(text: string, cases: readonly Case[]) {
-  let raw: unknown;
+  let parsed: unknown;
   try {
-    raw = JSON.parse(text);
+    parsed = JSON.parse(text);
   } catch {
     return reject("not valid JSON");
   }
-  if (!isRecord(raw)) return reject("expected a JSON object");
+  if (!isRecord(parsed)) return reject("expected a JSON object");
+  const migrated = parsed.version === 1;
+  const raw = migrated ? migrateV1toV2(parsed) : parsed;
   if (raw.version !== VERSION) {
     return reject(`unsupported version ${JSON.stringify(raw.version)}`);
   }
   const updatedAt = finite(raw.updatedAt, "updatedAt", 0);
-  const prefs = readPrefs(section(raw, "prefs"), defaultProgress(cases).prefs);
+  const prefs = readPrefs(section(raw, "prefs"));
 
   // Unknown ids are dropped without reading the record: it is discarded anyway.
   const known = new Set(cases.map((c) => c.id));
@@ -159,7 +117,7 @@ function read(text: string, cases: readonly Case[]) {
       notes[id] = value;
     }
   }
-  return { progress: { prefs, cards, notes }, updatedAt, dropped };
+  return { progress: { prefs, cards, notes }, updatedAt, dropped, migrated };
 }
 
 export function parseProgress(text: string, cases: readonly Case[]): ParseResult {

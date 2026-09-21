@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ALL_CASES } from "../data/algorithms.ts";
-import type { Group } from "../data/algorithms.ts";
+import type { CaseSet } from "../data/algorithms.ts";
 import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { setNote, setPref, toggleGroup } from "./progress-edit.ts";
+import { setNote, setPref, toggleSet } from "./progress-edit.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
 
 const progress = (notes: Record<string, string> = {}): Progress => ({
-  ...defaultProgress(ALL_CASES),
+  ...defaultProgress(),
   notes,
 });
 
@@ -51,30 +51,34 @@ describe("setPref", () => {
   });
 });
 
-describe("toggleGroup", () => {
-  const withGroups = (groups: Group[]): Progress => {
+describe("toggleSet", () => {
+  const withLearn = (learn: CaseSet[]): Progress => {
     const base = progress({ [A]: "x" });
-    return { ...base, prefs: { ...base.prefs, groups } };
+    return { ...base, prefs: { ...base.prefs, sets: { ...base.prefs.sets, learn } } };
   };
 
-  it("removes a selected group, keeping the others in order", () => {
-    expect(toggleGroup(withGroups(["F2L", "OLL", "PLL"]), "OLL").prefs.groups).toEqual(["F2L", "PLL"]);
+  it("removes a selected set, keeping the others in order", () => {
+    const after = toggleSet(withLearn(["F2L", "2-Look OLL", "Full PLL"]), "learn", "2-Look OLL");
+    expect(after.prefs.sets.learn).toEqual(["F2L", "Full PLL"]);
   });
 
-  it("adds a group that is not selected", () => {
-    expect(toggleGroup(withGroups(["PLL"]), "F2L").prefs.groups).toEqual(["PLL", "F2L"]);
+  it("adds a set that is not selected", () => {
+    expect(toggleSet(withLearn(["Full PLL"]), "learn", "F2L").prefs.sets.learn).toEqual(["Full PLL", "F2L"]);
   });
 
-  it("refuses to switch off the last group, returning the same object", () => {
-    const only = withGroups(["OLL"]);
-    expect(toggleGroup(only, "OLL")).toBe(only);
+  it("refuses to switch off the last set, returning the same object", () => {
+    const only = withLearn(["Full OLL"]);
+    expect(toggleSet(only, "learn", "Full OLL")).toBe(only);
   });
 
-  it("changes nothing but the groups, and not its input", () => {
-    const before = withGroups(["F2L", "OLL"]);
+  it("changes only the chosen mode, and not its input", () => {
+    const before = withLearn(["F2L", "2-Look OLL"]);
     const snapshot = structuredClone(before);
-    const after = toggleGroup(before, "OLL");
+    const after = toggleSet(before, "verify", "Full OLL");
     expect(before).toEqual(snapshot);
+    expect(after.prefs.sets.verify).toEqual([...before.prefs.sets.verify, "Full OLL"]);
+    expect(after.prefs.sets.learn).toBe(before.prefs.sets.learn);
+    expect(after.prefs.sets.drill).toBe(before.prefs.sets.drill);
     expect(after.notes).toBe(before.notes);
     expect(after.cards).toBe(before.cards);
     expect([after.prefs.showNames, after.prefs.showSolutions]).toEqual([before.prefs.showNames, before.prefs.showSolutions]);

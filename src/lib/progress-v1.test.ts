@@ -39,16 +39,26 @@ describe("the frozen v1 blob", () => {
     expect([...Object.keys(raw.cards), ...Object.keys(raw.notes)].filter((id) => !ids.has(id))).toEqual([]);
   });
 
-  it("is read by the v1 parser", () => {
+  // Groups become the 2-look sets, and the modes v1 never had take their defaults.
+  it("is migrated on read, every card and note intact", () => {
     expect(parseProgress(V1_BLOB, ALL_CASES)).toEqual({
       ok: true,
       progress: {
-        prefs: { showNames: false, showSolutions: true, groups: ["F2L", "PLL"] },
+        prefs: {
+          showNames: false,
+          showSolutions: true,
+          sets: {
+            learn: ["F2L", "2-Look PLL"],
+            drill: ["F2L", "2-Look OLL", "2-Look PLL"],
+            verify: ["2-Look OLL", "2-Look PLL"],
+          },
+        },
         cards: CARDS,
         notes: NOTES,
       },
       updatedAt: NOW,
       dropped: 0,
+      migrated: true,
     });
   });
 });

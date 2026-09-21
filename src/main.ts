@@ -1,8 +1,8 @@
 import "./style.css";
-import { ALL_CASES } from "./data/algorithms.ts";
-import type { Group } from "./data/algorithms.ts";
+import { ALL_CASES, CASE_SETS } from "./data/algorithms.ts";
+import type { CaseSet } from "./data/algorithms.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setNote, setPref, toggleGroup } from "./lib/progress-edit.ts";
+import { setNote, setPref, toggleSet } from "./lib/progress-edit.ts";
 import { answer, current, startSession, toggleReveal } from "./lib/session.ts";
 import { exportJson, importJson, load, save } from "./lib/storage.ts";
 import { createDataPanel } from "./ui/data-panel.ts";
@@ -33,8 +33,8 @@ const flashcard = createFlashcard({
 });
 const summary = createSummary(() => restart());
 const toolbar = createToolbar({
-  groups: [...new Set(ALL_CASES.map((c) => c.group))],
-  onGroup: (group) => switchGroup(group),
+  sets: CASE_SETS,
+  onSet: (set) => switchSet(set),
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => {
     persist(setPref(progress, "showSolutions", !progress.prefs.showSolutions));
@@ -66,10 +66,10 @@ function restart(): void {
   render();
 }
 
-// The card set changes with the groups, so the queue is rebuilt. Switching off
-// the last group is a no-op that toggleGroup reports by returning its input.
-function switchGroup(group: Group): void {
-  const next = toggleGroup(progress, group);
+// The card set changes with the sets, so the queue is rebuilt. Switching off
+// the last set is a no-op that toggleSet reports by returning its input.
+function switchSet(set: CaseSet): void {
+  const next = toggleSet(progress, "learn", set);
   if (next === progress) return;
   persist(next);
   restart();

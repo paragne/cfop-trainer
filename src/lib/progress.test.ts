@@ -19,19 +19,25 @@ const card = (over: Partial<Card> = {}): Card => ({
 });
 
 const progress = (over: Partial<Progress> = {}): Progress => ({
-  ...defaultProgress(ALL_CASES),
+  ...defaultProgress(),
   ...over,
 });
 
 // A wire-format blob whose fields tests overwrite with bad values.
 const blob = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  version: 1,
+  version: 2,
   updatedAt: NOW,
-  prefs: { showNames: true, showSolutions: false, groups: ["F2L", "OLL", "PLL"] },
+  prefs: { showNames: true, showSolutions: false, sets: SETS },
   cards: { [A]: card() },
   notes: { [A]: "insert from the back" },
   ...over,
 });
+
+const SETS: Progress["prefs"]["sets"] = {
+  learn: ["F2L", "2-Look OLL", "2-Look PLL"],
+  drill: ["F2L", "2-Look OLL", "2-Look PLL"],
+  verify: ["2-Look OLL", "2-Look PLL"],
+};
 
 const without = (obj: Record<string, unknown>, key: string) =>
   Object.fromEntries(Object.entries(obj).filter(([k]) => k !== key));
@@ -41,7 +47,7 @@ const parse = (obj: unknown) => parseProgress(JSON.stringify(obj), ALL_CASES);
 describe("serialize and parseProgress", () => {
   it("round-trips progress, and reports updatedAt with nothing dropped", () => {
     const original = progress({
-      prefs: { showNames: false, showSolutions: true, groups: ["OLL"] },
+      prefs: { showNames: false, showSolutions: true, sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] } },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },
     });
@@ -50,13 +56,14 @@ describe("serialize and parseProgress", () => {
       progress: original,
       updatedAt: NOW,
       dropped: 0,
+      migrated: false,
     });
   });
 
   it("writes exactly the persisted keys, so UI state cannot leak in unnoticed", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
-    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "groups"]);
+    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "sets"]);
   });
 });
 
@@ -66,7 +73,7 @@ describe("parseProgress rejects", () => {
 
   it.each<[string, unknown, string]>([
     ["a version of 0", bad({ version: 0 }), "version"],
-    ["a version of 2", bad({ version: 2 }), "version"],
+    ["a version of 3", bad({ version: 3 }), "version"],
     ["a string version", bad({ version: "1" }), "version"],
     ["a missing version", without(blob(), "version"), "version"],
     ["a missing updatedAt", without(blob(), "updatedAt"), "updatedAt"],
@@ -75,9 +82,12 @@ describe("parseProgress rejects", () => {
     ["a missing notes section", without(blob(), "notes"), '"notes"'],
     ["a cards section that is a list", bad({ cards: [] }), '"cards"'],
     ["a non-boolean pref", bad({ prefs: { showNames: "yes" } }), "prefs.showNames"],
-    ["an empty groups list", bad({ prefs: { groups: [] } }), "prefs.groups"],
-    ["an unknown group", bad({ prefs: { groups: ["F2L", "ZBLL"] } }), "ZBLL"],
-    ["groups that is not a list", bad({ prefs: { groups: "F2L" } }), "prefs.groups"],
+    ["sets that is not an object", bad({ prefs: { sets: ["F2L"] } }), "prefs.sets"],
+    ["an empty learn list", bad({ prefs: { sets: { learn: [] } } }), "prefs.sets.learn"],
+    ["an empty verify list", bad({ prefs: { sets: { verify: [] } } }), "prefs.sets.verify"],
+    ["an unknown set", bad({ prefs: { sets: { drill: ["F2L", "ZBLL"] } } }), "ZBLL"],
+    ["a v1 group name used as a set", bad({ prefs: { sets: { learn: ["OLL"] } } }), '"OLL"'],
+    ["a set list that is not a list", bad({ prefs: { sets: { learn: "F2L" } } }), "prefs.sets.learn"],
     ["a card that is not an object", bad({ cards: { [A]: 3 } }), `card ${A}`],
     ["a null ease (what JSON makes of NaN)", badCard({ ease: null }), "ease"],
     ["a string ease", badCard({ ease: "2.5" }), "ease"],
@@ -120,8 +130,13 @@ describe("parseProgress tolerates", () => {
     expect(result.ok && result.progress.prefs).toEqual({
       showNames: false,
       showSolutions: false,
-      groups: ["F2L", "OLL", "PLL"],
+      sets: SETS,
     });
+  });
+
+  it("a set list given for one mode, defaulting the others", () => {
+    const result = parse(blob({ prefs: { sets: { drill: ["Full PLL"] } } }));
+    expect(result.ok && result.progress.prefs.sets).toEqual({ ...SETS, drill: ["Full PLL"] });
   });
 
   it("an empty note, storing no entry", () => {

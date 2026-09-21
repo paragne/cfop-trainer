@@ -29,7 +29,8 @@ export function startSession(
   now: number,
   random: () => number,
 ): Session {
-  const selected = cases.filter((c) => progress.prefs.groups.includes(c.group));
+  const chosen = progress.prefs.sets.learn;
+  const selected = cases.filter((c) => c.sets.some((set) => chosen.includes(set)));
   const queue = buildQueue(selected, progress.cards, now, SESSION_LENGTH, random);
   return {
     queue,

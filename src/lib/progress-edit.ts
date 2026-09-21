@@ -1,4 +1,5 @@
-import type { Group } from "../data/algorithms.ts";
+import type { CaseSet } from "../data/algorithms.ts";
+import type { Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
 
 // An empty note is deleted rather than stored, matching what parsing does with
@@ -18,14 +19,18 @@ export function setPref(
   return { ...progress, prefs: { ...progress.prefs, [key]: value } };
 }
 
-// Returns the same object when the last group would be switched off, so the
+// Returns the same object when the last set would be switched off, so the
 // caller can tell nothing changed and an empty session never arises.
-export function toggleGroup(progress: Progress, group: Group): Progress {
-  const { groups } = progress.prefs;
-  if (!groups.includes(group)) {
-    return { ...progress, prefs: { ...progress.prefs, groups: [...groups, group] } };
+export function toggleSet(progress: Progress, mode: Mode, set: CaseSet): Progress {
+  const selected = progress.prefs.sets[mode];
+  if (!selected.includes(set)) {
+    return withSets(progress, mode, [...selected, set]);
   }
-  if (groups.length === 1) return progress;
-  const remaining = groups.filter((g) => g !== group);
-  return { ...progress, prefs: { ...progress.prefs, groups: remaining } };
+  if (selected.length === 1) return progress;
+  return withSets(progress, mode, selected.filter((s) => s !== set));
 }
+
+const withSets = (progress: Progress, mode: Mode, selected: CaseSet[]): Progress => ({
+  ...progress,
+  prefs: { ...progress.prefs, sets: { ...progress.prefs.sets, [mode]: selected } },
+});
