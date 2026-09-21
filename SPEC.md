@@ -8,7 +8,7 @@ it in your head or on a physical cube, then self-grade. Stats drive what you see
 next.
 
 Scope for v1: F2L (41 cases), 2-look OLL (10 cases), 2-look PLL (6 cases).
-Roadmap: 1-look OLL (57), 1-look PLL (21).
+v2 adds Full OLL (57) and Full PLL (21); see the v2 section.
 
 ## Data model
 
@@ -78,9 +78,10 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 
 ## Modes
 
-### 1. Flashcard (default)
+### 1. Learn (default)
 
-- Pick groups to drill: any combination of F2L, OLL, PLL.
+- Pick sets to drill: any combination of F2L, 2-Look OLL, 2-Look PLL, Full OLL,
+  Full PLL.
 - One case shown at a time as a computed SVG.
 - Controls: reveal/hide solution, reveal/hide case name, edit notes.
 - Grade: "Know it" or "Don't know it".
@@ -95,7 +96,7 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 ### 2. Verify (no honor code)
 
 - Session starts from a solved cube.
-- Feeds N randomly chosen 2-look OLL and 2-look PLL cases. Excludes F2L.
+- Feeds N randomly chosen OLL and PLL cases from the chosen sets. Excludes F2L.
 - For each case: apply the case setup to the cube state, render it, and show
   the user what the cube looks like.
 - User performs the algorithm on their physical cube.
@@ -106,12 +107,12 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 
 ### 3. Random rotation
 
-- Toggle available on both modes above.
+- Toggle available in all three modes: Learn, Drill and Verify.
 - Applies a random y rotation and a random AUF (U, U', U2, or nothing) to the
   displayed state before rendering.
 - Forces recognition from any angle rather than memorizing one picture.
-- For F2L this means also randomizing which slot is presented, which is why
-  slot is part of the mask rather than baked into the data.
+- Never applied to F2L cases. When a Learn or Drill selection mixes F2L with
+  OLL or PLL sets, the toggle affects only the OLL and PLL cards.
 
 ## Notes
 
@@ -242,12 +243,11 @@ silent overwrite.
 - No Cloudflare credentials in the local dev environment or in any agent's
   permission list. Deployment is triggered by git push only.
 
-## Non-goals for v1
+## Non-goals
 
 - No accounts, no server, no sync between devices beyond JSON export/import.
 - No timer, no scramble generator, no solve reconstruction.
 - No webcam or bluetooth cube input.
-- No 1-look OLL/PLL. The data model supports adding them without schema change.
 - No 3D animation in v1. Planned as its own version: an optional mode that
   renders the cube in 3D and animates each move of an algorithm as a visible
   layer rotation, primarily to teach F2L pair intuition.
