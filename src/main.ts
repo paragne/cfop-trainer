@@ -1,6 +1,9 @@
 import "./style.css";
 import { ALL_CASES, CASE_SETS } from "./data/algorithms.ts";
-import type { CaseSet } from "./data/algorithms.ts";
+import type { Case, CaseSet } from "./data/algorithms.ts";
+import { nextCase, startDrill } from "./lib/drill.ts";
+import type { Drill } from "./lib/drill.ts";
+import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setMode, setNote, setPref, toggleSet } from "./lib/progress-edit.ts";
@@ -10,6 +13,7 @@ import { dueCount, setStats } from "./lib/stats.ts";
 import { exportJson, importJson, load, save } from "./lib/storage.ts";
 import { createDataPanel } from "./ui/data-panel.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
+import type { CardView } from "./ui/flashcard.ts";
 import { createHome } from "./ui/home.ts";
 import { bindKeys } from "./ui/keys.ts";
 import type { KeyAction } from "./ui/keys.ts";
@@ -20,9 +24,11 @@ import { createTopbar } from "./ui/topbar.ts";
 
 const NOT_SAVING = "Progress can't be saved in this browser. Export it to keep it.";
 const SET_ASIDE = "Saved progress could not be read and was set aside. Starting fresh.";
-const MODES: readonly Mode[] = ["learn"];
 
-type Screen = { kind: "home" } | { kind: "learn"; session: Session };
+type Screen =
+  | { kind: "home" }
+  | { kind: "learn"; session: Session }
+  | { kind: "drill"; drill: Drill };
 
 const loaded = load(ALL_CASES);
 let progress = loaded.progress;
@@ -31,14 +37,14 @@ let screen: Screen = { kind: "home" };
 const status = createStatus();
 const topbar = createTopbar({ onHome: () => goHome(), onData: () => dataPanel.toggle() });
 const home = createHome({
-  modes: MODES,
+  modes: SHIPPED_MODES,
   sets: CASE_SETS,
   onMode: (mode) => {
     persist(setMode(progress, mode));
     render();
   },
   onSet: (set) => switchSet(set),
-  onStart: () => start(),
+  onStart: () => start(progress.prefs.mode),
 });
 const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
@@ -51,14 +57,14 @@ const flashcard = createFlashcard({
   onReveal: () => handle("reveal"),
   onDontKnow: () => handle("dontKnow"),
   onKnow: () => handle("know"),
+  onNext: () => handle("know"),
   onNote: (text) => {
-    if (screen.kind !== "learn") throw new Error("note edited with no card on screen");
-    const c = current(screen.session);
-    if (c === null) throw new Error("note edited with no current case");
+    const c = shown();
+    if (c === null) throw new Error("note edited with no card on screen");
     persist(setNote(progress, c.id, text));
   },
 });
-const summary = createSummary(() => start());
+const summary = createSummary(() => start("learn"));
 const dataPanel = createDataPanel({
   cases: ALL_CASES,
   cardCount: () => Object.keys(progress.cards).length,
@@ -67,8 +73,8 @@ const dataPanel = createDataPanel({
     const result = importJson(text, importMode, progress, ALL_CASES, Date.now());
     if (result.ok) {
       progress = result.progress;
-      if (screen.kind === "learn") start();
-      else render();
+      if (screen.kind === "home") render();
+      else start(screen.kind);
     }
     return result;
   },
@@ -86,8 +92,15 @@ function goHome(): void {
   render();
 }
 
-function start(): void {
-  screen = { kind: "learn", session: startSession(ALL_CASES, progress, Date.now(), Math.random) };
+function start(mode: Mode): void {
+  const now = Date.now();
+  if (mode === "learn") {
+    screen = { kind: "learn", session: startSession(ALL_CASES, progress, now, Math.random) };
+  } else if (mode === "drill") {
+    screen = { kind: "drill", drill: startDrill(ALL_CASES, progress, Math.random) };
+  } else {
+    throw new Error("Verify has not shipped");
+  }
   render();
 }
 
@@ -99,11 +112,27 @@ function switchSet(set: CaseSet): void {
   render();
 }
 
+function shown(): Case | null {
+  if (screen.kind === "learn") return current(screen.session);
+  return screen.kind === "drill" ? screen.drill.current : null;
+}
+
+function cardView(): CardView | null {
+  if (screen.kind === "drill") {
+    const { current: c, revealed, shown: count } = screen.drill;
+    return { c, revealed, count: String(count), mode: "drill" };
+  }
+  const c = shown();
+  if (screen.kind !== "learn" || c === null) return null;
+  const { revealed, done, total } = screen.session;
+  return { c, revealed, count: `${done} / ${total}`, mode: "learn" };
+}
+
 function render(): void {
   const onHome = screen.kind === "home";
   home.element.hidden = !onHome;
   prefBar.element.hidden = onHome;
-  if (screen.kind === "home") {
+  if (onHome) {
     const now = Date.now();
     home.render({
       mode: progress.prefs.mode,
@@ -111,27 +140,32 @@ function render(): void {
       learnDue: dueCount(ALL_CASES, progress.cards, progress.prefs.sets.learn, now),
       stats: setStats(ALL_CASES, progress.cards, now),
     });
-    flashcard.element.hidden = true;
-    summary.element.hidden = true;
-    return;
+  } else {
+    prefBar.render(progress);
   }
-  prefBar.render(progress);
-  const finished = current(screen.session) === null;
-  flashcard.element.hidden = finished;
-  summary.element.hidden = !finished;
-  if (finished) summary.render(screen.session);
-  else flashcard.render(screen.session, progress);
+  const view = cardView();
+  flashcard.element.hidden = view === null;
+  summary.element.hidden = screen.kind !== "learn" || view !== null;
+  if (view !== null) flashcard.render(view, progress);
+  else if (screen.kind === "learn") summary.render(screen.session);
 }
 
+// In Drill, "know" is Next and "dontKnow" is not bound.
 function handle(action: KeyAction): void {
   if (screen.kind === "home") {
-    if (action === "reveal") start();
+    if (action === "reveal") start(progress.prefs.mode);
     return;
   }
   if (action === "toggleNames") {
     persist(setPref(progress, "showNames", !progress.prefs.showNames));
+  } else if (screen.kind === "drill") {
+    if (action === "dontKnow") return;
+    screen = {
+      kind: "drill",
+      drill: action === "reveal" ? toggleReveal(screen.drill) : nextCase(screen.drill, progress, Math.random),
+    };
   } else if (current(screen.session) === null) {
-    if (action === "reveal") start();
+    if (action === "reveal") start("learn");
     return;
   } else if (action === "reveal") {
     screen = { kind: "learn", session: toggleReveal(screen.session) };

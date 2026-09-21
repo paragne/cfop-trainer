@@ -1,8 +1,7 @@
+import type { Case } from "../data/algorithms.ts";
 import { caseState } from "../lib/case-state.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
-import { current } from "../lib/session.ts";
-import type { Session } from "../lib/session.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { el, keyedButton } from "./dom.ts";
 
@@ -10,12 +9,22 @@ type Handlers = {
   onReveal: () => void;
   onDontKnow: () => void;
   onKnow: () => void;
+  onNext: () => void;
   onNote: (text: string) => void;
+};
+
+// What one card screen shows. Learn and Drill each build it from their own
+// state, so the screen knows nothing about either.
+export type CardView = {
+  c: Case;
+  revealed: boolean;
+  count: string;
+  mode: "learn" | "drill";
 };
 
 // Built once and never rebuilt. render() only syncs what state says, so the
 // textarea keeps its caret and focus.
-export function createFlashcard({ onReveal, onDontKnow, onKnow, onNote }: Handlers) {
+export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }: Handlers) {
   const element = el("section", "card");
   const section = el("span", "section");
   const count = el("span", "count");
@@ -31,12 +40,14 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNote }: Handle
   });
 
   const reveal = keyedButton("primary", "Reveal", "space", onReveal);
-  const actions = el("nav", "actions");
-  actions.append(
-    reveal.node,
+  // Drill's Next shares key 2 with Know it: the same finger, and nothing is graded.
+  const grades = [
     keyedButton("", "Don't know", "1", onDontKnow).node,
     keyedButton("", "Know it", "2", onKnow).node,
-  );
+  ];
+  const next = keyedButton("", "Next", "2", onNext).node;
+  const actions = el("nav", "actions");
+  actions.append(reveal.node, ...grades, next);
 
   const meta = el("p", "meta");
   meta.append(section, count);
@@ -44,10 +55,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNote }: Handle
 
   let shown: string | null = null;
 
-  function render(session: Session, progress: Progress): void {
-    const c = current(session);
-    if (c === null) throw new Error("flashcard rendered without a current case");
-
+  function render({ c, revealed, count: position, mode }: CardView, progress: Progress): void {
     // Only these two writes use innerHTML, and both take markup generated in
     // lib from our own case data.
     if (c.id !== shown) {
@@ -64,9 +72,12 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNote }: Handle
     if (note.value !== text) note.value = text;
 
     name.hidden = !progress.prefs.showNames || name.textContent === "";
-    solution.hidden = !session.revealed;
-    reveal.text.textContent = session.revealed ? "Hide" : "Reveal";
-    count.textContent = `${session.done} / ${session.total}`;
+    solution.hidden = !revealed;
+    reveal.text.textContent = revealed ? "Hide" : "Reveal";
+    count.textContent = position;
+    element.dataset.mode = mode;
+    for (const grade of grades) grade.hidden = mode === "drill";
+    next.hidden = mode === "learn";
   }
 
   return { element, render };

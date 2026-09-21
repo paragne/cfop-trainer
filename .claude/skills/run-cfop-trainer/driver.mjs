@@ -135,7 +135,8 @@ async function connect() {
 const READ = `(() => { const q = (s) => document.querySelector(s); return {
   count: q('.count')?.textContent, alg: q('.solution')?.textContent, revealed: !q('.solution')?.hidden,
   note: q('.note')?.value, summary: !q('.summary').hidden, home: !q('.home').hidden,
-  modes: [...document.querySelectorAll('.modes .toggle')].map((t) => t.textContent), startVisible: !!q('.start button') }; })()`;
+  modes: [...document.querySelectorAll('.modes .toggle')].map((t) => t.textContent), startVisible: !!q('.start button'),
+  cardMode: q('.card')?.dataset.mode, shownButtons: [...document.querySelectorAll('.actions button')].filter((b) => !b.hidden).map((b) => b.firstChild.textContent) }; })()`;
 const STORED = "JSON.parse(localStorage.getItem('cfop-trainer-v1') ?? 'null')";
 const CLICK_TOGGLE = (label) => `[...document.querySelectorAll('.toggle')].find((t) => (t.querySelector('span') ?? t).firstChild.textContent === ${JSON.stringify(label)}).click()`;
 
@@ -149,7 +150,7 @@ async function smoke() {
   await b.goto(APP); await b.eval("localStorage.clear()"); await b.goto(APP);
 
   let now = await s();
-  check("opens on the home screen, Learn only, with the due count", now.home && now.modes.join() === "Learn · 57 due", now.modes.join());
+  check("opens on the home screen with Learn and its due count, then Drill, and no Verify", now.home && now.modes.join() === "Learn · 57 due,Drill", now.modes.join());
   check("home shows a Start button", now.startVisible);
   console.log("shot:", await b.shot("phone-home"));
   await b.key(" ");
@@ -207,6 +208,35 @@ async function smoke() {
   check("finishing the session shows the summary", (await s()).summary);
   await b.key(" ");
   check("space on the summary starts another session", !(await s()).summary && (await s()).count === "0 / 6");
+
+  await b.eval("document.querySelector('.logo').click()");
+  const cardsBefore = JSON.stringify((await b.eval(STORED)).cards);
+  await b.eval("[...document.querySelectorAll('.modes .toggle')].find((t) => t.textContent === 'Drill').click()");
+  const drillPrefs = (await b.eval(STORED)).prefs;
+  check("choosing Drill stores it as the last mode and shows its own sets", drillPrefs.mode === "drill" && (await b.eval("[...document.querySelectorAll('.set-toggles .toggle')].filter((t) => t.getAttribute('aria-pressed') === 'true').map((t) => t.textContent).join()")) === "F2L,2-Look OLL,2-Look PLL");
+  await b.eval(CLICK_TOGGLE("F2L")); await b.eval(CLICK_TOGGLE("2-Look OLL")); await b.eval(CLICK_TOGGLE("2-Look PLL"));
+  const kept = (await b.eval(STORED)).prefs.sets;
+  check("Drill's toggles leave Learn's selection alone, and the last set stays on", kept.drill.join() === "2-Look PLL" && kept.learn.join() === "2-Look PLL", JSON.stringify(kept));
+  await b.eval(CLICK_TOGGLE("F2L")); await b.eval(CLICK_TOGGLE("2-Look OLL"));
+  await b.goto(APP);
+  check("a reload opens on Drill", (await b.eval("[...document.querySelectorAll('.modes .toggle')].find((t) => t.getAttribute('aria-pressed') === 'true').textContent")) === "Drill");
+  await b.key(" ");
+  now = await s();
+  check("Start runs Drill: Reveal and Next only, count 1", now.cardMode === "drill" && now.shownButtons.join() === "Reveal,Next" && now.count === "1", JSON.stringify(now.shownButtons));
+  await b.key(" ");
+  check("space reveals in Drill", (await s()).revealed);
+  await b.key("1");
+  check("1 does nothing in Drill", (await s()).count === "1");
+  let repeats = 0;
+  let last = (await s()).alg;
+  for (let i = 0; i < 80; i++) { await b.key("2"); const alg = (await s()).alg; if (alg === last) repeats++; last = alg; }
+  now = await s();
+  check("80 presses of 2 advance to card 81 without an immediate repeat", now.count === "81" && repeats === 0, `count ${now.count}, repeats ${repeats}`);
+  check("a new card starts hidden", !now.revealed);
+  console.log("shot:", await b.shot("phone-drill"));
+  check("Drill wrote no card", JSON.stringify((await b.eval(STORED)).cards) === cardsBefore);
+  await b.eval("document.querySelector('.logo').click()");
+  check("the logo leaves Drill for home", (await s()).home);
 
   await b.viewport(1280, 800, false);
   console.log("shot:", await b.shot("desktop"));
