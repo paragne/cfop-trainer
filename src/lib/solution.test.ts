@@ -6,6 +6,7 @@ import { renderSolution } from "./solution.ts";
 const caseWith = (algs: string[], videoUrl: string | null): Case => ({
   id: "synthetic",
   group: "F2L",
+  sets: ["F2L"],
   section: "",
   name: null,
   aliases: [],

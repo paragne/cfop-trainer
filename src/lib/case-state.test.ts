@@ -10,6 +10,7 @@ import { parse } from "./notation.ts";
 const caseWith = (mask: Mask, setup: string | null, alg = "U"): Case => ({
   id: "synthetic",
   group: "F2L",
+  sets: ["F2L"],
   section: "",
   name: null,
   aliases: [],

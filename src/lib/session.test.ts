@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Case, Group } from "../data/algorithms.ts";
+import type { Case, CaseSet, Group } from "../data/algorithms.ts";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
 import { answer, current, startSession, toggleReveal } from "./session.ts";
@@ -9,9 +9,12 @@ import type { Card } from "./srs.ts";
 const NOW = 1_800_000_000_000;
 const DAY = 86_400_000;
 
+const SET_OF: Record<Group, CaseSet> = { F2L: "F2L", OLL: "2-Look OLL", PLL: "2-Look PLL" };
+
 const mk = (id: string, group: Group = "F2L"): Case => ({
   id,
   group,
+  sets: [SET_OF[group]],
   section: "",
   name: null,
   aliases: [],

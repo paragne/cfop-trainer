@@ -8,6 +8,7 @@ const NOW = 1_800_000_000_000;
 const mk = (id: string): Case => ({
   id,
   group: "F2L",
+  sets: ["F2L"],
   section: "",
   name: null,
   aliases: [],

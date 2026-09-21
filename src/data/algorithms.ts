@@ -13,6 +13,11 @@
 
 export type Group = "F2L" | "OLL" | "PLL";
 
+// A set is a membership tag, not a container: a case in two sets is still one
+// case with one id and one SRS record.
+export const CASE_SETS = ["F2L", "2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"] as const;
+export type CaseSet = (typeof CASE_SETS)[number];
+
 export type Mask =
   | { kind: "f2l"; slot: "FR" | "FL" }
   | { kind: "oll-edges" }
@@ -25,6 +30,7 @@ export type Alg = { display: string; moves: string };
 export type Case = {
   id: string;
   group: Group;
+  sets: CaseSet[];
   section: string;
   name: string | null;
   aliases: string[];
@@ -43,7 +49,7 @@ function f2l(
   mask: Mask,
   algs: Alg[],
 ): Case {
-  return { id, group: "F2L", section, name: null, aliases: [], algs, mask, setup: null, videoUrl: null };
+  return { id, group: "F2L", sets: ["F2L"], section, name: null, aliases: [], algs, mask, setup: null, videoUrl: null };
 }
 
 function a(display: string, moves: string): Alg {
@@ -190,6 +196,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-cross-line",
     group: "OLL",
+    sets: ["2-Look OLL"],
     section: "Creating Cross",
     name: "Line",
     aliases: ["Bar", "Horizontal Line"],
@@ -201,6 +208,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-cross-l",
     group: "OLL",
+    sets: ["2-Look OLL"],
     section: "Creating Cross",
     name: "L Shape",
     aliases: ["Backwards L", "Hook"],
@@ -212,6 +220,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-cross-dot",
     group: "OLL",
+    sets: ["2-Look OLL"],
     section: "Creating Cross",
     name: "Dot",
     aliases: [],
@@ -227,6 +236,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-27",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Sune",
     aliases: ["OLL 27"],
@@ -238,6 +248,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-26",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Anti-Sune",
     aliases: ["OLL 26", "Antisune"],
@@ -249,6 +260,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-21",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "H",
     aliases: ["OLL 21", "Double Sune"],
@@ -262,6 +274,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-22",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Pi",
     aliases: ["OLL 22", "Bruno"],
@@ -273,6 +286,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-24",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Chameleon",
     aliases: ["OLL 24"],
@@ -284,6 +298,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-25",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Bowtie",
     aliases: ["OLL 25"],
@@ -295,6 +310,7 @@ export const OLL_CASES: Case[] = [
   {
     id: "oll-23",
     group: "OLL",
+    sets: ["2-Look OLL", "Full OLL"],
     section: "Finish OLL",
     name: "Headlights",
     aliases: ["OLL 23"],
@@ -310,6 +326,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-corners-diagonal",
     group: "PLL",
+    sets: ["2-Look PLL"],
     section: "Solving Corners",
     name: "No Headlights",
     aliases: ["Y Perm", "Diagonal Swap"],
@@ -326,6 +343,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-corners-adjacent",
     group: "PLL",
+    sets: ["2-Look PLL"],
     section: "Solving Corners",
     name: "Headlights",
     aliases: ["T Perm", "Adjacent Swap"],
@@ -344,6 +362,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-ua",
     group: "PLL",
+    sets: ["2-Look PLL", "Full PLL"],
     section: "Finish PLL",
     name: "Ua Perm",
     aliases: ["U Perm (a)"],
@@ -357,6 +376,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-ub",
     group: "PLL",
+    sets: ["2-Look PLL", "Full PLL"],
     section: "Finish PLL",
     name: "Ub Perm",
     aliases: ["U Perm (b)"],
@@ -370,6 +390,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-h",
     group: "PLL",
+    sets: ["2-Look PLL", "Full PLL"],
     section: "Finish PLL",
     name: "H Perm",
     aliases: [],
@@ -381,6 +402,7 @@ export const PLL_CASES: Case[] = [
   {
     id: "pll-z",
     group: "PLL",
+    sets: ["2-Look PLL", "Full PLL"],
     section: "Finish PLL",
     name: "Z Perm",
     aliases: [],

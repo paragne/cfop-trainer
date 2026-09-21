@@ -72,7 +72,10 @@ describe("OLL", () => {
     },
   );
 
-  it.each(OLL_CASES.filter((c) => c.mask.kind === "oll-full"))(
+  // A 2-Look OLL fact, not an oll-full one: Full OLL holds cases with no cross.
+  it.each(
+    OLL_CASES.filter((c) => c.sets.includes("2-Look OLL") && c.mask.kind === "oll-full"),
+  )(
     "$id: starts with the cross already made",
     (c) => {
       expect(orientedEdges(setupCube(c))).toHaveLength(4);
