@@ -10,28 +10,42 @@ import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 export const SCALE = 90; // pixels per cubie unit
 const GAP_PX = 6;
 const FACE_PX = SCALE - GAP_PX;
+// A flat, zero-thickness plane gives the browser's painter's-algorithm sort
+// no volume to resolve ties with, which is what let a hidden face win at a
+// shared silhouette edge even on a static cube. A shallow box, with one real
+// plastic-colored face behind the sticker, fixes that.
+const DEPTH_PX = 16;
 
 const FILL: Record<Color, string> = {
   U: "#ffd500", D: "#ffffff", F: "#009b48", B: "#0046ad", R: "#ff5800", L: "#c8102e",
 };
+const PLASTIC = "#1a1a1a";
 
 export type SceneSticker = { readonly outer: HTMLDivElement };
 
+function square(px: number, color: string): HTMLDivElement {
+  const el = document.createElement("div");
+  el.className = "square";
+  el.style.width = `${px}px`;
+  el.style.height = `${px}px`;
+  el.style.marginLeft = `${-px / 2}px`;
+  el.style.marginTop = `${-px / 2}px`;
+  el.style.background = color;
+  return el;
+}
+
 // A sticker is an outer pivot (zero-size, transform-origin at the cube
-// center, per the animation decision) wrapping a static square that never
-// itself animates — only the pivot's transform changes.
+// center, per the animation decision) wrapping a thin box that never itself
+// animates — only the pivot's transform changes.
 export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[]): SceneSticker[] {
   return stickers.map((sticker) => {
     const outer = document.createElement("div");
     outer.className = "sticker";
-    const face = document.createElement("div");
-    face.className = "face";
-    face.style.width = `${FACE_PX}px`;
-    face.style.height = `${FACE_PX}px`;
-    face.style.marginLeft = `${-FACE_PX / 2}px`;
-    face.style.marginTop = `${-FACE_PX / 2}px`;
-    face.style.background = FILL[sticker.color];
-    outer.append(face);
+    const face = square(FACE_PX, FILL[sticker.color]);
+    face.classList.add("face");
+    const back = square(FACE_PX, PLASTIC);
+    back.style.transform = `translateZ(${-DEPTH_PX}px)`;
+    outer.append(face, back);
     rig.append(outer);
     setBaseTransform(outer, sticker);
     return { outer };
