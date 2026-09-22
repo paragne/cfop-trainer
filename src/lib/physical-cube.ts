@@ -68,6 +68,19 @@ export function applyAlgPhysical(
   return moves.reduce(applyMovePhysical, stickers as PhysicalSticker[]);
 }
 
+// `position` is the sticker's cubie center (needed as-is for layer-
+// membership tests against depths -1/0/1) — a facelet's actual visible
+// surface sits half a cubie further out along its own normal. Anything that
+// renders or verifies where a sticker's face really is must use this, not
+// `position` directly.
+export function surfacePosition(sticker: PhysicalSticker): Vec {
+  return [
+    sticker.position[0] + 0.5 * sticker.normal[0],
+    sticker.position[1] + 0.5 * sticker.normal[1],
+    sticker.position[2] + 0.5 * sticker.normal[2],
+  ];
+}
+
 // A cubie's position is shared by up to three stickers (one per sticker on
 // that cubie); position plus normal is what identifies a single sticker,
 // exactly as cube.ts's own INDEX map keys it.

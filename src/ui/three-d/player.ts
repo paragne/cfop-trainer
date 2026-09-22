@@ -15,7 +15,7 @@
  */
 import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
-import { applyMovePhysical } from "../../lib/physical-cube.ts";
+import { applyMovePhysical, surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 import { rotateByAngle } from "../../lib/rotate-by-angle.ts";
 import type { Move } from "../../lib/notation.ts";
@@ -38,7 +38,7 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
 
   function bakeAll(): void {
     stickers.forEach((s, i) => setBaseTransform(scene.stickers[i].outer, s));
-    scene.reorderForPaint(stickers.map((s) => s.position), getBack());
+    scene.reorderForPaint(stickers.map(surfacePosition), getBack());
   }
 
   function snapTo(next: readonly PhysicalSticker[]): void {
@@ -63,9 +63,10 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
         const progress = running[0]?.effect?.getComputedTiming().progress;
         const currentAngle = angle * (typeof progress === "number" ? progress : 1);
         const movingSet = new Set(movingIndices);
-        const positions = stickers.map((s, i) =>
-          movingSet.has(i) ? rotateByAngle(s.position, axis, currentAngle) : s.position,
-        );
+        const positions = stickers.map((s, i) => {
+          const surface = surfacePosition(s);
+          return movingSet.has(i) ? rotateByAngle(surface, axis, currentAngle) : surface;
+        });
         scene.reorderForPaint(positions, getBack());
       };
       const interval = setInterval(resort, RESORT_INTERVAL_MS);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Vec } from "./cube.ts";
 import type { MoveName } from "./notation.ts";
 import { invert, parse } from "./notation.ts";
-import { applyMovePhysical, homeStickers } from "./physical-cube.ts";
+import { applyMovePhysical, homeStickers, surfacePosition } from "./physical-cube.ts";
 import type { PhysicalSticker } from "./physical-cube.ts";
 import { matrix3d } from "./css-transform.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
@@ -38,32 +38,31 @@ const LOCAL_CORNERS: readonly Vec[] = [
 ];
 
 function corners(sticker: PhysicalSticker): Vec[] {
-  const css = matrix3d(sticker.column, sticker.row, sticker.normal, sticker.position, 1);
+  const css = matrix3d(sticker.column, sticker.row, sticker.normal, surfacePosition(sticker), 1);
   return LOCAL_CORNERS.map((local) => applyMatrix3dString(css, local));
 }
 
-// Every corner must lie exactly in the sticker's own plane (zero offset from
-// position along normal), the four must form a square of the expected size
-// centered on position, and — independent of the matrix entirely — a sticker
-// that has only ever been rotated by 90° multiples about axis-aligned axes
-// must have an axis-aligned normal: never a fin standing at some in-between
-// angle.
-function expectFlatSquareOnItsFace(sticker: PhysicalSticker): void {
+// Deliberately independent of sticker.position: checking a corner against
+// "the plane through position" is satisfied by any consistently-wrong
+// position, since it never compares against anything external. The cube's
+// half-extent (1.5 cubie units) is the one fact this can check against
+// instead — every corner must sit exactly on the surface at that radius
+// along its own normal, and nowhere outside the cube at all.
+function expectOnCubeSurface(sticker: PhysicalSticker): void {
   const axisAligned = sticker.normal.filter((n) => Math.abs(n) > 1e-9);
   expect(axisAligned).toHaveLength(1);
   expect(Math.abs(axisAligned[0])).toBeCloseTo(1);
 
   const cs = corners(sticker);
   for (const c of cs) {
-    expect(Math.abs(dot(sub(c, sticker.position), sticker.normal))).toBeLessThan(1e-9);
+    expect(Math.abs(dot(sticker.normal, c))).toBeCloseTo(1.5);
+    for (const coord of c) {
+      expect(coord).toBeGreaterThanOrEqual(-1.5 - 1e-9);
+      expect(coord).toBeLessThanOrEqual(1.5 + 1e-9);
+    }
   }
-  const center: Vec = [
-    (cs[0][0] + cs[1][0] + cs[2][0] + cs[3][0]) / 4,
-    (cs[0][1] + cs[1][1] + cs[2][1] + cs[3][1]) / 4,
-    (cs[0][2] + cs[1][2] + cs[2][2] + cs[3][2]) / 4,
-  ];
-  expect(length(sub(center, sticker.position))).toBeLessThan(1e-9);
 
+  // Still a square: adjacent edges equal length and perpendicular.
   const edgeA = sub(cs[1], cs[0]);
   const edgeB = sub(cs[3], cs[0]);
   expect(length(edgeA)).toBeCloseTo(2 * HALF);
@@ -71,25 +70,25 @@ function expectFlatSquareOnItsFace(sticker: PhysicalSticker): void {
   expect(Math.abs(dot(edgeA, edgeB))).toBeLessThan(1e-9);
 }
 
-function expectAllFlat(stickers: readonly PhysicalSticker[], label: string): void {
+function expectAllOnSurface(stickers: readonly PhysicalSticker[], label: string): void {
   stickers.forEach((s, i) => {
     try {
-      expectFlatSquareOnItsFace(s);
+      expectOnCubeSurface(s);
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
-      throw new Error(`sticker ${i} (${label}) is not flat on its face: ${reason}`, { cause: e });
+      throw new Error(`sticker ${i} (${label}) is not on the cube surface: ${reason}`, { cause: e });
     }
   });
 }
 
-describe("every sticker's matrix3d places a flat square on its own face", () => {
+describe("every sticker's matrix3d places a flat square on the cube's outer surface", () => {
   it("holds for the solved cube", () => {
-    expectAllFlat(homeStickers(), "solved");
+    expectAllOnSurface(homeStickers(), "solved");
   });
 
   it.each<MoveName>(["U", "R", "F", "y"])("holds after a single %s", (name) => {
     const stickers = applyMovePhysical(homeStickers(), { name, turns: 1, prime: false });
-    expectAllFlat(stickers, name);
+    expectAllOnSurface(stickers, name);
   });
 
   it.each(ALL_CASES.map((c): [string, string] => [c.id, c.algs[0].moves]))(
@@ -100,7 +99,7 @@ describe("every sticker's matrix3d places a flat square on its own face", () => 
       let stickers = homeStickers();
       for (const move of [...setup, ...solution]) {
         stickers = applyMovePhysical(stickers, move);
-        expectAllFlat(stickers, `${id} mid-sequence`);
+        expectAllOnSurface(stickers, `${id} mid-sequence`);
       }
     },
   );

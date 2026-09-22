@@ -7,7 +7,7 @@ import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
 import { applyMoves, SOLVED } from "../../lib/cube.ts";
 import { invert, parse } from "../../lib/notation.ts";
-import { applyAlgPhysical, homeStickers } from "../../lib/physical-cube.ts";
+import { applyAlgPhysical, homeStickers, surfacePosition } from "../../lib/physical-cube.ts";
 import { homeRotation } from "../../lib/orientation.ts";
 import { buildScene } from "./scene.ts";
 import { createPlayer } from "./player.ts";
@@ -48,7 +48,7 @@ const scene = buildScene(rig, homeStickers());
 const playerCell: { current: Player | undefined } = { current: undefined };
 const camera = createCamera(rig, () => {
   const p = playerCell.current;
-  if (p !== undefined) scene.reorderForPaint(p.stickers.map((s) => s.position), camera.getBack());
+  if (p !== undefined) scene.reorderForPaint(p.stickers.map(surfacePosition), camera.getBack());
 });
 const player = createPlayer(scene, camera.getBack, () => Number(speedInput.value));
 playerCell.current = player;

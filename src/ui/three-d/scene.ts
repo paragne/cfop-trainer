@@ -11,6 +11,7 @@
  */
 import { matrix3d, rotate3d } from "../../lib/css-transform.ts";
 import type { Vec, Color } from "../../lib/cube.ts";
+import { surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 
 export const SCALE = 90; // pixels per cubie unit
@@ -80,8 +81,13 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
   return { stickers: sceneStickers, reorderForPaint };
 }
 
+// sticker.position is the cubie's center; the visible face sits half a
+// cubie further out, along the sticker's own normal — see surfacePosition.
+// Rendering it at position directly, as this did before, sinks every face
+// half a cubie into the cube, so adjacent faces intersect and overhang each
+// other at every edge instead of meeting at the surface.
 export function setBaseTransform(outer: HTMLElement, sticker: PhysicalSticker): void {
-  outer.style.transform = matrix3d(sticker.column, sticker.row, sticker.normal, sticker.position, SCALE);
+  outer.style.transform = matrix3d(sticker.column, sticker.row, sticker.normal, surfacePosition(sticker), SCALE);
 }
 
 // Matching transform lists (rotate3d leftmost, the same base matrix3d text

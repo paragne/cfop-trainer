@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyMoves, SOLVED } from "./cube.ts";
 import { parse } from "./notation.ts";
-import { applyMovePhysical, colorsAt, homeStickers } from "./physical-cube.ts";
+import { applyMovePhysical, colorsAt, homeStickers, surfacePosition } from "./physical-cube.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
 
 describe("homeStickers", () => {
@@ -15,6 +15,17 @@ describe("homeStickers", () => {
       stickers = applyMovePhysical(stickers, { name: "R", turns: 1, prime: false });
     }
     expect(colorsAt(stickers)).toEqual(SOLVED);
+  });
+});
+
+describe("surfacePosition", () => {
+  it("sits half a cubie further out than the cubie-center position, along normal", () => {
+    const uCenter = homeStickers().find(
+      (s) => s.position[0] === 0 && s.position[1] === 1 && s.position[2] === 0,
+    );
+    if (uCenter === undefined) throw new Error("U center not found");
+    expect(uCenter.position).toEqual([0, 1, 0]);
+    expect(surfacePosition(uCenter)).toEqual([0, 1.5, 0]);
   });
 });
 
