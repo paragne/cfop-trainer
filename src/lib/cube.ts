@@ -10,8 +10,8 @@
  * head-on with U at the top.
  *
  * A move table lists, for each destination index, the index its sticker comes
- * from. Nine layer turns are generated from this geometry; wide moves and
- * rotations are compositions of those.
+ * from. Every move, including wide moves and rotations, is one layer turn
+ * about a single axis (MOVE_AXES), not a composition of narrower ones.
  */
 import type { Move, MoveName } from "./notation.ts";
 
@@ -20,7 +20,7 @@ export type Cube = readonly Color[];
 
 export type Vec = readonly [number, number, number];
 export type FaceGeometry = { origin: Vec; column: Vec; row: Vec };
-type Sticker = { position: Vec; normal: Vec };
+export type Sticker = { position: Vec; normal: Vec };
 type Table = readonly number[];
 
 const FACES: readonly Color[] = ["U", "R", "F", "D", "L", "B"];
@@ -61,7 +61,10 @@ function stickerAt(face: Color, r: number, c: number): Sticker {
   return { position: [at(0), at(1), at(2)], normal };
 }
 
-const STICKERS = FACES.flatMap((face) =>
+// Home position/normal of every facelet index. The 3D animator seeds its
+// physical stickers from this; it is the same geometry every move table
+// below is built from, not a second copy of it.
+export const STICKERS: readonly Sticker[] = FACES.flatMap((face) =>
   Array.from({ length: 9 }, (_, i) => stickerAt(face, Math.floor(i / 3), i % 3)),
 );
 
@@ -80,8 +83,10 @@ export const PIECES: readonly (readonly number[])[] = [...cubies.values()];
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-// Quarter turn clockwise as seen from the tip of `axis`.
-function rotate(v: Vec, axis: Vec): Vec {
+// Quarter turn clockwise as seen from the tip of `axis`. Exported so the 3D
+// animator can advance a sticker's position/orientation the same way a move
+// table's own construction does, one quarter at a time.
+export function rotate(v: Vec, axis: Vec): Vec {
   const d = dot(axis, v);
   return [
     axis[0] * d - (axis[1] * v[2] - axis[2] * v[1]),
@@ -104,49 +109,60 @@ function layerTurn(axis: Vec, depths: readonly number[]): Table {
   return table;
 }
 
-// Applies each table in turn, left to right.
-function compose(first: Table, ...rest: Table[]): Table {
-  return rest.reduce((a, b) => a.map((_, j) => a[b[j]]), first);
-}
+export type MoveAxes = { axis: Vec; depths: readonly number[] };
 
-function inverse(table: Table): Table {
-  const result: number[] = [];
-  table.forEach((from, to) => {
-    result[from] = to;
-  });
-  return result;
-}
+// The single description of which stickers turn about which axis, for every
+// move name: a face turn is depth [1] on its own axis, a slice is [0], a
+// wide move is both together, and a rotation is all three. Wide moves and
+// rotations were previously built by composing the nine face/slice tables
+// (e.g. `r` as R then M reversed); that produces the same permutation as
+// turning both of r's layers about R's own axis directly, so this table is
+// the one place that fact is written down, reused below to build
+// QUARTER_TURN and by the 3D animator to know what to spin.
+export const MOVE_AXES: Record<MoveName, MoveAxes> = {
+  U: { axis: [0, 1, 0], depths: [1] },
+  D: { axis: [0, -1, 0], depths: [1] },
+  L: { axis: [-1, 0, 0], depths: [1] },
+  R: { axis: [1, 0, 0], depths: [1] },
+  F: { axis: [0, 0, 1], depths: [1] },
+  B: { axis: [0, 0, -1], depths: [1] },
+  // Each slice turns in the direction of its outer face: M with L, E with D, S with F.
+  M: { axis: [-1, 0, 0], depths: [0] },
+  E: { axis: [0, -1, 0], depths: [0] },
+  S: { axis: [0, 0, 1], depths: [0] },
+  u: { axis: [0, 1, 0], depths: [0, 1] },
+  d: { axis: [0, -1, 0], depths: [0, 1] },
+  l: { axis: [-1, 0, 0], depths: [0, 1] },
+  r: { axis: [1, 0, 0], depths: [0, 1] },
+  f: { axis: [0, 0, 1], depths: [0, 1] },
+  b: { axis: [0, 0, -1], depths: [0, 1] },
+  x: { axis: [1, 0, 0], depths: [-1, 0, 1] },
+  y: { axis: [0, 1, 0], depths: [-1, 0, 1] },
+  z: { axis: [0, 0, 1], depths: [-1, 0, 1] },
+};
 
-const U = layerTurn([0, 1, 0], [1]);
-const D = layerTurn([0, -1, 0], [1]);
-const R = layerTurn([1, 0, 0], [1]);
-const L = layerTurn([-1, 0, 0], [1]);
-const F = layerTurn([0, 0, 1], [1]);
-const B = layerTurn([0, 0, -1], [1]);
-// Each slice turns in the direction of its outer face: M with L, E with D, S with F.
-const M = layerTurn([-1, 0, 0], [0]);
-const E = layerTurn([0, -1, 0], [0]);
-const S = layerTurn([0, 0, 1], [0]);
+const tableFor = (name: MoveName): Table =>
+  layerTurn(MOVE_AXES[name].axis, MOVE_AXES[name].depths);
 
 const QUARTER_TURN: Record<MoveName, Table> = {
-  U, D, L, R, F, B, M, E, S,
-  u: compose(U, inverse(E)),
-  d: compose(D, E),
-  l: compose(L, M),
-  r: compose(R, inverse(M)),
-  f: compose(F, S),
-  b: compose(B, inverse(S)),
-  x: compose(R, inverse(M), inverse(L)),
-  y: compose(U, inverse(E), inverse(D)),
-  z: compose(F, S, inverse(B)),
+  U: tableFor("U"), D: tableFor("D"), L: tableFor("L"), R: tableFor("R"), F: tableFor("F"), B: tableFor("B"),
+  M: tableFor("M"), E: tableFor("E"), S: tableFor("S"),
+  u: tableFor("u"), d: tableFor("d"), l: tableFor("l"), r: tableFor("r"), f: tableFor("f"), b: tableFor("b"),
+  x: tableFor("x"), y: tableFor("y"), z: tableFor("z"),
 };
+
+// `turns === 2` is a half turn either way; otherwise a prime is three quarter
+// turns forward. Exported so the 3D animator advances its own tracked
+// stickers by the same rule applyMoves uses for the engine's flat array.
+export function quarterTurns({ turns, prime }: Move): number {
+  return turns === 2 ? 2 : prime ? 3 : 1;
+}
 
 export function applyMoves<T>(cube: readonly T[], moves: readonly Move[]): T[] {
   let state = [...cube];
-  for (const { name, turns, prime } of moves) {
-    const table = QUARTER_TURN[name];
-    const quarters = turns === 2 ? 2 : prime ? 3 : 1;
-    for (let q = 0; q < quarters; q++) state = table.map((from) => state[from]);
+  for (const move of moves) {
+    const table = QUARTER_TURN[move.name];
+    for (let q = 0; q < quarterTurns(move); q++) state = table.map((from) => state[from]);
   }
   return state;
 }
