@@ -122,8 +122,11 @@ export function verifyView(screen: Screen): Verify | null {
   return screen.kind === "verify" && screen.verify.phase !== "done" ? screen.verify : null;
 }
 
-export function chooseAuf(screen: Screen, i: number): Screen {
-  if (screen.kind !== "verify") throw new Error("chooseAuf called outside Verify");
+// Picks which of a case's algs was executed, when they disagree on where the
+// case lands (see verify.ts's choices()). Not an action: chosen by clicking
+// one of the alternates, not by a key.
+export function chooseAlt(screen: Screen, i: number): Screen {
+  if (screen.kind !== "verify") throw new Error("chooseAlt called outside Verify");
   return { kind: "verify", verify: chooseAlg(screen.verify, i) };
 }
 

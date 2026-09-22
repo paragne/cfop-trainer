@@ -4,8 +4,8 @@ import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setPref, toggleSet } from "./lib/progress-edit.ts";
-import { cardView, press, resultText, start } from "./lib/screen.ts";
+import { setMode, setNote, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
+import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { dueCount, setStats } from "./lib/stats.ts";
 import { exportJson, importJson, load, save } from "./lib/storage.ts";
@@ -17,6 +17,7 @@ import { createPrefBar } from "./ui/pref-bar.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
 import { createTopbar } from "./ui/topbar.ts";
+import { createVerify } from "./ui/verify.ts";
 
 const NOT_SAVING = "Progress can't be saved in this browser. Export it to keep it.";
 const SET_ASIDE = "Saved progress could not be read and was set aside. Starting fresh.";
@@ -39,6 +40,10 @@ const home = createHome({
     persist(setPref(progress, "randomRotation", !progress.prefs.randomRotation));
     render();
   },
+  onVerifyLength: (length) => {
+    persist(setVerifyLength(progress, length));
+    render();
+  },
   onStart: () => startMode(progress.prefs.mode),
 });
 const prefBar = createPrefBar({
@@ -57,6 +62,15 @@ const flashcard = createFlashcard({
     const view = cardView(screen);
     if (view === null) throw new Error("note edited with no card on screen");
     persist(setNote(progress, view.c.id, text));
+  },
+});
+const verify = createVerify({
+  onPrimary: () => handle("reveal"),
+  onMismatch: () => handle("dontKnow"),
+  onMatch: () => handle("know"),
+  onChoose: (i) => {
+    screen = chooseAlt(screen, i);
+    render();
   },
 });
 const summary = createSummary(() => handle("reveal"));
@@ -112,6 +126,7 @@ function render(): void {
       mode: progress.prefs.mode,
       selected: progress.prefs.sets[progress.prefs.mode],
       rotation: progress.prefs.randomRotation,
+      verifyLength: progress.prefs.verifyLength,
       learnDue: dueCount(ALL_CASES, progress.cards, progress.prefs.sets.learn, now),
       stats: setStats(ALL_CASES, progress.cards, now),
     });
@@ -119,10 +134,13 @@ function render(): void {
     prefBar.render(progress);
   }
   const view = cardView(screen);
+  const verifying = verifyView(screen);
   const result = resultText(screen);
   flashcard.element.hidden = view === null;
+  verify.element.hidden = verifying === null;
   summary.element.hidden = result === null;
   if (view !== null) flashcard.render(view, progress);
+  if (verifying !== null) verify.render(verifying, progress);
   if (result !== null) summary.render(result);
 }
 
@@ -140,6 +158,7 @@ document.body.append(
   home.element,
   prefBar.element,
   flashcard.element,
+  verify.element,
   summary.element,
 );
 bindKeys(handle);

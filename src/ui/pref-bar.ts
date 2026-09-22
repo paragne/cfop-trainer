@@ -19,6 +19,9 @@ export function createPrefBar({ onNames, onAutoReveal }: Handlers) {
     render({ prefs }: Progress): void {
       names.setAttribute("aria-pressed", String(prefs.showNames));
       autoReveal.setAttribute("aria-pressed", String(prefs.showSolutions));
+      // Verify has no per-card solution reveal: the algorithm only appears
+      // after a Mismatch.
+      autoReveal.hidden = prefs.mode === "verify";
     },
   };
 }

@@ -157,6 +157,9 @@ body {
   background: var(--bg);
 }
 .actions .primary { grid-column: 1 / -1; }
+/* Verify shows the primary alone through ready, attempt and missed, so it
+   stays full width even in the three-column desktop layout. */
+.verify .actions .primary { grid-column: 1 / -1; }
 
 button {
   min-height: 3.25rem;
@@ -169,7 +172,11 @@ button {
   cursor: pointer;
 }
 button:hover { border-color: var(--dim); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled:hover { border-color: var(--line); }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.hint { margin: 0; color: var(--dim); font-size: 0.875rem; }
 
 button.primary {
   border-color: var(--accent);

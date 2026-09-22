@@ -3,7 +3,7 @@ import type { CaseSet } from "../data/algorithms.ts";
 import { SOLVED } from "./cube.ts";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { chooseAuf, press, resultText, start, verifyView } from "./screen.ts";
+import { chooseAlt, press, resultText, start, verifyView } from "./screen.ts";
 import type { Action, Context, Screen } from "./screen.ts";
 import { mk, NOW } from "./session.fixture.ts";
 
@@ -114,8 +114,8 @@ describe("finishing a session", () => {
   });
 });
 
-describe("chooseAuf", () => {
+describe("chooseAlt", () => {
   it("throws outside Verify", () => {
-    expect(() => chooseAuf({ kind: "home" }, 1)).toThrow();
+    expect(() => chooseAlt({ kind: "home" }, 1)).toThrow();
   });
 });
