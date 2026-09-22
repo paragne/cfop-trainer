@@ -47,9 +47,14 @@ function brandIcons(): Plugin {
 export default defineConfig({
   plugins: [brandIcons()],
   build: {
-    // The contact sheet ships in every build, unlinked, as a second page.
+    // The contact sheet and 3D prototype ship in every build, unlinked, as
+    // extra pages.
     rolldownOptions: {
-      input: { main: "index.html", "contact-sheet": "contact-sheet.html" },
+      input: {
+        main: "index.html",
+        "contact-sheet": "contact-sheet.html",
+        "three-d": "three-d.html",
+      },
     },
   },
 });

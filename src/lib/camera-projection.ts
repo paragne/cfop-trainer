@@ -20,9 +20,9 @@ const normalize = (v: Vec): Vec => scale(v, 1 / Math.sqrt(dot(v, v)));
 
 // Isometric default: eye = [1,1,1] gives right ∝ [1,0,-1], the same
 // screen-x = x − z formula render.ts's isometric view already uses.
-export function screenAxes(eye: Vec): { right: Vec; up: Vec } {
+export function screenAxes(eye: Vec): { right: Vec; up: Vec; back: Vec } {
   const back = normalize(eye);
   const right = normalize(cross(WORLD_UP, back));
   const up = cross(back, right);
-  return { right, up };
+  return { right, up, back };
 }

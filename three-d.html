@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>3D prototype</title>
+    <style>
+      body { margin: 0; padding: 0; font: 14px system-ui, sans-serif; background: #e6e6e6; color: #111; }
+      #app { display: flex; flex-direction: column; height: 100vh; }
+      #stage {
+        flex: 1;
+        position: relative;
+        perspective: 1400px;
+        background: #fff;
+        touch-action: none;
+        overflow: hidden;
+      }
+      #rig {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 0;
+        height: 0;
+        transform-style: preserve-3d;
+      }
+      .sticker { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0 0; }
+      .face { position: absolute; border: 1px solid #1a1a1a; box-sizing: border-box; backface-visibility: hidden; }
+      #chrome { padding: 0.75rem 1rem 1rem; background: #fff; border-top: 1px solid #ccc; }
+      #info { font-size: 12px; color: #555; margin-bottom: 0.5rem; min-height: 1.2em; }
+      #presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+      button { font: inherit; padding: 0.4rem 0.7rem; }
+      #controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: 13px; }
+      #controls label { display: flex; align-items: center; gap: 0.4rem; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="stage"><div id="rig"></div></div>
+      <div id="chrome">
+        <div id="info"></div>
+        <div id="presets"></div>
+        <div id="controls">
+          <label>Speed <input id="speed" type="range" min="100" max="1000" step="50" value="400" /></label>
+          <label>Radius <input id="radius" type="range" min="300" max="1400" step="50" value="550" /></label>
+          <label><input id="freecam" type="checkbox" /> Free camera</label>
+          <button id="pause" type="button">Pause</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/ui/three-d/main.ts"></script>
+  </body>
+</html>
