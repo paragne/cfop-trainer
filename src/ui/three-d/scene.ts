@@ -11,7 +11,7 @@
  */
 import { matrix3d, rotate3d } from "../../lib/css-transform.ts";
 import type { Vec, Color } from "../../lib/cube.ts";
-import { surfacePosition } from "../../lib/physical-cube.ts";
+import { perpendicularBasis, surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 
 export const SCALE = 90; // pixels per cubie unit
@@ -21,6 +21,10 @@ const FACE_PX = SCALE - GAP_PX;
 // volume to resolve ties with. The manual sort below doesn't strictly need
 // it, but the box still reads as a nicer, more physical bevel than a plane.
 const DEPTH_PX = 16;
+// A cut-plane cap covers the full 3x3 cross-section a layer boundary exposes
+// once the layer swings away from it, oversized slightly so its edges
+// overlap the stationary cube rather than exactly meeting it.
+const CAP_PX = SCALE * 3 + 4;
 
 const FILL: Record<Color, string> = {
   U: "#ffd500", D: "#ffffff", F: "#009b48", B: "#0046ad", R: "#ff5800", L: "#c8102e",
@@ -28,9 +32,11 @@ const FILL: Record<Color, string> = {
 const PLASTIC = "#1a1a1a";
 
 export type SceneSticker = { readonly outer: HTMLDivElement };
+export type Cap = { readonly outer: HTMLDivElement };
 export type Scene = {
   readonly stickers: readonly SceneSticker[];
   reorderForPaint(positions: readonly Vec[], back: Vec): void;
+  buildCap(axis: Vec, depth: number): Cap;
 };
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -78,7 +84,25 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
     for (const i of order) rig.append(sceneStickers[i].outer);
   }
 
-  return { stickers: sceneStickers, reorderForPaint };
+  // A cut-plane cap: black, no sticker identity, gone once its move ends.
+  // Never backface-culled — unlike a real sticker, whose normal is always
+  // the outward direction the camera is meant to see, a cap at a slice's
+  // far cut plane can face away from a world-fixed camera, and it must stay
+  // visible from either side, or it would vanish exactly where it's needed.
+  function buildCap(axis: Vec, depth: number): Cap {
+    const outer = document.createElement("div");
+    outer.className = "sticker";
+    const plate = square(CAP_PX, PLASTIC);
+    plate.style.backfaceVisibility = "visible";
+    outer.append(plate);
+    rig.append(outer);
+    const { column, row } = perpendicularBasis(axis);
+    const position: Vec = [axis[0] * depth, axis[1] * depth, axis[2] * depth];
+    outer.style.transform = matrix3d(column, row, axis, position, SCALE);
+    return { outer };
+  }
+
+  return { stickers: sceneStickers, reorderForPaint, buildCap };
 }
 
 // sticker.position is the cubie's center; the visible face sits half a

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { applyMoves, SOLVED } from "./cube.ts";
+import { applyMoves, MOVE_AXES, SOLVED } from "./cube.ts";
 import { parse } from "./notation.ts";
-import { applyMovePhysical, colorsAt, homeStickers, surfacePosition } from "./physical-cube.ts";
+import { applyMovePhysical, colorsAt, cutPlaneDepths, homeStickers, surfacePosition } from "./physical-cube.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
 
 describe("homeStickers", () => {
@@ -26,6 +26,26 @@ describe("surfacePosition", () => {
     if (uCenter === undefined) throw new Error("U center not found");
     expect(uCenter.position).toEqual([0, 1, 0]);
     expect(surfacePosition(uCenter)).toEqual([0, 1.5, 0]);
+  });
+});
+
+describe("cutPlaneDepths", () => {
+  it("gives a face turn one cut plane, at the boundary with the rest", () => {
+    expect(cutPlaneDepths(MOVE_AXES.R.depths)).toEqual([0.5]);
+  });
+
+  it("gives a wide move one cut plane, at its far boundary", () => {
+    expect(cutPlaneDepths(MOVE_AXES.r.depths)).toEqual([-0.5]);
+  });
+
+  it("gives a slice two cut planes, sandwiched between two stationary layers", () => {
+    expect(cutPlaneDepths(MOVE_AXES.M.depths)).toEqual([-0.5, 0.5]);
+  });
+
+  it("gives a whole-cube rotation no cut planes — nothing stays behind", () => {
+    expect(cutPlaneDepths(MOVE_AXES.x.depths)).toEqual([]);
+    expect(cutPlaneDepths(MOVE_AXES.y.depths)).toEqual([]);
+    expect(cutPlaneDepths(MOVE_AXES.z.depths)).toEqual([]);
   });
 });
 

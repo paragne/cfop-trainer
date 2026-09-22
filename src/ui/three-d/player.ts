@@ -15,12 +15,12 @@
  */
 import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
-import { applyMovePhysical, surfacePosition } from "../../lib/physical-cube.ts";
+import { applyMovePhysical, cutPlaneDepths, surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 import { rotateByAngle, visualAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import type { Move } from "../../lib/notation.ts";
 import { animateSticker, setBaseTransform } from "./scene.ts";
-import type { Scene } from "./scene.ts";
+import type { Cap, Scene } from "./scene.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -58,6 +58,19 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
         .filter((i) => depths.includes(dot(axis, stickers[i].position)));
       running = movingIndices.map((i) => animateSticker(scene.stickers[i].outer, axis, 0, angle, duration));
 
+      // Cut-plane caps: black plates filling the wedge that opens between a
+      // turning layer and the rest as it swings away from it — a real cube
+      // shows plastic there; without a cap, the page background shows
+      // through. One cap per cut plane rotates with the turning layer, the
+      // other stays; both are gone once the move settles, since at rest the
+      // ordinary sticker-to-sticker seam (backing plates) is all there is.
+      const caps: Cap[] = cutPlaneDepths(depths).flatMap((cutDepth) => {
+        const moving = scene.buildCap(axis, cutDepth);
+        const stationary = scene.buildCap(axis, cutDepth);
+        running.push(animateSticker(moving.outer, axis, 0, angle, duration));
+        return [moving, stationary];
+      });
+
       const RESORT_INTERVAL_MS = 120;
       const resort = (): void => {
         const progress = running[0]?.effect?.getComputedTiming().progress;
@@ -75,6 +88,7 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
       clearInterval(interval);
       running.forEach((a) => a.cancel());
       running = [];
+      caps.forEach((cap) => cap.outer.remove());
       stickers = applyMovePhysical(stickers, move);
       bakeAll();
     }

@@ -27,8 +27,10 @@ const cross = (a: Vec, b: Vec): Vec => [
 
 // Any unit vector not parallel to `normal` gives a perpendicular pair via
 // two cross products; normals are always axis-aligned, so [0,1,0] only fails
-// for U and D, where [1,0,0] stands in instead.
-function perpendicularBasis(normal: Vec): { column: Vec; row: Vec } {
+// for U and D, where [1,0,0] stands in instead. Exported for anything else
+// that needs a flat plane's in-plane basis from just its normal — the 3D
+// renderer's cut-plane caps, for one.
+export function perpendicularBasis(normal: Vec): { column: Vec; row: Vec } {
   const seed: Vec = Math.abs(normal[1]) === 1 ? [1, 0, 0] : [0, 1, 0];
   const column = cross(seed, normal);
   return { column, row: cross(normal, column) };
@@ -79,6 +81,25 @@ export function surfacePosition(sticker: PhysicalSticker): Vec {
     sticker.position[1] + 0.5 * sticker.normal[1],
     sticker.position[2] + 0.5 * sticker.normal[2],
   ];
+}
+
+const ALL_DEPTHS = [-1, 0, 1] as const;
+
+// Where a visible gap opens between a turning layer and the rest of the
+// cube during its animation: the midpoint of every boundary, within
+// [-1, 0, 1], between a depth that's turning (in `moving`, a move's own
+// depths) and one that isn't. A face turn has one cut plane (between its
+// single layer and the rest); a slice has two (sandwiched between two
+// stationary layers); a wide move has one; a whole-cube rotation, moving
+// every depth, has none — there's nothing stationary left to gap against.
+export function cutPlaneDepths(moving: readonly number[]): number[] {
+  const cuts: number[] = [];
+  for (let i = 0; i < ALL_DEPTHS.length - 1; i++) {
+    const a = ALL_DEPTHS[i];
+    const b = ALL_DEPTHS[i + 1];
+    if (moving.includes(a) !== moving.includes(b)) cuts.push((a + b) / 2);
+  }
+  return cuts;
 }
 
 // A cubie's position is shared by up to three stickers (one per sticker on
