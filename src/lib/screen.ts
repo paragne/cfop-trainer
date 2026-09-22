@@ -1,4 +1,6 @@
 import type { Case } from "../data/algorithms.ts";
+import { pickAuf } from "./auf.ts";
+import type { Auf } from "./auf.ts";
 import { nextCase, startDrill } from "./drill.ts";
 import type { Drill } from "./drill.ts";
 import type { Mode } from "./prefs.ts";
@@ -9,8 +11,8 @@ import type { Session } from "./session.ts";
 
 export type Screen =
   | { kind: "home" }
-  | { kind: "learn"; session: Session }
-  | { kind: "drill"; drill: Drill };
+  | { kind: "learn"; session: Session; auf: Auf }
+  | { kind: "drill"; drill: Drill; auf: Auf };
 
 export type Action = "reveal" | "dontKnow" | "know" | "toggleNames";
 
@@ -28,13 +30,23 @@ export type CardView = {
   revealed: boolean;
   count: string;
   mode: "learn" | "drill";
+  auf: Auf;
 };
 
-export function start(mode: Mode, { progress, cases, now, random }: Context): Screen {
+// Drawn as each card comes up, so a retry is not the same picture twice.
+const aufFor = (c: Case | null, { progress, random }: Context): Auf =>
+  c === null ? "" : pickAuf(c, progress.prefs.randomRotation, random);
+
+export function start(mode: Mode, ctx: Context): Screen {
+  const { progress, cases, now, random } = ctx;
   if (mode === "learn") {
-    return { kind: "learn", session: startSession(cases, progress, now, random) };
+    const session = startSession(cases, progress, now, random);
+    return { kind: "learn", session, auf: aufFor(current(session), ctx) };
   }
-  if (mode === "drill") return { kind: "drill", drill: startDrill(cases, progress, random) };
+  if (mode === "drill") {
+    const drill = startDrill(cases, progress, random);
+    return { kind: "drill", drill, auf: aufFor(drill.current, ctx) };
+  }
   throw new Error("Verify has not shipped");
 }
 
@@ -54,30 +66,33 @@ export function press(
   }
   if (screen.kind === "drill") {
     if (action === "dontKnow") return unchanged;
-    const drill =
-      action === "reveal" ? toggleReveal(screen.drill) : nextCase(screen.drill, progress, random);
-    return { screen: { kind: "drill", drill }, progress };
+    if (action === "reveal") {
+      return { screen: { ...screen, drill: toggleReveal(screen.drill) }, progress };
+    }
+    const drill = nextCase(screen.drill, progress, random);
+    return { screen: { kind: "drill", drill, auf: aufFor(drill.current, ctx) }, progress };
   }
   if (current(screen.session) === null) {
     return action === "reveal" ? { screen: start("learn", ctx), progress } : unchanged;
   }
   if (action === "reveal") {
-    return { screen: { kind: "learn", session: toggleReveal(screen.session) }, progress };
+    return { screen: { ...screen, session: toggleReveal(screen.session) }, progress };
   }
   const result = answer(screen.session, progress, action === "know", ctx.now);
-  return { screen: { kind: "learn", session: result.session }, progress: result.progress };
+  const auf = aufFor(current(result.session), ctx);
+  return { screen: { kind: "learn", session: result.session, auf }, progress: result.progress };
 }
 
 export function cardView(screen: Screen): CardView | null {
   if (screen.kind === "drill") {
     const { current: c, revealed, shown } = screen.drill;
-    return { c, revealed, count: String(shown), mode: "drill" };
+    return { c, revealed, count: String(shown), mode: "drill", auf: screen.auf };
   }
   if (screen.kind !== "learn") return null;
   const c = current(screen.session);
   if (c === null) return null;
   const { revealed, done, total } = screen.session;
-  return { c, revealed, count: `${done} / ${total}`, mode: "learn" };
+  return { c, revealed, count: `${done} / ${total}`, mode: "learn", auf: screen.auf };
 }
 
 // Non-null only on a finished session's summary.

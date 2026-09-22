@@ -35,6 +35,10 @@ const home = createHome({
     render();
   },
   onSet: (set) => switchSet(set),
+  onRotation: () => {
+    persist(setPref(progress, "randomRotation", !progress.prefs.randomRotation));
+    render();
+  },
   onStart: () => startMode(progress.prefs.mode),
 });
 const prefBar = createPrefBar({
@@ -107,6 +111,7 @@ function render(): void {
     home.render({
       mode: progress.prefs.mode,
       selected: progress.prefs.sets[progress.prefs.mode],
+      rotation: progress.prefs.randomRotation,
       learnDue: dueCount(ALL_CASES, progress.cards, progress.prefs.sets.learn, now),
       stats: setStats(ALL_CASES, progress.cards, now),
     });

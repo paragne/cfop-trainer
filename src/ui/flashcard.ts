@@ -1,3 +1,4 @@
+import { turnState } from "../lib/auf.ts";
 import { caseState } from "../lib/case-state.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
@@ -46,15 +47,17 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }
 
   let shown: string | null = null;
 
-  function render({ c, revealed, count: position, mode }: CardView, progress: Progress): void {
+  function render({ c, revealed, count: position, mode, auf }: CardView, progress: Progress): void {
     // Only these two writes use innerHTML, and both take markup generated in
-    // lib from our own case data.
-    if (c.id !== shown) {
-      figure.innerHTML = renderCase(caseState(c), viewFor(c.mask));
-      solution.innerHTML = renderSolution(c);
+    // lib from our own case data. The AUF is part of the key: a failed card can
+    // come straight back, turned differently.
+    const key = `${c.id}|${auf}`;
+    if (key !== shown) {
+      figure.innerHTML = renderCase(turnState(caseState(c), auf), viewFor(c.mask));
+      solution.innerHTML = renderSolution(c, auf);
       section.textContent = `${c.group} · ${c.section}`;
       name.textContent = [c.name, ...c.aliases].filter((s) => s !== null).join(" · ");
-      shown = c.id;
+      shown = key;
     }
 
     // Equal while typing, so the caret is not disturbed; different after an

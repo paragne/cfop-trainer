@@ -50,6 +50,7 @@ describe("serialize and parseProgress", () => {
       prefs: {
         showNames: false,
         showSolutions: true,
+        randomRotation: true,
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
       },
@@ -68,7 +69,7 @@ describe("serialize and parseProgress", () => {
   it("writes exactly the persisted keys, so UI state cannot leak in unnoticed", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
-    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "mode", "sets"]);
+    expect(Object.keys(progress().prefs)).toEqual(["showNames", "showSolutions", "randomRotation", "mode", "sets"]);
   });
 });
 
@@ -87,6 +88,7 @@ describe("parseProgress rejects", () => {
     ["a missing notes section", without(blob(), "notes"), '"notes"'],
     ["a cards section that is a list", bad({ cards: [] }), '"cards"'],
     ["a non-boolean pref", bad({ prefs: { showNames: "yes" } }), "prefs.showNames"],
+    ["a non-boolean randomRotation", bad({ prefs: { randomRotation: 1 } }), "prefs.randomRotation"],
     ["a mode that has not shipped", bad({ prefs: { mode: "verify" } }), "prefs.mode"],
     ["an unknown mode", bad({ prefs: { mode: "ZBLL" } }), "prefs.mode"],
     ["a mode that is not a string", bad({ prefs: { mode: 1 } }), "prefs.mode"],
@@ -138,6 +140,7 @@ describe("parseProgress tolerates", () => {
     expect(result.ok && result.progress.prefs).toEqual({
       showNames: false,
       showSolutions: false,
+      randomRotation: false,
       mode: "learn",
       sets: SETS,
     });
@@ -148,6 +151,7 @@ describe("parseProgress tolerates", () => {
     expect(result.ok && result.progress.prefs).toEqual({
       showNames: true,
       showSolutions: false,
+      randomRotation: false,
       mode: "drill",
       sets: SETS,
     });

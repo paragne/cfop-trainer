@@ -1,4 +1,6 @@
 import type { Case } from "../data/algorithms.ts";
+import { prefixed } from "./auf.ts";
+import type { Auf } from "./auf.ts";
 
 const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 
@@ -6,11 +8,11 @@ const ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;"
 // caller can assign the result with innerHTML.
 const escape = (text: string) => text.replace(/[&<>"]/g, (ch) => ESCAPES[ch]);
 
-export function renderSolution(c: Case): string {
+export function renderSolution(c: Case, auf: Auf): string {
   const [primary, ...alternates] = c.algs;
   const algs = [
-    `<p class="alg primary">${escape(primary.display)}</p>`,
-    ...alternates.map((alg) => `<p class="alg alt">${escape(alg.display)}</p>`),
+    `<p class="alg primary">${escape(prefixed(auf, primary.display))}</p>`,
+    ...alternates.map((alg) => `<p class="alg alt">${escape(prefixed(auf, alg.display))}</p>`),
   ].join("");
   if (c.videoUrl === null) return algs;
   const link = `<a class="video" href="${escape(c.videoUrl)}" target="_blank" rel="noopener noreferrer">J Perm video</a>`;

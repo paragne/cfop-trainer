@@ -67,6 +67,18 @@ describe("setPref", () => {
   });
 });
 
+describe("setPref for the random AUF", () => {
+  it("turns it on, changes nothing else, and survives a save and reload", () => {
+    const before = progress({ [A]: "x" });
+    expect(before.prefs.randomRotation).toBe(false);
+    const after = setPref(before, "randomRotation", true);
+    expect({ ...after.prefs, randomRotation: false }).toEqual(before.prefs);
+    expect(after.notes).toBe(before.notes);
+    const loaded = parseProgress(serialize(after, 1), ALL_CASES);
+    expect(loaded.ok && loaded.progress.prefs.randomRotation).toBe(true);
+  });
+});
+
 describe("toggleSet", () => {
   const withLearn = (learn: CaseSet[]): Progress => {
     const base = progress({ [A]: "x" });

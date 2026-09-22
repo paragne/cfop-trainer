@@ -11,6 +11,7 @@ export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill"];
 export type Prefs = {
   showNames: boolean;
   showSolutions: boolean;
+  randomRotation: boolean;
   mode: Mode;
   sets: Record<Mode, CaseSet[]>;
 };
@@ -21,6 +22,7 @@ export function defaultPrefs(): Prefs {
   return {
     showNames: true,
     showSolutions: false,
+    randomRotation: false,
     mode: "learn",
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -60,7 +62,7 @@ function readMode(value: unknown, fallback: Mode): Mode {
 // without bumping the version.
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions"): boolean => {
+  const flag = (key: "showNames" | "showSolutions" | "randomRotation"): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -68,6 +70,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
   return {
     showNames: flag("showNames"),
     showSolutions: flag("showSolutions"),
+    randomRotation: flag("randomRotation"),
     mode: readMode(raw.mode, defaults.mode),
     sets: raw.sets === undefined ? defaults.sets : readSets(raw.sets, defaults.sets),
   };
