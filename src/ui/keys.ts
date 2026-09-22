@@ -1,8 +1,8 @@
-export type KeyAction = "reveal" | "dontKnow" | "know" | "toggleNames";
+import type { Action } from "../lib/screen.ts";
 
 type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean };
 
-const BINDINGS = new Map<string, KeyAction>([
+const BINDINGS = new Map<string, Action>([
   [" ", "reveal"],
   ["1", "dontKnow"],
   ["2", "know"],
@@ -11,12 +11,12 @@ const BINDINGS = new Map<string, KeyAction>([
 
 // Typing in a note must not grade, a held modifier is a browser shortcut
 // (Ctrl+1 switches tabs), and auto-repeat must not grade five cards.
-export function actionForKey({ key, typing, modifier, repeat }: KeyInput): KeyAction | null {
+export function actionForKey({ key, typing, modifier, repeat }: KeyInput): Action | null {
   if (typing || modifier || repeat) return null;
   return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
-export function bindKeys(onAction: (action: KeyAction) => void): void {
+export function bindKeys(onAction: (action: Action) => void): void {
   const typing = (e: KeyboardEvent) => e.target instanceof HTMLTextAreaElement;
 
   document.addEventListener("keydown", (e) => {

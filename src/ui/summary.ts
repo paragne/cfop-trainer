@@ -1,4 +1,3 @@
-import type { Session } from "../lib/session.ts";
 import { el, keyedButton } from "./dom.ts";
 
 export function createSummary(onAgain: () => void) {
@@ -9,8 +8,8 @@ export function createSummary(onAgain: () => void) {
 
   return {
     element,
-    render(session: Session): void {
-      result.textContent = `${session.firstTry} of ${session.total} known on the first try.`;
+    render(text: string): void {
+      result.textContent = text;
     },
   };
 }

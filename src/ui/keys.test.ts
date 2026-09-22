@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { actionForKey } from "./keys.ts";
-import type { KeyAction } from "./keys.ts";
+import type { Action } from "../lib/screen.ts";
 
 const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean }> = {}) =>
   actionForKey({ key, typing: false, modifier: false, repeat: false, ...over });
 
 describe("actionForKey", () => {
-  it.each<[string, KeyAction]>([
+  it.each<[string, Action]>([
     [" ", "reveal"],
     ["1", "dontKnow"],
     ["2", "know"],

@@ -1,7 +1,7 @@
-import type { Case } from "../data/algorithms.ts";
 import { caseState } from "../lib/case-state.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
+import type { CardView } from "../lib/screen.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { el, keyedButton } from "./dom.ts";
 
@@ -11,15 +11,6 @@ type Handlers = {
   onKnow: () => void;
   onNext: () => void;
   onNote: (text: string) => void;
-};
-
-// What one card screen shows. Learn and Drill each build it from their own
-// state, so the screen knows nothing about either.
-export type CardView = {
-  c: Case;
-  revealed: boolean;
-  count: string;
-  mode: "learn" | "drill";
 };
 
 // Built once and never rebuilt. render() only syncs what state says, so the
