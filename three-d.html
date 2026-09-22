@@ -39,14 +39,19 @@
         position: absolute;
         box-sizing: border-box;
         backface-visibility: hidden;
-        /* A transparent outline doesn't change layout, but nudges the
-           rasterizer's edge-coverage/anti-aliasing pass, which measurably
-           softens the jagged edges a 3D-transformed bordered box otherwise
-           gets. A small radius rounds off the remaining jagged corners. */
-        outline: 1px solid transparent;
-        border-radius: 1px;
       }
-      .face { border: 1px solid #1a1a1a; }
+      .face {
+        /* A stickerless cube has no painted border between pieces — just
+           the piece's own rounded ("pillowed") edge. A transparent outline
+           doesn't change layout, but nudges the rasterizer's edge-coverage
+           pass, which measurably softens the jagged edges a 3D-transformed
+           box otherwise gets. Only .face is rounded — the backing plates
+           and caps behind it are plain rectangles sized to show through
+           .face's rounded corners in the same (or a matching-shade) color,
+           rather than leaving a background-colored notch there. */
+        outline: 1px solid transparent;
+        border-radius: 8px;
+      }
       #chrome { padding: 0.75rem 1rem 1rem; background: #fff; border-top: 1px solid #ccc; }
       #info { font-size: 12px; color: #555; margin-bottom: 0.5rem; min-height: 1.2em; }
       #presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
