@@ -1,4 +1,5 @@
 import type { Case } from "../data/algorithms.ts";
+import { draw } from "./bag.ts";
 import type { Progress } from "./progress.ts";
 import { inSets } from "./selection.ts";
 import { shuffle } from "./shuffle.ts";
@@ -25,19 +26,12 @@ export function startDrill(
   return { current, pool, bag, shown: 1, revealed: progress.prefs.showSolutions };
 }
 
-// Each pass shows every case once, so coverage stays even where independent
-// draws would cluster. A new pass never opens on the case just shown.
 export function nextCase(d: Drill, progress: Progress, random: () => number): Drill {
-  let bag = d.bag;
-  if (bag.length === 0) {
-    bag = shuffle(d.pool, random);
-    if (bag[0].id === d.current.id) bag = [...bag.slice(1), bag[0]];
-  }
-  const [current, ...rest] = bag;
+  const { current, bag } = draw(d.pool, d.bag, d.current, random);
   return {
     current,
     pool: d.pool,
-    bag: rest,
+    bag,
     shown: d.shown + 1,
     revealed: progress.prefs.showSolutions,
   };
