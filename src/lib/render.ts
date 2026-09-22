@@ -17,12 +17,12 @@ type Poly = { index: number; corners: Point[] };
 export type Palette = Readonly<Record<Facelet, string>>;
 
 const FILL: Palette = {
-  U: "#ffd500",
+  U: "#ffdc00",
   D: "#ffffff",
-  F: "#009b48",
-  B: "#0046ad",
-  R: "#ff5800",
-  L: "#c8102e",
+  F: "#00a651",
+  B: "#0062ff",
+  R: "#ff6600",
+  L: "#e53935",
   masked: "#8a8f98",
 };
 
