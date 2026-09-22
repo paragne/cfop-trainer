@@ -1,7 +1,12 @@
 /**
  * Builds the 54 sticker elements and updates their placement. 54 outward
- * stickers, not 26 solid cubies, are all direct siblings of the rig — one
- * flat sorting context, per SPEC's painter's-algorithm mitigation.
+ * stickers, not 26 solid cubies, are all direct siblings of the rig.
+ *
+ * The rig deliberately does *not* use transform-style: preserve-3d for these
+ * siblings — that leaves paint order up to the browser's own approximate 3D
+ * sort, which turned out to misorder faces even on a static cube (see
+ * reorderForPaint). Paint order instead follows plain DOM order, which we
+ * control exactly, computed from positions this module has no opinion about.
  */
 import { matrix3d, rotate3d } from "../../lib/css-transform.ts";
 import type { Vec, Color } from "../../lib/cube.ts";
@@ -10,10 +15,9 @@ import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 export const SCALE = 90; // pixels per cubie unit
 const GAP_PX = 6;
 const FACE_PX = SCALE - GAP_PX;
-// A flat, zero-thickness plane gives the browser's painter's-algorithm sort
-// no volume to resolve ties with, which is what let a hidden face win at a
-// shared silhouette edge even on a static cube. A shallow box, with one real
-// plastic-colored face behind the sticker, fixes that.
+// A flat, zero-thickness plane also gave the OLD browser-sorted approach no
+// volume to resolve ties with. The manual sort below doesn't strictly need
+// it, but the box still reads as a nicer, more physical bevel than a plane.
 const DEPTH_PX = 16;
 
 const FILL: Record<Color, string> = {
@@ -22,6 +26,12 @@ const FILL: Record<Color, string> = {
 const PLASTIC = "#1a1a1a";
 
 export type SceneSticker = { readonly outer: HTMLDivElement };
+export type Scene = {
+  readonly stickers: readonly SceneSticker[];
+  reorderForPaint(positions: readonly Vec[], back: Vec): void;
+};
+
+const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 function square(px: number, color: string): HTMLDivElement {
   const el = document.createElement("div");
@@ -37,8 +47,8 @@ function square(px: number, color: string): HTMLDivElement {
 // A sticker is an outer pivot (zero-size, transform-origin at the cube
 // center, per the animation decision) wrapping a thin box that never itself
 // animates — only the pivot's transform changes.
-export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[]): SceneSticker[] {
-  return stickers.map((sticker) => {
+export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[]): Scene {
+  const sceneStickers = stickers.map((sticker) => {
     const outer = document.createElement("div");
     outer.className = "sticker";
     const face = square(FACE_PX, FILL[sticker.color]);
@@ -50,6 +60,17 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
     setBaseTransform(outer, sticker);
     return { outer };
   });
+
+  // True painter's algorithm: farthest-from-camera first, so each later
+  // append paints over the ones before it. Positions are passed in rather
+  // than read from the stickers this module built, so a caller can pass an
+  // in-flight animated sticker's true current (not just its at-rest) angle.
+  function reorderForPaint(positions: readonly Vec[], back: Vec): void {
+    const order = sceneStickers.map((_, i) => i).sort((a, b) => dot(positions[a], back) - dot(positions[b], back));
+    for (const i of order) rig.append(sceneStickers[i].outer);
+  }
+
+  return { stickers: sceneStickers, reorderForPaint };
 }
 
 export function setBaseTransform(outer: HTMLElement, sticker: PhysicalSticker): void {

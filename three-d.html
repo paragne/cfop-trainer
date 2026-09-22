@@ -31,6 +31,8 @@
         width: 0;
         height: 0;
         transform-origin: 0 0 0;
+        /* preserve-3d here is just for this sticker's own two faces
+           (front/back), which never need sorting against each other. */
         transform-style: preserve-3d;
       }
       .square { position: absolute; box-sizing: border-box; backface-visibility: hidden; }

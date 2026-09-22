@@ -11,6 +11,7 @@ import { applyAlgPhysical, homeStickers } from "../../lib/physical-cube.ts";
 import { homeRotation } from "../../lib/orientation.ts";
 import { buildScene } from "./scene.ts";
 import { createPlayer } from "./player.ts";
+import type { Player } from "./player.ts";
 import { createCamera } from "./camera.ts";
 
 // Presets chosen to stress the four move kinds that don't reduce to a plain
@@ -40,8 +41,20 @@ const freecamInput = required<HTMLInputElement>("#freecam");
 const pauseButton = required<HTMLButtonElement>("#pause");
 
 const scene = buildScene(rig, homeStickers());
-const player = createPlayer(scene, () => Number(speedInput.value));
-const camera = createCamera(rig);
+// camera's onChange needs player (to read current sticker positions) and
+// player needs camera (to read its current back vector). player is built
+// second, so onChange goes through this cell, resolved once both exist;
+// camera makes no call that would invoke onChange before then.
+const playerCell: { current: Player | undefined } = { current: undefined };
+const camera = createCamera(rig, () => {
+  const p = playerCell.current;
+  if (p !== undefined) scene.reorderForPaint(p.stickers.map((s) => s.position), camera.getBack());
+});
+const player = createPlayer(scene, camera.getBack, () => Number(speedInput.value));
+playerCell.current = player;
+// Must happen before any camera change: onChange reads player.stickers,
+// which starts empty until a first snap gives it something to sort.
+player.snapTo(homeStickers());
 camera.setRadius(Number(radiusInput.value));
 camera.attachDrag(stage);
 
