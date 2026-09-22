@@ -5,10 +5,13 @@
  * would, via applyMovePhysical — a −90° turn and three forward 90° turns are
  * the same rotation, so the two always end up agreeing.
  *
- * Paint order is re-sorted every animation frame while a move plays, using
+ * Paint order is re-sorted a few times a second while a move plays, using
  * each moving sticker's true current angle (the animation's own eased
  * progress, not a linear guess) — a rotating layer's depth relative to the
  * stationary stickers changes continuously, not just at the start and end.
+ * Every animation frame (60/s) was too often: reordering up to 54 elements
+ * that often visibly starved the browser's ability to paint the animation
+ * itself, so the CSS animation looked stalled even though it was running.
  */
 import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
@@ -55,8 +58,8 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
         .filter((i) => depths.includes(dot(axis, stickers[i].position)));
       running = movingIndices.map((i) => animateSticker(scene.stickers[i].outer, axis, 0, angle, duration));
 
-      let frame: number;
-      const resortEachFrame = (): void => {
+      const RESORT_INTERVAL_MS = 120;
+      const resort = (): void => {
         const progress = running[0]?.effect?.getComputedTiming().progress;
         const currentAngle = angle * (typeof progress === "number" ? progress : 1);
         const movingSet = new Set(movingIndices);
@@ -64,12 +67,11 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
           movingSet.has(i) ? rotateByAngle(s.position, axis, currentAngle) : s.position,
         );
         scene.reorderForPaint(positions, getBack());
-        if (running.some((a) => a.playState === "running")) frame = requestAnimationFrame(resortEachFrame);
       };
-      frame = requestAnimationFrame(resortEachFrame);
+      const interval = setInterval(resort, RESORT_INTERVAL_MS);
 
       await Promise.all(running.map((a) => a.finished));
-      cancelAnimationFrame(frame);
+      clearInterval(interval);
       running.forEach((a) => a.cancel());
       running = [];
       stickers = applyMovePhysical(stickers, move);

@@ -1,12 +1,13 @@
 /**
  * Builds the 54 sticker elements and updates their placement. 54 outward
- * stickers, not 26 solid cubies, are all direct siblings of the rig.
+ * stickers, not 26 solid cubies, are all direct siblings of the rig — one
+ * flat sorting context.
  *
- * The rig deliberately does *not* use transform-style: preserve-3d for these
- * siblings — that leaves paint order up to the browser's own approximate 3D
- * sort, which turned out to misorder faces even on a static cube (see
- * reorderForPaint). Paint order instead follows plain DOM order, which we
- * control exactly, computed from positions this module has no opinion about.
+ * The rig's own preserve-3d sort is left in place (removing it broke actual
+ * 3D positioning, not just paint order — see the fix commit), but it turned
+ * out to misorder faces even on a static cube, so reorderForPaint also
+ * drives plain DOM order as a true painter's algorithm, which measurably
+ * improves what actually gets painted alongside the browser's own sort.
  */
 import { matrix3d, rotate3d } from "../../lib/css-transform.ts";
 import type { Vec, Color } from "../../lib/cube.ts";
@@ -65,8 +66,14 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
   // append paints over the ones before it. Positions are passed in rather
   // than read from the stickers this module built, so a caller can pass an
   // in-flight animated sticker's true current (not just its at-rest) angle.
+  // Reordering the DOM is real work at 54 elements, so it's skipped
+  // whenever the sort didn't actually change anything.
+  let lastOrder: readonly number[] | null = null;
   function reorderForPaint(positions: readonly Vec[], back: Vec): void {
     const order = sceneStickers.map((_, i) => i).sort((a, b) => dot(positions[a], back) - dot(positions[b], back));
+    const previous = lastOrder;
+    if (previous !== null && order.every((i, k) => i === previous[k])) return;
+    lastOrder = order;
     for (const i of order) rig.append(sceneStickers[i].outer);
   }
 
