@@ -21,9 +21,13 @@ const FACE_PX = SCALE - GAP_PX;
 // volume to resolve ties with. The manual sort below doesn't strictly need
 // it, but the box still reads as a nicer, more physical bevel than a plane.
 const DEPTH_PX = 16;
+// Wider than a full grid cell (SCALE), so a sticker's backing plate overlaps
+// its neighbours' rather than just meeting them — a seam between two exactly
+// abutting plates can still show a hairline of whatever's behind (the page
+// background) at sub-pixel misalignment; an overlap can't.
+const BACK_PX = SCALE + 4;
 // A cut-plane cap covers the full 3x3 cross-section a layer boundary exposes
-// once the layer swings away from it, oversized slightly so its edges
-// overlap the stationary cube rather than exactly meeting it.
+// once the layer swings away from it, with the same small overlap margin.
 const CAP_PX = SCALE * 3 + 4;
 
 const FILL: Record<Color, string> = {
@@ -61,7 +65,7 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
     outer.className = "sticker";
     const face = square(FACE_PX, FILL[sticker.color]);
     face.classList.add("face");
-    const back = square(FACE_PX, PLASTIC);
+    const back = square(BACK_PX, PLASTIC);
     back.style.transform = `translateZ(${-DEPTH_PX}px)`;
     outer.append(face, back);
     rig.append(outer);

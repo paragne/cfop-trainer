@@ -35,7 +35,17 @@
            (front/back), which never need sorting against each other. */
         transform-style: preserve-3d;
       }
-      .square { position: absolute; box-sizing: border-box; backface-visibility: hidden; }
+      .square {
+        position: absolute;
+        box-sizing: border-box;
+        backface-visibility: hidden;
+        /* A transparent outline doesn't change layout, but nudges the
+           rasterizer's edge-coverage/anti-aliasing pass, which measurably
+           softens the jagged edges a 3D-transformed bordered box otherwise
+           gets. A small radius rounds off the remaining jagged corners. */
+        outline: 1px solid transparent;
+        border-radius: 1px;
+      }
       .face { border: 1px solid #1a1a1a; }
       #chrome { padding: 0.75rem 1rem 1rem; background: #fff; border-top: 1px solid #ccc; }
       #info { font-size: 12px; color: #555; margin-bottom: 0.5rem; min-height: 1.2em; }
