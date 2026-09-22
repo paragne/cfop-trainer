@@ -111,24 +111,58 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 
 ### 2. Verify (no honor code)
 
-- Session starts from a solved cube.
-- Feeds N randomly chosen OLL and PLL cases from the chosen sets. Excludes F2L.
-- For each case: apply the case setup to the cube state, render it, and show
-  the user what the cube looks like.
-- User performs the algorithm on their physical cube.
-- App then shows the expected resulting state, computed by applying the
-  algorithm to the current state. User confirms match or mismatch.
-- Mismatch is graded as "don't know it".
-- The expected state is always computed. Never hardcode an expected result.
+- Home screen: chosen sets (F2L excluded, and its toggle disabled while Verify
+  is selected) and a session length of 5, 10 or 20, persisted as
+  `prefs.verifyLength` (default 10), additive to `prefs.sets.verify`.
+- Start screen: "Hold a solved cube yellow up, green front." and Begin.
+- Each step shows the case picture as in Learn, name hideable, turned by the
+  random AUF like any other card. The user executes that case's algorithm on
+  their physical cube from whatever state it is in; the cube in hand will not
+  look like the pictured case, since the check is on the result, not the setup.
+- Check reveals the expected state: the cumulative engine state after every
+  algorithm so far (this step's AUF-prefixed algorithm applied to wherever the
+  previous step left the cube), top view, no mask, never normalized. The
+  un-normalized state is exactly the physical cube as held after executing,
+  including any net rotation. One alg, `oll-42`, leaves centers displaced; when
+  the expected state needs a whole-cube rotation to restore home centers
+  (green front, yellow up), Check names that rotation as an instruction, and
+  Match applies it to the engine state directly rather than normalizing, since
+  normalizing recolors stickers in place instead of physically relocating
+  them and is not equivalent for this case.
+- When a case's algs disagree on where it lands from the current cube (not
+  just on solving it), Check offers "Expected if you used:" with each
+  alternate's display text, AUF included. This is computed per case, not
+  hardcoded: today it is `oll-24` and `oll-25`, whose alternates orient the
+  case correctly but permute it differently. A PLL alternate is always the
+  identical permutation and never triggers this. The selected alg is what the
+  expected picture shows and what Match advances the engine state by.
+- The user answers Match or Mismatch. Mismatch shows the correct algorithm(s)
+  and offers Reset (Finish on the last step): the user solves their physical
+  cube, the engine state returns to solved, and the session continues.
+- Session tally only. Verify never reads or writes `cards`, so it neither
+  feeds nor is fed by the scheduler.
+- No immediate case repeats, using the same shuffle bag as Drill. `chosen`
+  (see above) resets to `algs[0]` at the start of every step.
 
 ### 3. Random rotation
 
-- Toggle available in all three modes: Learn, Drill and Verify.
-- Applies a random y rotation and a random AUF (U, U', U2, or nothing) to the
-  displayed state before rendering.
+- Toggle available in all three modes: Learn, Drill and Verify, persisted as
+  `prefs.randomRotation` (default off).
+- Applies a random AUF (U, U', U2, or nothing) to the displayed OLL or PLL
+  state before rendering. No y rotation: a y rotation moves the centers, which
+  would need normalizing to display, defeating the point of a rotation the
+  user is meant to notice.
 - Forces recognition from any angle rather than memorizing one picture.
-- Never applied to F2L cases. When a Learn or Drill selection mixes F2L with
-  OLL or PLL sets, the toggle affects only the OLL and PLL cards.
+- Never applied to F2L cases: a U turn on an F2L picture is a different case,
+  not the same one from another angle, since the U layer is part of what
+  defines the pair. When a Learn or Drill selection mixes F2L with OLL or PLL
+  sets, the toggle affects only the OLL and PLL cards.
+- Every displayed algorithm still solves the displayed picture: the AUF is
+  prepended to the shown solution, merging with the algorithm's own leading U
+  turns if it has any (`U' U R` displays as `R`, not `U' U R`) so no shown
+  algorithm carries a redundant pair of U turns.
+- In Verify, that AUF is part of what the user executes and part of the
+  expected state.
 
 ## Notes
 
@@ -211,7 +245,9 @@ lives in the blob), single JSON blob:
   "prefs": {
     "showNames": true,
     "showSolutions": false,
+    "randomRotation": false,
     "mode": "learn",
+    "verifyLength": 10,
     "sets": {
       "learn": ["F2L", "2-Look OLL", "2-Look PLL"],
       "drill": ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -229,10 +265,11 @@ full sets are opt-in, since they add about a hundred cases to a session queue of
 twenty. Verify never offers F2L.
 
 `prefs.mode` is the last mode used, and the home screen opens on it. It holds
-only a mode that has shipped, so it is `learn` or `drill` until Verify exists.
+only a mode that has shipped: `learn`, `drill` or `verify`.
 
-`prefs.randomRotation` is added when Mode 3 lands. A missing pref loads as its
-default, so adding one needs no version bump.
+`prefs.randomRotation` and `prefs.verifyLength` (`5 | 10 | 20`, default `10`)
+were added after v2's first release. A missing pref loads as its default, so
+adding one needs no version bump.
 
 ### Version 1 to 2
 
@@ -353,9 +390,7 @@ include it.
   the user's own text and not a grade. Cards come from a shuffle bag: every
   case in the chosen sets once in random order, then a reshuffle whose first
   card is never the one just shown.
-- Verify: start from solved. For each OLL/PLL case, the user performs the alg
-  on a physical cube and compares against the computed expected state.
-  Excludes F2L.
+- Verify: see Mode 2 above. Its own session length (5/10/20), no honor code.
 - Each mode remembers its own set selection.
 
 ### Layout
@@ -367,10 +402,10 @@ No sidebar. The home screen is the navigation.
   logo needs no confirmation, since grades save on each tap.
 - Home: mode selector, set toggles for the chosen mode, stats, and one Start
   button in the accent color, pinned at the bottom where a thumb reaches it.
-  The selector lists only modes that exist, so Verify is absent until it ships.
+  The selector lists only modes that exist.
 - The Learn selector shows the due count ("Learn · 7 due"). Due counts every
   case the session queue would take: never seen, or `due <= now`.
-- Verify disables the F2L toggle.
+- Verify disables the F2L toggle and adds a session-length group (5/10/20).
 - Stats, per set: cases seen out of total, accuracy (known over seen, summed
   over the set's cases), due count. A case in two sets counts in both.
 - The card screens carry the Names and Auto-reveal toggles. Set toggles live
