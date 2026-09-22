@@ -17,7 +17,7 @@ import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { applyMovePhysical, surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
-import { rotateByAngle } from "../../lib/rotate-by-angle.ts";
+import { rotateByAngle, visualAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import type { Move } from "../../lib/notation.ts";
 import { animateSticker, setBaseTransform } from "./scene.ts";
 import type { Scene } from "./scene.ts";
@@ -51,7 +51,7 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
   async function play(moves: readonly Move[]): Promise<void> {
     for (const move of moves) {
       const { axis, depths } = MOVE_AXES[move.name];
-      const angle = move.prime ? -90 : move.turns === 2 ? 180 : 90;
+      const angle = visualAngleDegrees(move);
       const duration = getDurationMs();
       const movingIndices = stickers
         .map((_, i) => i)
