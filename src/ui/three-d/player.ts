@@ -15,7 +15,13 @@
  */
 import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
-import { applyMovePhysical, cutPlaneDepths, surfacePosition } from "../../lib/physical-cube.ts";
+import {
+  applyMovePhysical,
+  cutPlaneDepths,
+  perpendicularFaceNormals,
+  surfacePosition,
+  turningFaceNormals,
+} from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
 import { rotateByAngle, visualAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import type { Move } from "../../lib/notation.ts";
@@ -61,15 +67,31 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
       // Cut-plane caps: black plates filling the wedge that opens between a
       // turning layer and the rest as it swings away from it — a real cube
       // shows plastic there; without a cap, the page background shows
-      // through. One cap per cut plane rotates with the turning layer, the
-      // other stays; both are gone once the move settles, since at rest the
-      // ordinary sticker-to-sticker seam (backing plates) is all there is.
-      const caps: Cap[] = cutPlaneDepths(depths).flatMap((cutDepth) => {
-        const moving = scene.buildCap(axis, cutDepth);
-        const stationary = scene.buildCap(axis, cutDepth);
-        running.push(animateSticker(moving.outer, axis, 0, angle, duration));
-        return [moving, stationary];
-      });
+      // through. A cap's position (axis * depth) doesn't change as its layer
+      // turns — rotating a vector about an axis it's already parallel to
+      // leaves it fixed — so one per cut plane, never animated, covers both
+      // the moving and stationary side. Gone once the move settles, since at
+      // rest the sticker-to-sticker seam is backed by the face's own core.
+      const caps: Cap[] = cutPlaneDepths(depths).map((cutDepth) => scene.buildCap(axis, cutDepth));
+
+      // A face whose own 9 stickers are all turning stays coplanar with
+      // itself but spins within that plane — its core, backing the whole
+      // face, has to spin with it exactly like a real cube's top layer
+      // carries its own backing plastic around with it. A fixed, never-
+      // rotating core would sit outside the rotated square's corners even
+      // though it fully covers the layer at rest. Canceling this animation
+      // (with the sticker animations below, once the move finishes) reverts
+      // the core to its original, unrotated transform — correct again as
+      // soon as the layer's new stickers are back in that same plane.
+      const turningFaces = turningFaceNormals(axis, depths);
+      running.push(...turningFaces.map((n) => animateSticker(scene.coreOuter(n), axis, 0, angle, duration)));
+
+      // A turning face's rotated-away corner also exposes the untouched
+      // faces sharing that same corner — their own core legitimately
+      // reaches it too (needed to back their own seams the rest of the
+      // time), so it briefly comes down alongside the turning face's.
+      const shieldedFaces = turningFaces.length > 0 ? perpendicularFaceNormals(axis) : [];
+      shieldedFaces.forEach((n) => scene.hideCore(n));
 
       const RESORT_INTERVAL_MS = 120;
       const resort = (): void => {
@@ -82,13 +104,15 @@ export function createPlayer(scene: Scene, getBack: () => Vec, getDurationMs: ()
         });
         scene.reorderForPaint(positions, getBack());
       };
+      resort(); // once immediately, so caps paint correctly from the first frame, not just after the first tick
       const interval = setInterval(resort, RESORT_INTERVAL_MS);
 
       await Promise.all(running.map((a) => a.finished));
       clearInterval(interval);
       running.forEach((a) => a.cancel());
       running = [];
-      caps.forEach((cap) => cap.outer.remove());
+      caps.forEach((cap) => cap.remove());
+      shieldedFaces.forEach((n) => scene.showCore(n));
       stickers = applyMovePhysical(stickers, move);
       bakeAll();
     }

@@ -11,59 +11,31 @@
  */
 import { matrix3d, rotate3d } from "../../lib/css-transform.ts";
 import type { Vec, Color } from "../../lib/cube.ts";
-import { perpendicularBasis, surfacePosition } from "../../lib/physical-cube.ts";
+import { surfacePosition } from "../../lib/physical-cube.ts";
 import type { PhysicalSticker } from "../../lib/physical-cube.ts";
+import { createPanels } from "./panels.ts";
+import type { Cap } from "./panels.ts";
+
+export type { Cap } from "./panels.ts";
 
 export const SCALE = 90; // pixels per cubie unit
-// A stickerless cube's pieces sit close enough to touch; the thin gap that
-// remains is where the piece's own shadowed backing plate shows through
-// (see GAP_SHADE), not painted-on black grout.
 const GAP_PX = 3;
 const FACE_PX = SCALE - GAP_PX;
-// A flat, zero-thickness plane also gave the OLD browser-sorted approach no
-// volume to resolve ties with. The manual sort below doesn't strictly need
-// it, but the box still reads as a nicer, more physical bevel than a plane.
-const DEPTH_PX = 16;
-// Wider than a full grid cell (SCALE), so a sticker's backing plate overlaps
-// its neighbours' rather than just meeting them — a seam between two exactly
-// abutting plates can still show a hairline of whatever's behind (the page
-// background) at sub-pixel misalignment; an overlap can't. Colored to match
-// its own sticker (see GAP_SHADE) rather than black, since a stickerless
-// cube's plastic is the same color all the way through — any residual
-// sub-pixel gap this doesn't quite cover blends into the same color instead
-// of exposing the page background.
-const BACK_PX = SCALE + 4;
-// A cut-plane cap covers the full 3x3 cross-section a layer boundary exposes
-// once the layer swings away from it, with the same small overlap margin.
-const CAP_PX = SCALE * 3 + 4;
 
-// Sampled from reference/gan_cube_color_reference.jpg (a GAN stickerless
-// 2x2, colors carry over to the 3x3 this renders).
+// Sampled from the speedcube palette (reference/gan_cube_color_reference.jpg
+// carried the chirality; the exact hex values are the product's own).
 const FILL: Record<Color, string> = {
-  U: "#f2fe13", D: "#e7e4d3", F: "#128312", B: "#12397c", R: "#fe6f13", L: "#a31313",
+  U: "#ffdc00", D: "#ffffff", F: "#00a651", B: "#0062ff", R: "#ff6600", L: "#e53935",
 };
-// The subtle shadowed crease between two physically separate stickerless
-// pieces — a darkened tint of the piece's own color, not black; see BACK_PX.
-const GAP_SHADE = 0.72;
-// The exposed inner mechanism, visible only in the gap a turning layer's
-// cut-plane cap fills — light plastic, not the black shell a stickered cube
-// would show. Sampled from reference/speed_cube.png's offset layer.
-const CORE_PLASTIC = "#e3e3e5";
-
-function shade(hex: string, factor: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 0xff) * factor);
-  const g = Math.round(((n >> 8) & 0xff) * factor);
-  const b = Math.round((n & 0xff) * factor);
-  return `rgb(${r}, ${g}, ${b})`;
-}
 
 export type SceneSticker = { readonly outer: HTMLDivElement };
-export type Cap = { readonly outer: HTMLDivElement };
 export type Scene = {
   readonly stickers: readonly SceneSticker[];
   reorderForPaint(positions: readonly Vec[], back: Vec): void;
   buildCap(axis: Vec, depth: number): Cap;
+  coreOuter(normal: Vec): HTMLElement;
+  hideCore(normal: Vec): void;
+  showCore(normal: Vec): void;
 };
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -88,49 +60,46 @@ export function buildScene(rig: HTMLElement, stickers: readonly PhysicalSticker[
     outer.className = "sticker";
     const face = square(FACE_PX, FILL[sticker.color]);
     face.classList.add("face");
-    const back = square(BACK_PX, shade(FILL[sticker.color], GAP_SHADE));
-    back.style.transform = `translateZ(${-DEPTH_PX}px)`;
-    outer.append(face, back);
+    outer.append(face);
     rig.append(outer);
     setBaseTransform(outer, sticker);
     return { outer };
   });
 
+  // The black interior — 6 permanent face cores plus however many cut-plane
+  // caps the current move has open — sorts for paint alongside the 54
+  // stickers above but otherwise manages its own geometry; see panels.ts.
+  const panels = createPanels(rig, SCALE);
+
   // True painter's algorithm: farthest-from-camera first, so each later
-  // append paints over the ones before it. Positions are passed in rather
-  // than read from the stickers this module built, so a caller can pass an
-  // in-flight animated sticker's true current (not just its at-rest) angle.
-  // Reordering the DOM is real work at 54 elements, so it's skipped
-  // whenever the sort didn't actually change anything.
-  let lastOrder: readonly number[] | null = null;
+  // append paints over the ones before it. Sticker positions are passed in
+  // rather than read from the stickers this module built, so a caller can
+  // pass an in-flight animated sticker's true current (not just its at-rest)
+  // angle. Reordering the DOM is real work, so it's skipped whenever the
+  // sort didn't actually change anything.
+  let lastOrder: readonly HTMLDivElement[] | null = null;
   function reorderForPaint(positions: readonly Vec[], back: Vec): void {
-    const order = sceneStickers.map((_, i) => i).sort((a, b) => dot(positions[a], back) - dot(positions[b], back));
+    const all = [
+      ...sceneStickers.map((s, i) => ({ outer: s.outer, position: positions[i] })),
+      ...panels.fixed,
+    ].sort((a, b) => dot(a.position, back) - dot(b.position, back));
+    const order = all.map((a) => a.outer);
     const previous = lastOrder;
-    if (previous !== null && order.every((i, k) => i === previous[k])) return;
+    if (previous !== null && order.length === previous.length && order.every((el, k) => el === previous[k])) {
+      return;
+    }
     lastOrder = order;
-    for (const i of order) rig.append(sceneStickers[i].outer);
+    for (const el of order) rig.append(el);
   }
 
-  // A cut-plane cap: bare inner plastic, no sticker identity, gone once its
-  // move ends. Never backface-culled — unlike a real sticker, whose normal
-  // is always the outward direction the camera is meant to see, a cap at a
-  // slice's far cut plane can face away from a world-fixed camera, and it
-  // must stay visible from either side, or it would vanish exactly where
-  // it's needed.
-  function buildCap(axis: Vec, depth: number): Cap {
-    const outer = document.createElement("div");
-    outer.className = "sticker";
-    const plate = square(CAP_PX, CORE_PLASTIC);
-    plate.style.backfaceVisibility = "visible";
-    outer.append(plate);
-    rig.append(outer);
-    const { column, row } = perpendicularBasis(axis);
-    const position: Vec = [axis[0] * depth, axis[1] * depth, axis[2] * depth];
-    outer.style.transform = matrix3d(column, row, axis, position, SCALE);
-    return { outer };
-  }
-
-  return { stickers: sceneStickers, reorderForPaint, buildCap };
+  return {
+    stickers: sceneStickers,
+    reorderForPaint,
+    buildCap: panels.buildCap,
+    coreOuter: panels.coreOuter,
+    hideCore: panels.hideCore,
+    showCore: panels.showCore,
+  };
 }
 
 // sticker.position is the cubie's center; the visible face sits half a

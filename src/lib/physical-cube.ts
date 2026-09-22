@@ -102,6 +102,33 @@ export function cutPlaneDepths(moving: readonly number[]): number[] {
   return cuts;
 }
 
+// A face whose own 9 stickers are entirely inside a move's layer — every one
+// of them stays in that face's plane (rotating an axis-aligned point about
+// that same axis can't move it out of the plane) and spins together as one
+// rigid layer, backing plastic included. Only the two faces whose normal is
+// ±axis are ever fully contained this way; a slice like M never contains
+// either one.
+export function turningFaceNormals(axis: Vec, moving: readonly number[]): Vec[] {
+  const normals: Vec[] = [];
+  if (moving.includes(1)) normals.push(axis);
+  if (moving.includes(-1)) normals.push([-axis[0] || 0, -axis[1] || 0, -axis[2] || 0]);
+  return normals;
+}
+
+const ALL_AXES: readonly Vec[] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+
+// The 4 faces NOT turning about a move's axis — e.g. U, D, L, R while F
+// turns. Each one's own corner sits exactly where a turning face's rotated
+// layer swings away from during the move (their shared vertex at rest), so
+// a renderer backing each face with a fixed panel reaching that same corner
+// needs to take it down there too for the move's duration, or the turning
+// face's rotated-away corner exposes it. Only relevant when some face is
+// fully turning (see turningFaceNormals) — a slice like M never uncovers
+// any corner, since it never contains a full face.
+export function perpendicularFaceNormals(axis: Vec): Vec[] {
+  return ALL_AXES.filter((normal) => dot(normal, axis) === 0);
+}
+
 // A cubie's position is shared by up to three stickers (one per sticker on
 // that cubie); position plus normal is what identifies a single sticker,
 // exactly as cube.ts's own INDEX map keys it.

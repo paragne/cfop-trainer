@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { applyMoves, MOVE_AXES, SOLVED } from "./cube.ts";
 import { parse } from "./notation.ts";
-import { applyMovePhysical, colorsAt, cutPlaneDepths, homeStickers, surfacePosition } from "./physical-cube.ts";
+import {
+  applyMovePhysical,
+  colorsAt,
+  cutPlaneDepths,
+  homeStickers,
+  perpendicularFaceNormals,
+  surfacePosition,
+  turningFaceNormals,
+} from "./physical-cube.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
 
 describe("homeStickers", () => {
@@ -46,6 +54,47 @@ describe("cutPlaneDepths", () => {
     expect(cutPlaneDepths(MOVE_AXES.x.depths)).toEqual([]);
     expect(cutPlaneDepths(MOVE_AXES.y.depths)).toEqual([]);
     expect(cutPlaneDepths(MOVE_AXES.z.depths)).toEqual([]);
+  });
+});
+
+describe("turningFaceNormals", () => {
+  it("names a face turn's own face", () => {
+    expect(turningFaceNormals(MOVE_AXES.U.axis, MOVE_AXES.U.depths)).toEqual([[0, 1, 0]]);
+  });
+
+  it("names nothing for a slice — neither face is fully inside it", () => {
+    expect(turningFaceNormals(MOVE_AXES.M.axis, MOVE_AXES.M.depths)).toEqual([]);
+  });
+
+  it("names the one face a wide move fully contains", () => {
+    expect(turningFaceNormals(MOVE_AXES.r.axis, MOVE_AXES.r.depths)).toEqual([[1, 0, 0]]);
+  });
+
+  it("names both faces for a whole-cube rotation", () => {
+    expect(turningFaceNormals(MOVE_AXES.x.axis, MOVE_AXES.x.depths)).toEqual([
+      [1, 0, 0],
+      [-1, 0, 0],
+    ]);
+  });
+});
+
+describe("perpendicularFaceNormals", () => {
+  it("names the 4 faces not turning about an axis", () => {
+    const around = perpendicularFaceNormals(MOVE_AXES.R.axis);
+    expect(around.toSorted()).toEqual(
+      [
+        [0, 1, 0],
+        [0, -1, 0],
+        [0, 0, 1],
+        [0, 0, -1],
+      ].toSorted(),
+    );
+  });
+
+  it("excludes both faces on the given axis, not just one", () => {
+    const around = perpendicularFaceNormals(MOVE_AXES.U.axis);
+    expect(around).not.toContainEqual([0, 1, 0]);
+    expect(around).not.toContainEqual([0, -1, 0]);
   });
 });
 
