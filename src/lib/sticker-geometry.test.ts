@@ -4,42 +4,34 @@ import type { MoveName } from "./notation.ts";
 import { invert, parse } from "./notation.ts";
 import { applyMovePhysical, homeStickers, surfacePosition } from "./physical-cube.ts";
 import type { PhysicalSticker } from "./physical-cube.ts";
-import { matrix3d } from "./css-transform.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub = (a: Vec, b: Vec): Vec => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const length = (a: Vec) => Math.sqrt(dot(a, a));
 
-// Parses the literal "matrix3d(a1,...,a16)" string scene.ts hands the
-// browser and applies it exactly as CSS defines matrix3d: 16 values in
-// column-major order, applied to a homogeneous [x,y,z,1] local point. This
-// is not a reimplementation of matrix3d()'s own math — it independently
-// re-derives what the browser would compute from the string it receives.
-function applyMatrix3dString(css: string, local: Vec): Vec {
-  const m = css.slice("matrix3d(".length, -1).split(",").map(Number);
-  expect(m).toHaveLength(16);
-  const [x, y, z] = local;
-  return [
-    m[0] * x + m[4] * y + m[8] * z + m[12],
-    m[1] * x + m[5] * y + m[9] * z + m[13],
-    m[2] * x + m[6] * y + m[10] * z + m[14],
-  ];
-}
-
-// CSS-local corners of the sticker's front face: y grows downward (CSS's
-// own convention, independent of cube.ts's y-up), z=0.
+// Local (u, v) offsets of the sticker's front face, in its own column/row
+// basis: surfacePosition + u*column + v*row places each corner in world
+// space, the same plane-placement fact matrix3d() used to encode as a CSS
+// string before the WebGL rewrite — expressed directly as vector arithmetic
+// now that there is no CSS string to round-trip through.
 const HALF = 0.45;
-const LOCAL_CORNERS: readonly Vec[] = [
-  [-HALF, -HALF, 0],
-  [HALF, -HALF, 0],
-  [HALF, HALF, 0],
-  [-HALF, HALF, 0],
+const LOCAL_CORNERS: readonly [number, number][] = [
+  [-HALF, -HALF],
+  [HALF, -HALF],
+  [HALF, HALF],
+  [-HALF, HALF],
 ];
 
 function corners(sticker: PhysicalSticker): Vec[] {
-  const css = matrix3d(sticker.column, sticker.row, sticker.normal, surfacePosition(sticker), 1);
-  return LOCAL_CORNERS.map((local) => applyMatrix3dString(css, local));
+  const base = surfacePosition(sticker);
+  return LOCAL_CORNERS.map(
+    ([u, v]): Vec => [
+      base[0] + u * sticker.column[0] + v * sticker.row[0],
+      base[1] + u * sticker.column[1] + v * sticker.row[1],
+      base[2] + u * sticker.column[2] + v * sticker.row[2],
+    ],
+  );
 }
 
 // Deliberately independent of sticker.position: checking a corner against
@@ -81,7 +73,7 @@ function expectAllOnSurface(stickers: readonly PhysicalSticker[], label: string)
   });
 }
 
-describe("every sticker's matrix3d places a flat square on the cube's outer surface", () => {
+describe("every sticker's column/row/normal places a flat square on the cube's outer surface", () => {
   it("holds for the solved cube", () => {
     expectAllOnSurface(homeStickers(), "solved");
   });
