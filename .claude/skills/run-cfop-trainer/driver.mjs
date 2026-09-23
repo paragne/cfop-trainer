@@ -126,6 +126,17 @@ async function connect() {
       await sleep(60);
     },
     type: async (text) => { await send("Input.insertText", { text }); await sleep(60); },
+    // Real mouse events, so camera.ts's pointerdown/pointermove listeners
+    // (which the browser fires alongside mouse events for mouse input) see
+    // a genuine drag, one small step at a time — camera.ts uses the raw
+    // pixel delta per step as a degree value, so a single small step is a
+    // precise, small-angle yaw/pitch nudge.
+    async dragStep(x, y, dx, dy) {
+      await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+      await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x + dx, y: y + dy, button: "left", buttons: 1 });
+      await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x + dx, y: y + dy, button: "left", buttons: 0, clickCount: 1 });
+      await sleep(30);
+    },
   };
   // A fresh browser sits on about:blank, where there is no app and no localStorage.
   if (!page.url.includes(`localhost:${PORT}`)) await b.goto(APP);
@@ -245,6 +256,137 @@ async function smoke() {
   process.exitCode = failed === 0 ? 0 : 1;
 }
 
+// Pixel classification for the WebGL 3D prototype (three-d.html), set up
+// once per page load. Colors are the exact values from src/ui/three-d/
+// palette.ts and gl-shaders.ts's EDGE_COLOR/gl-scene.ts's clear color — a
+// second hand-copy, not an import, since this runs inside the page with no
+// module loader for app source. BG is deliberately not pure white: D's own
+// face color is pure white, so a background leak inside the silhouette must
+// be distinguishable from a genuine D face by color alone.
+const CLASSIFIER_SETUP = `(() => {
+  const canvas = document.querySelector("#canvas");
+  const gl = canvas.getContext("webgl2");
+  const PALETTE = {
+    U: [255, 229, 0], D: [255, 255, 255], F: [0, 214, 90], B: [30, 107, 255],
+    R: [255, 122, 0], L: [255, 45, 45], EDGE: [26, 26, 26], BG: [217, 217, 217],
+  };
+  function nearest(r, g, b) {
+    let best = null, bestDist = Infinity;
+    for (const name in PALETTE) {
+      const [pr, pg, pb] = PALETTE[name];
+      const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
+      if (d < bestDist) { bestDist = d; best = name; }
+    }
+    return { name: best, dist: Math.round(Math.sqrt(bestDist)) };
+  }
+  window.__gl3d = {
+    sample(fx, fy) {
+      const dpr = window.devicePixelRatio || 1;
+      const cssX = canvas.clientWidth / 2 + fx * canvas.clientWidth;
+      const cssY = canvas.clientHeight / 2 + fy * canvas.clientHeight;
+      const px = Math.round(cssX * dpr);
+      const py = Math.round((canvas.clientHeight - cssY) * dpr);
+      const buf = new Uint8Array(4);
+      gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      return { r: buf[0], g: buf[1], b: buf[2], ...nearest(buf[0], buf[1], buf[2]) };
+    },
+    // Calibrated against the default locked camera on a solved cube: each is
+    // deep enough inside one sticker's interior to read a pure, unblended
+    // color at rest (see the probe session that picked them), not merely
+    // "somewhere on the cube" the way a dense pixel scan would be — a scan
+    // like that inevitably lands on the antialiased blend band along every
+    // grid line and silhouette edge, which is correct rendering, not a
+    // defect, and swamps a distance-from-nearest-color threshold with false
+    // positives. This instead asks the one question the historical bugs
+    // here were actually about: is there a background gap where a sticker
+    // clearly belongs, under a move or a small camera nudge.
+    INTERIOR_POINTS: [
+      [-0.2, -0.2], [0.2, -0.2], [0, -0.4], [-0.2, 0], [0.2, 0], [-0.2, 0.2], [0.2, 0.2],
+    ],
+    checkInterior() {
+      return window.__gl3d.INTERIOR_POINTS.map(([fx, fy]) => ({ fx, fy, ...window.__gl3d.sample(fx, fy) }));
+    },
+    frameDiff(setupMovesText, moveText, fraction) {
+      const w = canvas.width, h = canvas.height;
+      const read = () => {
+        const buf = new Uint8Array(w * h * 4);
+        gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        return buf;
+      };
+      window.__threeD.renderAt(setupMovesText, moveText, fraction);
+      const a = read();
+      window.__threeD.renderAt(setupMovesText, moveText, fraction);
+      const b = read();
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diff++;
+      return diff;
+    },
+  };
+  return true;
+})()`;
+
+async function threeDCheck() {
+  const b = await connect();
+  let failed = 0;
+  const check = (name, ok, detail = "") => { if (!ok) failed++; console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  [${detail}]` : ""}`); };
+
+  await b.send("Page.enable");
+  await b.viewport(480, 700, false);
+  await b.goto(`${APP}three-d.html?debug=1`);
+  await b.sleep(400);
+  await b.eval(CLASSIFIER_SETUP);
+
+  // Chirality: SPEC.md's yellow-up/green-front/orange-right cube, on the
+  // default locked camera, solved. A handedness bug in mat4's lookAt or
+  // perspective mirrors this and nothing else here would catch it.
+  const u = await b.eval("window.__gl3d.sample(0, -0.3)");
+  const f = await b.eval("window.__gl3d.sample(-0.22, 0.1)");
+  const r = await b.eval("window.__gl3d.sample(0.22, 0.1)");
+  check("U is on screen-top", u.name === "U", JSON.stringify(u));
+  check("F is on screen-left", f.name === "F", JSON.stringify(f));
+  check("R is on screen-right", r.name === "R", JSON.stringify(r));
+
+  // Back-face culling + winding: two renders of the same paused frame must
+  // be pixel-identical. Without culling, two exactly coincident faces at an
+  // internal boundary (the turning layer's underside against the stationary
+  // layer's top) z-fight, and which one wins can differ frame to frame.
+  for (const move of ["U", "M", "r"]) {
+    const diff = await b.eval(`window.__gl3d.frameDiff("", "${move}", 0.5)`);
+    check(`no z-fighting: two renders of the same paused ${move} 50% frame are identical`, diff === 0, `${diff} differing bytes`);
+  }
+
+  // Paused mid-move: no background bleeding into the silhouette at any of
+  // the calibrated interior points — the historical bug class here (seam
+  // gaps, overhanging plates) showed up exactly this way. The points are
+  // calibrated against the solved cube at rest; a moving layer can rotate a
+  // sticker's true color away from a point's rest-state color, so this only
+  // asserts "still some face, not the gray background", not which face.
+  for (const move of ["U", "M", "r"]) {
+    for (const fraction of [0.25, 0.5, 0.75]) {
+      await b.eval(`window.__threeD.renderAt("", "${move}", ${fraction})`);
+      const interior = await b.eval("window.__gl3d.checkInterior()");
+      const gaps = interior.filter((p) => p.name === "BG");
+      check(`${move} at ${fraction * 100}%: no background gap at any interior point`, gaps.length === 0, JSON.stringify(gaps));
+    }
+  }
+
+  // Yaw/pitch sweep on the solved cube: camera.ts uses the raw drag pixel
+  // delta as a degree value, so a 5px step is a precise 5 degree nudge.
+  await b.eval('window.__threeD.renderAt("", "U", 0)'); // back to a plain solved frame, camera locked
+  await b.eval("document.querySelector('#freecam').click()");
+  const cx = 240, cy = 200;
+  for (const [label, dx, dy] of [["yaw +5", 5, 0], ["yaw +5", 5, 0], ["pitch +5", 0, 5], ["pitch +5", 0, 5], ["yaw -5", -5, 0], ["pitch -5", 0, -5]]) {
+    await b.dragStep(cx, cy, dx, dy);
+    const interior = await b.eval("window.__gl3d.checkInterior()");
+    const gaps = interior.filter((p) => p.name === "BG");
+    check(`after ${label}: no background gap at any interior point`, gaps.length === 0, JSON.stringify(gaps));
+  }
+
+  b.close();
+  console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);
+  process.exitCode = failed === 0 ? 0 : 1;
+}
+
 async function shot([name = "app", width = "390", height = "844"]) {
   const b = await connect();
   await b.send("Page.enable");
@@ -268,9 +410,12 @@ async function press(keys) {
 }
 
 const [command, ...args] = process.argv.slice(2);
-const commands = { up: start, down: stop, smoke, shot: () => shot(args), eval: () => evaluate(args), key: () => press(args) };
+const commands = {
+  up: start, down: stop, smoke, shot: () => shot(args), eval: () => evaluate(args), key: () => press(args),
+  "three-d": threeDCheck,
+};
 if (!commands[command]) {
-  console.error("usage: driver.mjs up | down | smoke | shot NAME [W H] | eval JS | key KEY...");
+  console.error("usage: driver.mjs up | down | smoke | shot NAME [W H] | eval JS | key KEY... | three-d");
   process.exit(2);
 }
 await commands[command]();
