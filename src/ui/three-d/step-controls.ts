@@ -31,38 +31,28 @@ function isTextEntry(el: Element | null): boolean {
 
 export function attachStepControls(elements: Elements, player: Player): StepControls {
   const { stepModeInput, prevButton, nextButton, algContainer } = elements;
-  const stepMode: StepMode = createStepMode(player);
 
+  // StepMode's own onSettled callback re-renders the display once a
+  // requested step actually completes — not when it's merely requested,
+  // since a request made while a move is animating just queues.
   function refreshDisplay(): void {
     renderAlg(algContainer, stepMode.moves(), stepMode.currentIndex());
   }
+  const stepMode: StepMode = createStepMode(player, refreshDisplay);
 
-  function stepForward(): void {
-    stepMode.stepForward();
-    refreshDisplay();
-  }
-
-  function stepBackward(): void {
-    stepMode.stepBackward();
-    refreshDisplay();
-  }
-
-  prevButton.addEventListener("click", stepBackward);
-  nextButton.addEventListener("click", stepForward);
+  prevButton.addEventListener("click", stepMode.stepBackward);
+  nextButton.addEventListener("click", stepMode.stepForward);
 
   document.addEventListener("keydown", (e) => {
     if (isTextEntry(document.activeElement)) return;
-    if (e.key === "ArrowRight") stepForward();
-    else if (e.key === "ArrowLeft") stepBackward();
+    if (e.key === "ArrowRight") stepMode.stepForward();
+    else if (e.key === "ArrowLeft") stepMode.stepBackward();
     else return;
     e.preventDefault();
   });
 
   return {
     isStepMode: () => stepModeInput.checked,
-    loadCase(moves) {
-      stepMode.load(moves);
-      refreshDisplay();
-    },
+    loadCase: stepMode.load,
   };
 }
