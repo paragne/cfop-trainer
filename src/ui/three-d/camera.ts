@@ -19,7 +19,7 @@ import type { Move } from "../../lib/notation.ts";
 
 const EYE: Vec = [1, 1, 1];
 const WORLD_UP: Vec = [0, 1, 0];
-const DEFAULT_RADIUS = 6;
+const DEFAULT_RADIUS = 12;
 const PITCH_LIMIT = 85;
 
 export type CameraMode = "locked" | "free";

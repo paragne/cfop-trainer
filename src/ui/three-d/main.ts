@@ -24,6 +24,7 @@ import { createGlScene } from "./gl-scene.ts";
 import { createPlayer } from "./player.ts";
 import type { InFlight, Player } from "./player.ts";
 import { createCamera } from "./camera.ts";
+import { attachZoom } from "./zoom.ts";
 import { renderCase } from "../../lib/render.ts";
 
 declare global {
@@ -118,6 +119,7 @@ if (glContext === null) {
   player.snapTo(homeCubiesWithCore());
   camera.setRadius(Number(radiusInput.value));
   camera.attachDrag(stage);
+  attachZoom(canvas, radiusInput, camera);
   requestRedraw();
 
   let paused = false;
