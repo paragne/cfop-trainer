@@ -1,9 +1,9 @@
 import type { Color } from "../../lib/cube.ts";
 
-// Brighter speedcube palette (reference/gan_cube_color_reference.jpg carried
-// the chirality; these exact hex values are the requested ones, not sampled).
+// Neon speedcube palette (reference/gan_cube_color_reference.jpg carried the
+// chirality; these exact hex values are the requested ones, not sampled).
 export const FILL: Record<Color, string> = {
-  U: "#ffe500", D: "#ffffff", F: "#00d65a", B: "#1e6bff", R: "#ff7a00", L: "#ff2d2d",
+  U: "#fff200", D: "#ffffff", F: "#00f064", B: "#1f6fff", R: "#ff7300", L: "#ff1e3c",
 };
 
 // #rrggbb, 0-255 per channel, to 0-1 floats for a GLSL uniform.
