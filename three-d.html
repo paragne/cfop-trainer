@@ -11,47 +11,11 @@
       #stage {
         flex: 1;
         position: relative;
-        perspective: 1400px;
-        background: #fff;
+        background: #d9d9d9;
         touch-action: none;
         overflow: hidden;
       }
-      #rig {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        width: 0;
-        height: 0;
-        transform-style: preserve-3d;
-      }
-      .sticker {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 0;
-        height: 0;
-        transform-origin: 0 0 0;
-        /* preserve-3d here is just for this sticker's own two faces
-           (front/back), which never need sorting against each other. */
-        transform-style: preserve-3d;
-      }
-      .square {
-        position: absolute;
-        box-sizing: border-box;
-        backface-visibility: hidden;
-      }
-      .face {
-        /* A stickerless cube has no painted border between pieces — just
-           the piece's own rounded ("pillowed") edge. A transparent outline
-           doesn't change layout, but nudges the rasterizer's edge-coverage
-           pass, which measurably softens the jagged edges a 3D-transformed
-           box otherwise gets. Only .face is rounded — the backing plates
-           and caps behind it are plain rectangles sized to show through
-           .face's rounded corners in the same (or a matching-shade) color,
-           rather than leaving a background-colored notch there. */
-        outline: 1px solid transparent;
-        border-radius: 8px;
-      }
+      #canvas { display: block; width: 100%; height: 100%; }
       #chrome { padding: 0.75rem 1rem 1rem; background: #fff; border-top: 1px solid #ccc; }
       #info { font-size: 12px; color: #555; margin-bottom: 0.5rem; min-height: 1.2em; }
       #presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
@@ -62,13 +26,13 @@
   </head>
   <body>
     <div id="app">
-      <div id="stage"><div id="rig"></div></div>
+      <div id="stage"><canvas id="canvas"></canvas></div>
       <div id="chrome">
         <div id="info"></div>
         <div id="presets"></div>
         <div id="controls">
           <label>Speed <input id="speed" type="range" min="100" max="1000" step="50" value="400" /></label>
-          <label>Radius <input id="radius" type="range" min="300" max="1400" step="50" value="550" /></label>
+          <label>Radius <input id="radius" type="range" min="3" max="15" step="0.5" value="6" /></label>
           <label><input id="freecam" type="checkbox" /> Free camera</label>
           <button id="pause" type="button">Pause</button>
         </div>

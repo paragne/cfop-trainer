@@ -6,20 +6,20 @@
  * once (at preset load, never mid-playback) by a case's corrective rotation.
  * Free mode is plain user-driven orbit, independent of algorithm playback.
  *
- * Both modes keep one explicit (right, up, back) world-space basis rather
- * than free mode using CSS rotateX/rotateY: the depth-sorter needs the
- * camera's exact current back vector to sort stickers by, in either mode.
+ * `onChange` marks the render loop's dirty flag; it does not draw anything
+ * itself. Radius is in cube.ts's own world units now (the cube spans
+ * roughly ±1.5), not CSS pixels — there is no separate pixel scale once a
+ * projection matrix does that job.
  */
 import { MOVE_AXES, quarterTurns, rotate } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { screenAxes } from "../../lib/camera-projection.ts";
-import { viewMatrix3d } from "../../lib/css-transform.ts";
 import { rotateByAngle } from "../../lib/rotate-by-angle.ts";
 import type { Move } from "../../lib/notation.ts";
 
 const EYE: Vec = [1, 1, 1];
 const WORLD_UP: Vec = [0, 1, 0];
-const DEFAULT_RADIUS = 550;
+const DEFAULT_RADIUS = 6;
 const PITCH_LIMIT = 85;
 
 export type CameraMode = "locked" | "free";
@@ -28,12 +28,15 @@ type Basis = { right: Vec; up: Vec; back: Vec };
 export type Camera = {
   setMode(mode: CameraMode): void;
   setCorrective(moves: readonly Move[]): void;
-  setRadius(radiusPx: number): void;
+  setRadius(radius: number): void;
   attachDrag(el: HTMLElement): void;
-  getBack(): Vec;
+  getEye(): Vec;
+  getUp(): Vec;
+  getRadius(): number;
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const scale = (v: Vec, k: number): Vec => [v[0] * k, v[1] * k, v[2] * k];
 
 // Rotates the same three basis vectors a physical sticker's would rotate
 // through, via cube.ts's own rotate() — the corrective is always x/y/z
@@ -54,7 +57,7 @@ function rotateBasis(basis: Basis, moves: readonly Move[]): Basis {
 
 const DEFAULT_BASIS: Basis = screenAxes(EYE);
 
-export function createCamera(rig: HTMLElement, onChange: () => void): Camera {
+export function createCamera(onChange: () => void): Camera {
   let mode: CameraMode = "locked";
   let radius = DEFAULT_RADIUS;
   let lockedBasis = DEFAULT_BASIS;
@@ -64,31 +67,27 @@ export function createCamera(rig: HTMLElement, onChange: () => void): Camera {
     return mode === "free" ? freeBasis : lockedBasis;
   }
 
-  function apply(): void {
-    const { right, up, back } = basis();
-    rig.style.transform = `translateZ(${-radius}px) ${viewMatrix3d(right, up, back)}`;
-    onChange();
-  }
-
-  // Deferred: the caller wires this camera's onChange to code that reads
-  // sticker positions from a player built after this camera (it needs
-  // getBack), so nothing can fire before the caller makes its own first
-  // setMode/setCorrective/setRadius call once everything exists.
   return {
     setMode(next) {
       mode = next;
-      apply();
+      onChange();
     },
     setCorrective(moves) {
       lockedBasis = rotateBasis(DEFAULT_BASIS, moves);
-      apply();
+      onChange();
     },
-    setRadius(radiusPx) {
-      radius = radiusPx;
-      apply();
+    setRadius(next) {
+      radius = next;
+      onChange();
     },
-    getBack() {
-      return basis().back;
+    getEye() {
+      return scale(basis().back, radius);
+    },
+    getUp() {
+      return basis().up;
+    },
+    getRadius() {
+      return radius;
     },
     attachDrag(el) {
       let dragging = false;
@@ -128,7 +127,7 @@ export function createCamera(rig: HTMLElement, onChange: () => void): Camera {
           up: rotateByAngle(yawed.up, yawed.right, pitchDelta),
           back: rotateByAngle(yawed.back, yawed.right, pitchDelta),
         };
-        apply();
+        onChange();
       });
       const stop = () => {
         dragging = false;
