@@ -31,13 +31,13 @@ const FL: Mask = { kind: "f2l", slot: "FL" };
 const FR_HOME = [12, 15, 23, 26, 29];
 const LAST_LAYER = [...range(0, 9), ...[9, 18, 36, 45].flatMap((s) => range(s, s + 3))];
 
-// FR/FL: every first-two-layer sticker on the D, F and slot-side faces, not
-// just the 5-sticker pair (D face fully colored, F and side faces' bottom
-// two rows colored, last layer entirely gray) — the new F2L mask rule.
+// FR/FL: the white cross (every D-layer edge + every non-U center, 4*2+5=13
+// stickers) plus the 5-sticker target pair, 18 total, always — the cross and
+// centers never change with the case; only the pair's identity does.
 describe("masks on a solved cube", () => {
   it.each<[string, Mask, number[]]>([
-    ["FR", FR, [12, 13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]],
-    ["FL", FL, [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39, 40, 41, 42, 43, 44]],
+    ["FR", FR, [12, 13, 15, 16, 22, 23, 25, 26, 28, 29, 30, 31, 32, 34, 40, 43, 49, 52]],
+    ["FL", FL, [13, 16, 21, 22, 24, 25, 27, 28, 30, 31, 32, 34, 40, 41, 43, 44, 49, 52]],
     ["oll-full", { kind: "oll-full" }, range(0, 9)],
     ["oll-edges", { kind: "oll-edges" }, [1, 3, 4, 5, 7]],
     ["pll-corners", { kind: "pll-corners" }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 18, 20, 36, 38, 45, 47]],
@@ -101,7 +101,7 @@ describe("caseState", () => {
     const fr = caseState(caseWith(FR, "R U' R'"));
     const fl = caseState(caseWith(FL, "L' U L"));
 
-    expect(colored(fl)).toHaveLength(21);
+    expect(colored(fl)).toHaveLength(18);
     expect(fl).toEqual(fr.map((_, j) => swapSides(fr[mirrorIndex(j)])));
   });
 });

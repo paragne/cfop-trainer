@@ -41,33 +41,32 @@ describe("F2L masks", () => {
     ).toBe(true);
   });
 
-  // Restates the new rule loosely (found independently, not by calling
-  // case-state.ts's own code), so it only catches gross corruption: every
-  // colored sticker is D/F/side, the target pair is fully colored wherever
-  // it ended up, and no last-layer piece contributes a colored sticker even
-  // when one of its stickers happens to be D/F/side-colored.
-  it.each(F2L_CASES)("$id: colors only D/F/side, the whole pair, and never the last layer", (c) => {
+  // Restates the new rule independently (found by color, not by calling
+  // case-state.ts's own code): the white cross (every D-layer edge, by
+  // color, plus every non-U center) and the target pair, found the same
+  // way the old pre-cross rule already did — nothing else, always 18
+  // stickers total regardless of the case's setup.
+  it.each(F2L_CASES)("$id: colors exactly the white cross and the target pair", (c) => {
     if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
     const cube = setupCube(c);
     const state = caseState(c);
     const side = c.mask.slot === "FR" ? "R" : "L";
-    const allowed = new Set(["D", "F", side]);
-    const coloredIndices = colored(state);
-    expect(coloredIndices.every((i) => allowed.has(state[i]))).toBe(true);
 
+    const crossEdges = PIECES.filter((piece) => piece.length === 2 && piece.some((i) => cube[i] === "D"));
+    const nonUCenters = PIECES.filter((piece) => piece.length === 1 && cube[piece[0]] !== "U");
     const pair = [
       ["D", "F", side],
       ["F", side],
     ];
-    const pairIndices = PIECES.filter((piece) =>
+    const targetPieces = PIECES.filter((piece) =>
       pair.some(
         (colors) => colors.length === piece.length && colors.every((color) => piece.some((i) => cube[i] === color)),
       ),
-    ).flat();
-    expect(pairIndices.every((i) => coloredIndices.includes(i))).toBe(true);
+    );
+    const expected = [...crossEdges, ...nonUCenters, ...targetPieces].flat().toSorted((a, b) => a - b);
 
-    const lastLayerIndices = PIECES.filter((piece) => piece.some((i) => cube[i] === "U")).flat();
-    expect(lastLayerIndices.some((i) => coloredIndices.includes(i))).toBe(false);
+    expect(colored(state).toSorted((a, b) => a - b)).toEqual(expected);
+    expect(colored(state)).toHaveLength(18);
   });
 });
 
