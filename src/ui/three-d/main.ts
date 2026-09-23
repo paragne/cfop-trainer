@@ -21,7 +21,7 @@ import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import { createGlContext } from "./gl-context.ts";
 import { createGlScene } from "./gl-scene.ts";
-import { createPlayer } from "./player.ts";
+import { createPlayer, speedToDurationMs } from "./player.ts";
 import type { InFlight, Player } from "./player.ts";
 import { createCamera } from "./camera.ts";
 import { attachZoom } from "./zoom.ts";
@@ -87,7 +87,7 @@ if (glContext === null) {
   }
 
   const camera = createCamera(requestRedraw);
-  const player: Player = createPlayer(() => Number(speedInput.value), requestRedraw);
+  const player: Player = createPlayer(() => speedToDurationMs(Number(speedInput.value)), requestRedraw);
 
   function viewProjection(): { view: Mat4; projection: Mat4 } {
     const aspect = canvas.width / Math.max(1, canvas.height);

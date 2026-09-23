@@ -19,6 +19,14 @@ import type { Move } from "../../lib/notation.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
+// The speed slider's value is a ×speed multiplier, not a duration: doubling
+// it halves the animation time. BASE_DURATION_MS is the duration at 1×,
+// matching the old fixed-duration default.
+const BASE_DURATION_MS = 400;
+export function speedToDurationMs(speed: number): number {
+  return BASE_DURATION_MS / speed;
+}
+
 export type InFlight = { readonly axis: Vec; readonly angleDeg: number; readonly movingCubieIndices: ReadonlySet<number> };
 export type PlayerFrame = { readonly cubies: readonly PhysicalCubie[]; readonly inFlight: InFlight | null };
 
