@@ -2,6 +2,7 @@ import { FACE_GEOMETRY, faceNormal, SOLVED } from "./cube.ts";
 import type { Color, FaceGeometry, Vec } from "./cube.ts";
 import type { CaseState, Facelet } from "./case-state.ts";
 import type { Mask } from "../data/algorithms.ts";
+import { FILL as FACE_FILL, GRAY } from "./palette.ts";
 
 export type View = "iso-fr" | "iso-fl" | "top";
 
@@ -16,15 +17,7 @@ type Poly = { index: number; corners: Point[] };
 // render as its own mirror.
 export type Palette = Readonly<Record<Facelet, string>>;
 
-const FILL: Palette = {
-  U: "#ffdc00",
-  D: "#ffffff",
-  F: "#00a651",
-  B: "#0062ff",
-  R: "#ff6600",
-  L: "#e53935",
-  masked: "#8a8f98",
-};
+const FILL: Palette = { ...FACE_FILL, masked: GRAY };
 
 // Shared with the icon rasterizer so both draw the same outline.
 export const STROKE = "#1a1a1a";

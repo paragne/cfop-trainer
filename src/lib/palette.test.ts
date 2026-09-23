@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { FILL, toRgb } from "./palette.ts";
+import { FILL, GRAY, toRgb } from "./palette.ts";
 
-// Bands rather than hex values, so this is not the color map restated — see
-// render.test.ts's identical approach for the v1 SVG palette, which this
-// file intentionally duplicates rather than shares: the two palettes are
-// independent and allowed to diverge.
+// Bands rather than hex values, so this is not the color map restated.
 function hsl(hex: string) {
   const [r, g, b] = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16) / 255);
   const max = Math.max(r, g, b);
@@ -27,7 +24,7 @@ function colorName(hex: string) {
   return `hue ${Math.round(h)}`;
 }
 
-describe("3D palette", () => {
+describe("palette", () => {
   it.each([
     ["U", "D", "yellow", "white"],
     ["F", "B", "green", "blue"],
@@ -44,6 +41,10 @@ describe("3D palette", () => {
       "orange",
       "red",
     ]);
+  });
+
+  it("renders GRAY as gray, distinct from every face color", () => {
+    expect(colorName(GRAY)).toBe("gray");
   });
 });
 

@@ -11,7 +11,7 @@
  */
 import { unitCubeVertices } from "./cubie-mesh.ts";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "./gl-shaders.ts";
-import { FILL, toRgb } from "./palette.ts";
+import { FILL, toRgb } from "../../lib/palette.ts";
 import { animatedModelMatrix, bakedModelMatrix } from "./cubie-model.ts";
 import type { InFlight } from "./player.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
