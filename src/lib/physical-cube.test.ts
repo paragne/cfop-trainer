@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { applyMoves, MOVE_AXES, SOLVED } from "./cube.ts";
+import { applyMoves, SOLVED } from "./cube.ts";
 import { parse } from "./notation.ts";
 import {
+  applyAlgToCubies,
   applyMovePhysical,
+  applyMoveToCubies,
   colorsAt,
-  cutPlaneDepths,
+  colorsAtCubies,
+  homeCubies,
   homeStickers,
-  perpendicularFaceNormals,
   surfacePosition,
-  turningFaceNormals,
 } from "./physical-cube.ts";
 import { ALL_CASES } from "../data/algorithms.ts";
 
@@ -37,64 +38,46 @@ describe("surfacePosition", () => {
   });
 });
 
-describe("cutPlaneDepths", () => {
-  it("gives a face turn one cut plane, at the boundary with the rest", () => {
-    expect(cutPlaneDepths(MOVE_AXES.R.depths)).toEqual([0.5]);
+describe("homeCubies", () => {
+  it("matches SOLVED", () => {
+    expect(colorsAtCubies(homeCubies())).toEqual(SOLVED);
   });
 
-  it("gives a wide move one cut plane, at its far boundary", () => {
-    expect(cutPlaneDepths(MOVE_AXES.r.depths)).toEqual([-0.5]);
+  it("gives every cubie exactly 6 faces, sticker-counted by piece kind", () => {
+    for (const cubie of homeCubies()) {
+      expect(cubie.faces).toHaveLength(6);
+      const zeros = cubie.position.filter((n) => n === 0).length;
+      const expectedStickers = 3 - zeros; // corner 3, edge 2, center 1
+      expect(cubie.faces.filter((f) => f.isSticker)).toHaveLength(expectedStickers);
+    }
   });
 
-  it("gives a slice two cut planes, sandwiched between two stationary layers", () => {
-    expect(cutPlaneDepths(MOVE_AXES.M.depths)).toEqual([-0.5, 0.5]);
+  it("gives a center's non-sticker faces its own single color", () => {
+    const uCenter = homeCubies().find((c) => c.position[0] === 0 && c.position[1] === 1 && c.position[2] === 0);
+    if (uCenter === undefined) throw new Error("U center not found");
+    for (const face of uCenter.faces) expect(face.colors).toEqual(["U"]);
   });
 
-  it("gives a whole-cube rotation no cut planes — nothing stays behind", () => {
-    expect(cutPlaneDepths(MOVE_AXES.x.depths)).toEqual([]);
-    expect(cutPlaneDepths(MOVE_AXES.y.depths)).toEqual([]);
-    expect(cutPlaneDepths(MOVE_AXES.z.depths)).toEqual([]);
-  });
-});
-
-describe("turningFaceNormals", () => {
-  it("names a face turn's own face", () => {
-    expect(turningFaceNormals(MOVE_AXES.U.axis, MOVE_AXES.U.depths)).toEqual([[0, 1, 0]]);
+  it("gives a corner's hidden faces the color of its own axis's sticker", () => {
+    const corner = homeCubies().find((c) => c.position[0] === 1 && c.position[1] === 1 && c.position[2] === 1);
+    if (corner === undefined) throw new Error("URF corner not found");
+    const byAxis = new Map(corner.faces.map((f) => [f.normal.join(","), f.colors]));
+    expect(byAxis.get("1,0,0")).toEqual(byAxis.get("-1,0,0"));
+    expect(byAxis.get("0,1,0")).toEqual(byAxis.get("0,-1,0"));
+    expect(byAxis.get("0,0,1")).toEqual(byAxis.get("0,0,-1"));
   });
 
-  it("names nothing for a slice — neither face is fully inside it", () => {
-    expect(turningFaceNormals(MOVE_AXES.M.axis, MOVE_AXES.M.depths)).toEqual([]);
-  });
-
-  it("names the one face a wide move fully contains", () => {
-    expect(turningFaceNormals(MOVE_AXES.r.axis, MOVE_AXES.r.depths)).toEqual([[1, 0, 0]]);
-  });
-
-  it("names both faces for a whole-cube rotation", () => {
-    expect(turningFaceNormals(MOVE_AXES.x.axis, MOVE_AXES.x.depths)).toEqual([
-      [1, 0, 0],
-      [-1, 0, 0],
-    ]);
-  });
-});
-
-describe("perpendicularFaceNormals", () => {
-  it("names the 4 faces not turning about an axis", () => {
-    const around = perpendicularFaceNormals(MOVE_AXES.R.axis);
-    expect(around.toSorted()).toEqual(
-      [
-        [0, 1, 0],
-        [0, -1, 0],
-        [0, 0, 1],
-        [0, 0, -1],
-      ].toSorted(),
-    );
-  });
-
-  it("excludes both faces on the given axis, not just one", () => {
-    const around = perpendicularFaceNormals(MOVE_AXES.U.axis);
-    expect(around).not.toContainEqual([0, 1, 0]);
-    expect(around).not.toContainEqual([0, -1, 0]);
+  it("splits an edge's one un-stickered axis between its two colors, and mirrors its own two stickers solid", () => {
+    const edge = homeCubies().find((c) => c.position[0] === 1 && c.position[1] === 1 && c.position[2] === 0);
+    if (edge === undefined) throw new Error("UR edge not found");
+    const hidden = edge.faces.filter((f) => !f.isSticker);
+    expect(hidden).toHaveLength(4);
+    const split = hidden.filter((f) => f.colors.length === 2);
+    const solid = hidden.filter((f) => f.colors.length === 1);
+    expect(split).toHaveLength(2);
+    for (const face of split) expect(face.colors.toSorted()).toEqual(["R", "U"]);
+    expect(solid).toHaveLength(2);
+    expect(solid.map((f) => f.colors[0]).toSorted()).toEqual(["R", "U"]);
   });
 });
 
@@ -120,4 +103,27 @@ describe("applyMovePhysical", () => {
       }
     },
   );
+});
+
+// Proves applyMoveToCubies against the already-proven applyMovePhysical
+// (rather than a second copy of the exhaustive applyMoves comparison above):
+// a per-cubie body's sticker faces must read the same colors as the flat
+// tracker after every prefix of every case's algorithm.
+describe("applyMoveToCubies", () => {
+  it.each(ALGS)("keeps colorsAtCubies in sync with applyMovePhysical after every prefix of %s", (_label, movesText) => {
+    const moves = parse(movesText);
+    let stickers = homeStickers();
+    let cubies = homeCubies();
+    for (const move of moves) {
+      stickers = applyMovePhysical(stickers, move);
+      cubies = applyMoveToCubies(cubies, move);
+      expect(colorsAtCubies(cubies)).toEqual(colorsAt(stickers));
+    }
+  });
+
+  it("agrees with applyAlgToCubies over the whole sequence at once", () => {
+    const moves = parse(ALGS[0][1]);
+    const stepwise = moves.reduce(applyMoveToCubies, homeCubies());
+    expect(colorsAtCubies(applyAlgToCubies(homeCubies(), moves))).toEqual(colorsAtCubies(stepwise));
+  });
 });
