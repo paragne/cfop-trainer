@@ -11,21 +11,20 @@
  */
 import { unitCubeVertices } from "./cubie-mesh.ts";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "./gl-shaders.ts";
-import { FILL, toRgb } from "../../lib/palette.ts";
+import { coreFaceColorUniforms, faceColorUniforms } from "./face-uniforms.ts";
 import { animatedModelMatrix, bakedModelMatrix } from "./cubie-model.ts";
 import type { InFlight } from "./player.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import type { Vec } from "../../lib/cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
+import type { Mask } from "../../data/algorithms.ts";
 
 export type GlScene = {
   render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void;
+  // Recolors every sticker for the given case's mask (null: every sticker
+  // shows its true color, no case loaded).
+  setMask(mask: Mask | null): void;
 };
-
-// The dark core's own fixed color — not one of the six sticker Colors (see
-// main.ts's core cubie, whose faces carry a placeholder Color never actually
-// read; gl-scene picks this up by index instead).
-const CORE_COLOR = toRgb("#1a1a1a");
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type);
@@ -87,27 +86,6 @@ function buildVertexArray(gl: WebGL2RenderingContext, program: WebGLProgram): nu
   return vertices.length;
 }
 
-type FaceUniforms = { color: Float32Array; visible: Float32Array };
-
-// Colors never change for a given cubie/face-slot (see physical-cube.ts), so
-// this bakes uniforms once from `home`, never from the live evolving cubies.
-function faceColorUniforms(home: PhysicalCubie): FaceUniforms {
-  const color = new Float32Array(18);
-  const visible = new Float32Array(6);
-  home.faces.forEach((face, i) => {
-    if (!face.isSticker) return;
-    color.set(toRgb(FILL[face.colors[0]]), i * 3);
-    visible[i] = 1;
-  });
-  return { color, visible };
-}
-
-function coreFaceColorUniforms(): FaceUniforms {
-  const color = new Float32Array(18);
-  for (let i = 0; i < 6; i++) color.set(CORE_COLOR, i * 3);
-  return { color, visible: new Float32Array(6).fill(1) };
-}
-
 const add = (a: Vec, b: Vec): Vec => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const scale = (v: Vec, k: number): Vec => [v[0] * k, v[1] * k, v[2] * k];
 const cross = (a: Vec, b: Vec): Vec => [
@@ -141,7 +119,7 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
   const uFaceVisible = requireUniform(gl, program, "uFaceVisible");
   const uLightDir = requireUniform(gl, program, "uLightDir");
   const uCameraPos = requireUniform(gl, program, "uCameraPos");
-  const faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie)));
+  let faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, null)));
 
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
@@ -176,5 +154,9 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
     gl.bindVertexArray(null);
   }
 
-  return { render };
+  function setMask(mask: Mask | null): void {
+    faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, mask)));
+  }
+
+  return { render, setMask };
 }

@@ -27,17 +27,6 @@ import { attachStepControls } from "./step-controls.ts";
 import { renderAt } from "./debug-render-at.ts";
 import { renderCase } from "../../lib/render.ts";
 
-declare global {
-  interface Window {
-    // Gated behind ?debug so it is inert unless asked for. Renders one
-    // deterministic frame — `setupMovesText` applied instantly, then a single
-    // `moveText` frozen at `fraction` through its animation — with no timer
-    // involved, for pixel verification scripts that cannot pause a real
-    // animation at a precise fraction without flakiness.
-    __threeD?: { renderAt(setupMovesText: string, moveText: string, fraction: number): void };
-  }
-}
-
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
 const NEAR_FAR_MARGIN = 3; // cube's bounding sphere is ~2.6 units; a bit more keeps both planes tight but safe
 
@@ -147,6 +136,7 @@ if (glContext === null) {
     const setupMoves = invert(solutionMoves);
     const flatSetup = applyMoves(SOLVED, setupMoves);
     camera.setCorrective(homeRotation(flatSetup));
+    glScene.setMask(c.mask);
     player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     stepControls.loadCase(solutionMoves);
@@ -157,6 +147,7 @@ if (glContext === null) {
     resetPlayback();
     syncCameraMode();
     camera.setCorrective([]);
+    glScene.setMask(null);
     player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";
     stepControls.loadCase([]);
@@ -190,7 +181,8 @@ if (glContext === null) {
 
   if (new URLSearchParams(location.search).has("debug")) {
     window.__threeD = {
-      renderAt: (setupMovesText, moveText, fraction) => renderAt(camera, renderNow, setupMovesText, moveText, fraction),
+      renderAt: (setupMovesText, moveText, fraction, maskKind, maskSlot) =>
+        renderAt(camera, (mask) => glScene.setMask(mask), renderNow, setupMovesText, moveText, fraction, maskKind, maskSlot),
     };
   }
 }

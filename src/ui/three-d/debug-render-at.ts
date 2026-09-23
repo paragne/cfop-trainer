@@ -14,21 +14,66 @@ import { homeRotation } from "../../lib/orientation.ts";
 import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import type { Camera } from "./camera.ts";
 import type { InFlight } from "./player.ts";
+import type { Mask } from "../../data/algorithms.ts";
+
+declare global {
+  interface Window {
+    // Gated behind ?debug so it is inert unless asked for. Renders one
+    // deterministic frame — `setupMovesText` applied instantly, then a
+    // single `moveText` frozen at `fraction` through its animation, with
+    // the given mask applied (omitted: every sticker its true color) — with
+    // no timer involved, for pixel verification scripts that cannot pause a
+    // real animation at a precise fraction without flakiness.
+    __threeD?: {
+      renderAt(
+        setupMovesText: string,
+        moveText: string,
+        fraction: number,
+        maskKind?: Mask["kind"],
+        maskSlot?: "FR" | "FL",
+      ): void;
+    };
+  }
+}
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
+// Built from separate plain-string params (not a JSON-encoded Mask) so a
+// caller across the window boundary can't hand this something the Mask
+// union doesn't cover without a type-unsafe cast at the parse site.
+function maskFor(kind: Mask["kind"] | undefined, slot: "FR" | "FL" | undefined): Mask | null {
+  switch (kind) {
+    case undefined:
+      return null;
+    case "f2l":
+      if (slot === undefined) throw new Error("renderAt: an f2l mask needs a slot");
+      return { kind: "f2l", slot };
+    case "oll-edges":
+    case "oll-full":
+    case "pll-corners":
+    case "pll-full":
+      return { kind };
+  }
+}
+
 export function renderAt(
   camera: Camera,
+  setMask: (mask: Mask | null) => void,
   renderNow: (cubies: readonly PhysicalCubie[], inFlight: InFlight | null) => void,
   setupMovesText: string,
   moveText: string,
   fraction: number,
+  // Omitted (every sticker its true color) by the camera/animation-only
+  // checks that came first and don't care about masking.
+  maskKind?: Mask["kind"],
+  maskSlot?: "FR" | "FL",
 ): void {
   const setupMoves = parse(setupMovesText);
   const move = parse(moveText)[0];
   if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
   camera.setMode("locked");
   camera.setCorrective(homeRotation(applyMoves(SOLVED, setupMoves)));
+  setMask(maskFor(maskKind, maskSlot));
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
   const { axis, depths } = MOVE_AXES[move.name];
   const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));

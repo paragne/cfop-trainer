@@ -283,7 +283,11 @@ const CLASSIFIER_SETUP = `(() => {
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
     const l = (max + min) / 2 / 255;
     const s = max === min ? 0 : (max - min) / 255 / (1 - Math.abs(2 * l - 1));
-    if (s < 0.15) return { name: l > 0.55 ? "D" : "dark", dist: 0 };
+    // A masked (grayed-out) sticker is palette.ts's GRAY (#8a8f98, l ~0.55
+    // unlit), which under this lighting never rises above l ~0.55; D (pure
+    // white, l ~0.6 at its dimmest) never falls below that. "dark" is
+    // anything darker still: the unlit core or a heavily-shaded face.
+    if (s < 0.15) return { name: l > 0.62 ? "D" : l > 0.25 ? "gray" : "dark", dist: 0 };
     const h = hueDegrees(r, g, b);
     const name =
       h >= 340 || h < 10 ? "L" : h >= 15 && h < 40 ? "R" : h >= 45 && h < 70 ? "U" : h >= 90 && h < 170 ? "F" : h >= 190 && h < 250 ? "B" : \`hue \${Math.round(h)}\`;
@@ -410,6 +414,36 @@ async function threeDCheck() {
   const diagF = await b.eval("window.__gl3d.sample(-0.05, 0.025)");
   check("R at 45%: exposed UF-edge inner face reads U on the U side of its diagonal", diagU.name === "U", JSON.stringify(diagU));
   check("R at 45%: exposed UF-edge inner face reads F on the F side of its diagonal", diagF.name === "F", JSON.stringify(diagF));
+
+  // F2L mask: f2l-easy-1 (FR, setup "R U R' U'") and f2l-easy-2 (FL, setup
+  // "L' U' L U") at rest (fraction 0), default camera, no rotation needed
+  // (their setups are plain R/U or L/U turns, so homeRotation is a no-op and
+  // the standard F-left/R-right chirality holds). Points calibrated against
+  // a live run, not computed by hand. The FL case's right-hand points are
+  // the interesting ones: that's the R face, which an FL mask must leave
+  // gray (only F, L and D are ever colored), unlike the FR case where the
+  // same points are the colored slot face.
+  await b.eval(`window.__threeD.renderAt("R U R' U'", "U", 0, "f2l", "FR")`);
+  const frTop1 = await b.eval("window.__gl3d.sample(0, -0.12)");
+  const frTop2 = await b.eval("window.__gl3d.sample(-0.12, -0.12)");
+  const frLeft1 = await b.eval("window.__gl3d.sample(-0.15, 0.16)");
+  const frLeft2 = await b.eval("window.__gl3d.sample(-0.15, 0.18)");
+  const frRight1 = await b.eval("window.__gl3d.sample(0.15, 0.16)");
+  const frRight2 = await b.eval("window.__gl3d.sample(0.15, 0.18)");
+  check("FR mask: last layer is gray at two top points", frTop1.name === "gray" && frTop2.name === "gray", JSON.stringify([frTop1, frTop2]));
+  check("FR mask: the pair's F face is colored", frLeft1.name === "F" && frLeft2.name === "F", JSON.stringify([frLeft1, frLeft2]));
+  check("FR mask: the slot's R face is colored", frRight1.name === "R" && frRight2.name === "R", JSON.stringify([frRight1, frRight2]));
+
+  await b.eval(`window.__threeD.renderAt("L' U' L U", "U", 0, "f2l", "FL")`);
+  const flTop1 = await b.eval("window.__gl3d.sample(0, -0.12)");
+  const flTop2 = await b.eval("window.__gl3d.sample(-0.12, -0.12)");
+  const flLeft1 = await b.eval("window.__gl3d.sample(-0.15, 0.16)");
+  const flLeft2 = await b.eval("window.__gl3d.sample(-0.15, 0.18)");
+  const flRight1 = await b.eval("window.__gl3d.sample(0.15, 0.16)");
+  const flRight2 = await b.eval("window.__gl3d.sample(0.15, 0.18)");
+  check("FL mask: last layer is gray at two top points", flTop1.name === "gray" && flTop2.name === "gray", JSON.stringify([flTop1, flTop2]));
+  check("FL mask: the pair's F face is colored", flLeft1.name === "F" && flLeft2.name === "F", JSON.stringify([flLeft1, flLeft2]));
+  check("FL mask: the R face (not the slot's own side) stays gray", flRight1.name === "gray" && flRight2.name === "gray", JSON.stringify([flRight1, flRight2]));
 
   b.close();
   console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);
