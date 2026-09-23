@@ -9,12 +9,10 @@
  */
 import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
-import { applyMoves, SOLVED } from "../../lib/cube.ts";
 import { invert, parse } from "../../lib/notation.ts";
 import { applyAlgToCubies, colorsAtCubies, homeCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 import { homeCubiesWithCore } from "./core-cubie.ts";
-import { homeRotation } from "../../lib/orientation.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import { createGlContext } from "./gl-context.ts";
@@ -25,6 +23,7 @@ import { createCamera } from "./camera.ts";
 import { attachZoom } from "./zoom.ts";
 import { attachStepControls } from "./step-controls.ts";
 import { renderAt } from "./debug-render-at.ts";
+import { applyCameraForCase } from "./case-camera.ts";
 import { renderCase } from "../../lib/render.ts";
 
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
@@ -90,7 +89,7 @@ if (glContext === null) {
     const radius = camera.getRadius();
     const near = Math.max(0.1, radius - NEAR_FAR_MARGIN);
     const far = radius + NEAR_FAR_MARGIN;
-    return { view: lookAt(camera.getEye(), [0, 0, 0], camera.getUp()), projection: perspective(FOV_Y_RADIANS, aspect, near, far) };
+    return { view: lookAt(camera.getEye(), camera.getTarget(), camera.getUp()), projection: perspective(FOV_Y_RADIANS, aspect, near, far) };
   }
 
   function renderNow(cubies: readonly PhysicalCubie[], inFlight: InFlight | null): void {
@@ -134,8 +133,7 @@ if (glContext === null) {
     syncCameraMode();
     const solutionMoves = parse(c.algs[0].moves);
     const setupMoves = invert(solutionMoves);
-    const flatSetup = applyMoves(SOLVED, setupMoves);
-    camera.setCorrective(homeRotation(flatSetup));
+    applyCameraForCase(camera, c.mask, setupMoves);
     glScene.setMask(c.mask);
     player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
@@ -146,7 +144,7 @@ if (glContext === null) {
   function loadSolved(): void {
     resetPlayback();
     syncCameraMode();
-    camera.setCorrective([]);
+    applyCameraForCase(camera, null, []);
     glScene.setMask(null);
     player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";

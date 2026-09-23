@@ -28,11 +28,19 @@ type Basis = { right: Vec; up: Vec; back: Vec };
 export type Camera = {
   setMode(mode: CameraMode): void;
   setCorrective(moves: readonly Move[]): void;
+  // Sets the locked basis directly from an eye direction (e.g. mirrored
+  // across x for an FL case, so the L face is on screen instead of R),
+  // bypassing setCorrective's fixed [1,1,1]-eye rotation composition.
+  setEyeDirection(eye: Vec): void;
+  // Where the camera looks, world space (default the origin). Independent
+  // of the eye: changing it reframes the view without moving the eye.
+  setTarget(point: Vec): void;
   setRadius(radius: number): void;
   attachDrag(el: HTMLElement): void;
   getEye(): Vec;
   getUp(): Vec;
   getRadius(): number;
+  getTarget(): Vec;
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -60,8 +68,14 @@ const DEFAULT_BASIS: Basis = screenAxes(EYE);
 export function createCamera(onChange: () => void): Camera {
   let mode: CameraMode = "locked";
   let radius = DEFAULT_RADIUS;
+  let target: Vec = [0, 0, 0];
   let lockedBasis = DEFAULT_BASIS;
   let freeBasis = DEFAULT_BASIS;
+  // Degrees pitched from the default, level view — tracked separately from
+  // freeBasis so a drag past the limit can be clamped (a per-event delta
+  // can't be clamped meaningfully; only the cumulative angle can). Lives
+  // here, not inside attachDrag, so setMode can reset it alongside freeBasis.
+  let pitchAccum = 0;
 
   function basis(): Basis {
     return mode === "free" ? freeBasis : lockedBasis;
@@ -69,11 +83,25 @@ export function createCamera(onChange: () => void): Camera {
 
   return {
     setMode(next) {
+      // Free cam always re-enters at the current fixed angle rather than
+      // resuming wherever a previous drag left it.
+      if (next === "free") {
+        freeBasis = lockedBasis;
+        pitchAccum = 0;
+      }
       mode = next;
       onChange();
     },
     setCorrective(moves) {
       lockedBasis = rotateBasis(DEFAULT_BASIS, moves);
+      onChange();
+    },
+    setEyeDirection(eye) {
+      lockedBasis = screenAxes(eye);
+      onChange();
+    },
+    setTarget(point) {
+      target = point;
       onChange();
     },
     setRadius(next) {
@@ -89,14 +117,13 @@ export function createCamera(onChange: () => void): Camera {
     getRadius() {
       return radius;
     },
+    getTarget() {
+      return target;
+    },
     attachDrag(el) {
       let dragging = false;
       let lastX = 0;
       let lastY = 0;
-      // Degrees pitched from the default, level view — tracked separately
-      // from freeBasis so a drag past the limit can be clamped (a per-event
-      // delta can't be clamped meaningfully; only the cumulative angle can).
-      let pitchAccum = 0;
       el.addEventListener("pointerdown", (e) => {
         if (mode !== "free") return;
         dragging = true;

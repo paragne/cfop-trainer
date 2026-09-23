@@ -415,35 +415,34 @@ async function threeDCheck() {
   check("R at 45%: exposed UF-edge inner face reads U on the U side of its diagonal", diagU.name === "U", JSON.stringify(diagU));
   check("R at 45%: exposed UF-edge inner face reads F on the F side of its diagonal", diagF.name === "F", JSON.stringify(diagF));
 
-  // F2L mask: f2l-easy-1 (FR, setup "R U R' U'") and f2l-easy-2 (FL, setup
-  // "L' U' L U") at rest (fraction 0), default camera, no rotation needed
-  // (their setups are plain R/U or L/U turns, so homeRotation is a no-op and
-  // the standard F-left/R-right chirality holds). Points calibrated against
-  // a live run, not computed by hand. The FL case's right-hand points are
-  // the interesting ones: that's the R face, which an FL mask must leave
-  // gray (only F, L and D are ever colored), unlike the FR case where the
-  // same points are the colored slot face.
-  await b.eval(`window.__threeD.renderAt("R U R' U'", "U", 0, "f2l", "FR")`);
-  const frTop1 = await b.eval("window.__gl3d.sample(0, -0.12)");
-  const frTop2 = await b.eval("window.__gl3d.sample(-0.12, -0.12)");
-  const frLeft1 = await b.eval("window.__gl3d.sample(-0.15, 0.16)");
-  const frLeft2 = await b.eval("window.__gl3d.sample(-0.15, 0.18)");
-  const frRight1 = await b.eval("window.__gl3d.sample(0.15, 0.16)");
-  const frRight2 = await b.eval("window.__gl3d.sample(0.15, 0.18)");
+  // F2L mask (white cross + the target pair) and camera (no per-case
+  // rotation, retargeted at the slot, eye mirrored across x for FL — see
+  // case-camera.ts): a synthetic solved-cube FR/FL case (setup ""), so the
+  // pair is trivially "in slot" and the picture is deterministic. FL's eye
+  // direction is mirrored, so its own pair (L) lands in the same relative
+  // screen position FR's (R) does — points calibrated against a live run,
+  // not computed by hand.
+  await b.eval(`window.__threeD.renderAt("", "U", 0, "f2l", "FR")`);
+  const frTop1 = await b.eval("window.__gl3d.sample(0, -0.2)");
+  const frTop2 = await b.eval("window.__gl3d.sample(-0.05, -0.2)");
+  const frF1 = await b.eval("window.__gl3d.sample(-0.05, -0.025)");
+  const frF2 = await b.eval("window.__gl3d.sample(-0.05, 0.025)");
+  const frR1 = await b.eval("window.__gl3d.sample(0.025, -0.025)");
+  const frR2 = await b.eval("window.__gl3d.sample(0.025, 0.025)");
   check("FR mask: last layer is gray at two top points", frTop1.name === "gray" && frTop2.name === "gray", JSON.stringify([frTop1, frTop2]));
-  check("FR mask: the pair's F face is colored", frLeft1.name === "F" && frLeft2.name === "F", JSON.stringify([frLeft1, frLeft2]));
-  check("FR mask: the slot's R face is colored", frRight1.name === "R" && frRight2.name === "R", JSON.stringify([frRight1, frRight2]));
+  check("FR mask: the pair's F side is colored", frF1.name === "F" && frF2.name === "F", JSON.stringify([frF1, frF2]));
+  check("FR mask: the pair's R side is colored", frR1.name === "R" && frR2.name === "R", JSON.stringify([frR1, frR2]));
 
-  await b.eval(`window.__threeD.renderAt("L' U' L U", "U", 0, "f2l", "FL")`);
-  const flTop1 = await b.eval("window.__gl3d.sample(0, -0.12)");
-  const flTop2 = await b.eval("window.__gl3d.sample(-0.12, -0.12)");
-  const flLeft1 = await b.eval("window.__gl3d.sample(-0.15, 0.16)");
-  const flLeft2 = await b.eval("window.__gl3d.sample(-0.15, 0.18)");
-  const flRight1 = await b.eval("window.__gl3d.sample(0.15, 0.16)");
-  const flRight2 = await b.eval("window.__gl3d.sample(0.15, 0.18)");
+  await b.eval(`window.__threeD.renderAt("", "U", 0, "f2l", "FL")`);
+  const flTop1 = await b.eval("window.__gl3d.sample(0, -0.2)");
+  const flTop2 = await b.eval("window.__gl3d.sample(0.05, -0.2)");
+  const flF1 = await b.eval("window.__gl3d.sample(0.05, -0.025)");
+  const flF2 = await b.eval("window.__gl3d.sample(0.05, 0.025)");
+  const flL1 = await b.eval("window.__gl3d.sample(-0.05, -0.025)");
+  const flL2 = await b.eval("window.__gl3d.sample(-0.05, 0.025)");
   check("FL mask: last layer is gray at two top points", flTop1.name === "gray" && flTop2.name === "gray", JSON.stringify([flTop1, flTop2]));
-  check("FL mask: the pair's F face is colored", flLeft1.name === "F" && flLeft2.name === "F", JSON.stringify([flLeft1, flLeft2]));
-  check("FL mask: the R face (not the slot's own side) stays gray", flRight1.name === "gray" && flRight2.name === "gray", JSON.stringify([flRight1, flRight2]));
+  check("FL mask: the pair's F side is colored", flF1.name === "F" && flF2.name === "F", JSON.stringify([flF1, flF2]));
+  check("FL mask: the pair's L side is colored, not R (the mirror worked)", flL1.name === "L" && flL2.name === "L", JSON.stringify([flL1, flL2]));
 
   b.close();
   console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);

@@ -4,14 +4,14 @@
  * without flakiness. Applies setup instantly, then freezes one move at
  * `fraction` through its animation.
  */
-import { applyMoves, MOVE_AXES, SOLVED } from "../../lib/cube.ts";
+import { MOVE_AXES } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { parse } from "../../lib/notation.ts";
 import { applyAlgToCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 import { homeCubiesWithCore } from "./core-cubie.ts";
-import { homeRotation } from "../../lib/orientation.ts";
 import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
+import { applyCameraForCase } from "./case-camera.ts";
 import type { Camera } from "./camera.ts";
 import type { InFlight } from "./player.ts";
 import type { Mask } from "../../data/algorithms.ts";
@@ -71,9 +71,10 @@ export function renderAt(
   const setupMoves = parse(setupMovesText);
   const move = parse(moveText)[0];
   if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
+  const mask = maskFor(maskKind, maskSlot);
   camera.setMode("locked");
-  camera.setCorrective(homeRotation(applyMoves(SOLVED, setupMoves)));
-  setMask(maskFor(maskKind, maskSlot));
+  applyCameraForCase(camera, mask, setupMoves);
+  setMask(mask);
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
   const { axis, depths } = MOVE_AXES[move.name];
   const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));
