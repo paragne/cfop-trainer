@@ -31,16 +31,14 @@ export function rotateByAngle(v: Vec, axis: Vec, degrees: number): Vec {
   ];
 }
 
-// The angle to hand CSS's rotate3d() for a move's visual animation.
-// cube.ts's rotate() (and this file's own rotateByAngle) turn clockwise as
-// seen from the tip of axis; CSS rotate3d(axis, +angle) turns counterclockwise
-// from the tip of axis (the standard right-hand-rule convention) — the two
-// are opposite senses of "positive". A plain quarter turn (not prime, not a
-// half turn) is +90° in the engine's clockwise sense, which is -90° in
-// rotate3d's counterclockwise sense; a prime quarter turn is the reverse.
-// Half turns (180°) have no direction, so the sign doesn't matter there —
-// confirmed by visual-angle.test.ts, the one case that passed before this
-// fix.
-export function visualAngleDegrees(move: Move): number {
-  return move.prime ? 90 : move.turns === 2 ? 180 : -90;
+// The angle to sweep a move's visual animation through, in the engine's own
+// clockwise-from-tip-of-axis sense (mat4.ts's rotationAboutAxis and this
+// file's own rotateByAngle both use that sense, so this needs no sign flip
+// for either). A plain quarter turn animates through +90°: one forward
+// rotate(). A prime quarter turn animates through -90°, one turn backward,
+// rather than +270° (three forward quarters) — same end state, shorter
+// visual sweep. Half turns (180°) have no direction, so the sign doesn't
+// matter there.
+export function animationAngleDegrees(move: Move): number {
+  return move.prime ? -90 : move.turns === 2 ? 180 : 90;
 }
