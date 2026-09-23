@@ -1,7 +1,8 @@
 /**
  * Compiles the one shader program, builds the one shared cubie mesh, and
- * draws all 26 cubies each frame with per-cubie uModel/color uniforms.
- * Every internal cube boundary has two coincident, oppositely-facing
+ * draws every cubie each frame with per-cubie uModel/color uniforms, plus a
+ * lighting pair (uLightDir/uCameraPos) recomputed from the camera each
+ * frame. Every internal cube boundary has two coincident, oppositely-facing
  * triangles (this cubie's face against its neighbour's, flush at rest and
  * mid-turn alike); back-face culling plus the mesh's consistent
  * CCW-from-outside winding (see cubie-mesh.test.ts) is what keeps exactly
@@ -14,11 +15,17 @@ import { FILL, toRgb } from "./palette.ts";
 import { animatedModelMatrix, bakedModelMatrix } from "./cubie-model.ts";
 import type { InFlight } from "./player.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
+import type { Vec } from "../../lib/cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 
 export type GlScene = {
-  render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4): void;
+  render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void;
 };
+
+// The dark core's own fixed color — not one of the six sticker Colors (see
+// main.ts's core cubie, whose faces carry a placeholder Color never actually
+// read; gl-scene picks this up by index instead).
+const CORE_COLOR = toRgb("#1a1a1a");
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type);
@@ -59,12 +66,12 @@ function requireUniform(gl: WebGL2RenderingContext, program: WebGLProgram, name:
   return loc;
 }
 
-const FLOATS_PER_VERTEX = 6; // position(3) + uv(2) + faceIndex(1)
+const FLOATS_PER_VERTEX = 6; // position(3) + normal(3)
 
 function buildVertexArray(gl: WebGL2RenderingContext, program: WebGLProgram): number {
   const vertices = unitCubeVertices();
   const data = new Float32Array(vertices.length * FLOATS_PER_VERTEX);
-  vertices.forEach((v, i) => data.set([...v.position, ...v.uv, v.faceIndex], i * FLOATS_PER_VERTEX));
+  vertices.forEach((v, i) => data.set([...v.position, ...v.normal], i * FLOATS_PER_VERTEX));
   const buffer = gl.createBuffer();
   if (buffer === null) throw new Error("createBuffer failed");
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -72,32 +79,54 @@ function buildVertexArray(gl: WebGL2RenderingContext, program: WebGLProgram): nu
 
   const stride = FLOATS_PER_VERTEX * 4;
   const aPosition = requireAttrib(gl, program, "aPosition");
-  const aUV = requireAttrib(gl, program, "aUV");
-  const aFaceIndex = requireAttrib(gl, program, "aFaceIndex");
+  const aNormal = requireAttrib(gl, program, "aNormal");
   gl.enableVertexAttribArray(aPosition);
   gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, stride, 0);
-  gl.enableVertexAttribArray(aUV);
-  gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, stride, 3 * 4);
-  gl.enableVertexAttribArray(aFaceIndex);
-  gl.vertexAttribPointer(aFaceIndex, 1, gl.FLOAT, false, stride, 5 * 4);
+  gl.enableVertexAttribArray(aNormal);
+  gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, stride, 3 * 4);
   return vertices.length;
 }
 
+type FaceUniforms = { color: Float32Array; visible: Float32Array };
+
 // Colors never change for a given cubie/face-slot (see physical-cube.ts), so
 // this bakes uniforms once from `home`, never from the live evolving cubies.
-function faceColorUniforms(home: PhysicalCubie): { color0: Float32Array; color1: Float32Array; split: Float32Array } {
-  const color0 = new Float32Array(18);
-  const color1 = new Float32Array(18);
-  const split = new Float32Array(6);
+function faceColorUniforms(home: PhysicalCubie): FaceUniforms {
+  const color = new Float32Array(18);
+  const visible = new Float32Array(6);
   home.faces.forEach((face, i) => {
-    color0.set(toRgb(FILL[face.colors[0]]), i * 3);
-    color1.set(toRgb(FILL[face.colors.length === 2 ? face.colors[1] : face.colors[0]]), i * 3);
-    split[i] = face.colors.length === 2 ? 1 : 0;
+    if (!face.isSticker) return;
+    color.set(toRgb(FILL[face.colors[0]]), i * 3);
+    visible[i] = 1;
   });
-  return { color0, color1, split };
+  return { color, visible };
 }
 
-export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly PhysicalCubie[]): GlScene {
+function coreFaceColorUniforms(): FaceUniforms {
+  const color = new Float32Array(18);
+  for (let i = 0; i < 6; i++) color.set(CORE_COLOR, i * 3);
+  return { color, visible: new Float32Array(6).fill(1) };
+}
+
+const add = (a: Vec, b: Vec): Vec => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const scale = (v: Vec, k: number): Vec => [v[0] * k, v[1] * k, v[2] * k];
+const cross = (a: Vec, b: Vec): Vec => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+const normalize = (v: Vec): Vec => scale(v, 1 / Math.hypot(...v));
+
+// Up-and-to-the-left of the camera, recomputed every frame from its current
+// basis so the light stays camera-relative (never dims a face just because
+// the free camera orbited away from a world-fixed light).
+function cameraRelativeLightDir(eye: Vec, up: Vec): Vec {
+  const back = normalize(eye);
+  const right = normalize(cross(up, back));
+  return normalize(add(add(scale(up, 0.6), scale(right, -0.7)), scale(back, 0.5)));
+}
+
+export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly PhysicalCubie[], coreIndex: number): GlScene {
   const program = link(gl);
   const vao = gl.createVertexArray();
   if (vao === null) throw new Error("createVertexArray failed");
@@ -108,17 +137,18 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
   const uProjection = requireUniform(gl, program, "uProjection");
   const uView = requireUniform(gl, program, "uView");
   const uModel = requireUniform(gl, program, "uModel");
-  const uColor0 = requireUniform(gl, program, "uColor0");
-  const uColor1 = requireUniform(gl, program, "uColor1");
-  const uSplit = requireUniform(gl, program, "uSplit");
-  const colorUniforms = homeCubies.map(faceColorUniforms);
+  const uFaceColor = requireUniform(gl, program, "uFaceColor");
+  const uFaceVisible = requireUniform(gl, program, "uFaceVisible");
+  const uLightDir = requireUniform(gl, program, "uLightDir");
+  const uCameraPos = requireUniform(gl, program, "uCameraPos");
+  const faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie)));
 
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
   gl.frontFace(gl.CCW);
 
-  function render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4): void {
+  function render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void {
     // Not pure white: D's own face color is pure white, and a background
     // leak inside the silhouette needs to be distinguishable from D by color
     // alone for the pixel-check scripts that read this back.
@@ -128,6 +158,8 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
     gl.bindVertexArray(vao);
     gl.uniformMatrix4fv(uProjection, false, [...projection]);
     gl.uniformMatrix4fv(uView, false, [...view]);
+    gl.uniform3fv(uLightDir, cameraRelativeLightDir(eye, up));
+    gl.uniform3fv(uCameraPos, eye);
 
     cubies.forEach((cubie, i) => {
       const model =
@@ -135,10 +167,9 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
           ? animatedModelMatrix(cubie, inFlight.axis, inFlight.angleDeg)
           : bakedModelMatrix(cubie);
       gl.uniformMatrix4fv(uModel, false, [...model]);
-      const { color0, color1, split } = colorUniforms[i];
-      gl.uniform3fv(uColor0, color0);
-      gl.uniform3fv(uColor1, color1);
-      gl.uniform1fv(uSplit, split);
+      const { color, visible } = faceUniforms[i];
+      gl.uniform3fv(uFaceColor, color);
+      gl.uniform1fv(uFaceVisible, visible);
       gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
     });
 

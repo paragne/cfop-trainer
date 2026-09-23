@@ -14,6 +14,7 @@ import type { Vec } from "../../lib/cube.ts";
 import { invert, parse } from "../../lib/notation.ts";
 import { applyAlgToCubies, colorsAtCubies, homeCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
+import { homeCubiesWithCore } from "./core-cubie.ts";
 import { homeRotation } from "../../lib/orientation.ts";
 import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
@@ -70,7 +71,8 @@ if (glContext === null) {
   info.textContent = "WebGL2 is unavailable in this browser; showing a static picture.";
 } else {
   const { gl, resize, onContextLost, onContextRestored } = glContext;
-  let glScene = createGlScene(gl, homeCubies());
+  const initialCubies = homeCubiesWithCore();
+  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
 
   let scheduled = false;
   function requestRedraw(): void {
@@ -97,7 +99,7 @@ if (glContext === null) {
   function renderNow(cubies: readonly PhysicalCubie[], inFlight: InFlight | null): void {
     resize();
     const { view, projection } = viewProjection();
-    glScene.render(cubies, inFlight, view, projection);
+    glScene.render(cubies, inFlight, view, projection, camera.getEye(), camera.getUp());
   }
 
   onContextLost(() => {
@@ -105,14 +107,15 @@ if (glContext === null) {
   });
   onContextRestored(() => {
     // The lost context took its program, buffers and VAO with it.
-    glScene = createGlScene(gl, homeCubies());
+    const cubies = homeCubiesWithCore();
+    glScene = createGlScene(gl, cubies, cubies.length - 1);
     info.textContent = "";
     requestRedraw();
   });
 
   new ResizeObserver(requestRedraw).observe(canvas);
 
-  player.snapTo(homeCubies());
+  player.snapTo(homeCubiesWithCore());
   camera.setRadius(Number(radiusInput.value));
   camera.attachDrag(stage);
   requestRedraw();
@@ -135,7 +138,7 @@ if (glContext === null) {
     const setupMoves = invert(solutionMoves);
     const flatSetup = applyMoves(SOLVED, setupMoves);
     camera.setCorrective(homeRotation(flatSetup));
-    player.snapTo(applyAlgToCubies(homeCubies(), setupMoves));
+    player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     await player.play(solutionMoves);
   }
@@ -144,7 +147,7 @@ if (glContext === null) {
     resetPlayback();
     syncCameraMode();
     camera.setCorrective([]);
-    player.snapTo(homeCubies());
+    player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";
   }
 
@@ -182,7 +185,7 @@ if (glContext === null) {
         if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
         camera.setMode("locked");
         camera.setCorrective(homeRotation(applyMoves(SOLVED, setupMoves)));
-        const before = applyAlgToCubies(homeCubies(), setupMoves);
+        const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
         const { axis, depths } = MOVE_AXES[move.name];
         const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));
         const inFlight: InFlight = { axis, angleDeg: animationAngleDegrees(move) * fraction, movingCubieIndices };
