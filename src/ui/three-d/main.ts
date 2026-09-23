@@ -9,14 +9,12 @@
  */
 import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
-import { applyMoves, MOVE_AXES, SOLVED } from "../../lib/cube.ts";
-import type { Vec } from "../../lib/cube.ts";
+import { applyMoves, SOLVED } from "../../lib/cube.ts";
 import { invert, parse } from "../../lib/notation.ts";
 import { applyAlgToCubies, colorsAtCubies, homeCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 import { homeCubiesWithCore } from "./core-cubie.ts";
 import { homeRotation } from "../../lib/orientation.ts";
-import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import { createGlContext } from "./gl-context.ts";
@@ -25,6 +23,8 @@ import { createPlayer, speedToDurationMs } from "./player.ts";
 import type { InFlight, Player } from "./player.ts";
 import { createCamera } from "./camera.ts";
 import { attachZoom } from "./zoom.ts";
+import { attachStepControls } from "./step-controls.ts";
+import { renderAt } from "./debug-render-at.ts";
 import { renderCase } from "../../lib/render.ts";
 
 declare global {
@@ -38,7 +38,6 @@ declare global {
   }
 }
 
-const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
 const NEAR_FAR_MARGIN = 3; // cube's bounding sphere is ~2.6 units; a bit more keeps both planes tight but safe
 
@@ -64,6 +63,10 @@ const radiusInput = required<HTMLInputElement>("#radius");
 const freecamInput = required<HTMLInputElement>("#freecam");
 const pauseButton = required<HTMLButtonElement>("#pause");
 const canvas = required<HTMLCanvasElement>("#canvas");
+const stepModeInput = required<HTMLInputElement>("#stepmode");
+const stepPrevButton = required<HTMLButtonElement>("#step-prev");
+const stepNextButton = required<HTMLButtonElement>("#step-next");
+const algContainer = required<HTMLElement>("#alg");
 
 const glContext = createGlContext(canvas);
 if (glContext === null) {
@@ -88,6 +91,10 @@ if (glContext === null) {
 
   const camera = createCamera(requestRedraw);
   const player: Player = createPlayer(() => speedToDurationMs(Number(speedInput.value)), requestRedraw);
+  const stepControls = attachStepControls(
+    { stepModeInput, prevButton: stepPrevButton, nextButton: stepNextButton, algContainer },
+    player,
+  );
 
   function viewProjection(): { view: Mat4; projection: Mat4 } {
     const aspect = canvas.width / Math.max(1, canvas.height);
@@ -142,7 +149,8 @@ if (glContext === null) {
     camera.setCorrective(homeRotation(flatSetup));
     player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
-    await player.play(solutionMoves);
+    stepControls.loadCase(solutionMoves);
+    if (!stepControls.isStepMode()) await player.play(solutionMoves);
   }
 
   function loadSolved(): void {
@@ -151,6 +159,7 @@ if (glContext === null) {
     camera.setCorrective([]);
     player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";
+    stepControls.loadCase([]);
   }
 
   const solvedButton = document.createElement("button");
@@ -181,18 +190,7 @@ if (glContext === null) {
 
   if (new URLSearchParams(location.search).has("debug")) {
     window.__threeD = {
-      renderAt(setupMovesText, moveText, fraction) {
-        const setupMoves = parse(setupMovesText);
-        const move = parse(moveText)[0];
-        if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
-        camera.setMode("locked");
-        camera.setCorrective(homeRotation(applyMoves(SOLVED, setupMoves)));
-        const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
-        const { axis, depths } = MOVE_AXES[move.name];
-        const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));
-        const inFlight: InFlight = { axis, angleDeg: animationAngleDegrees(move) * fraction, movingCubieIndices };
-        renderNow(before, inFlight);
-      },
+      renderAt: (setupMovesText, moveText, fraction) => renderAt(camera, renderNow, setupMovesText, moveText, fraction),
     };
   }
 }

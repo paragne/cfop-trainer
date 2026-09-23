@@ -22,6 +22,10 @@
       button { font: inherit; padding: 0.4rem 0.7rem; }
       #controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: 13px; }
       #controls label { display: flex; align-items: center; gap: 0.4rem; }
+      #alg { font: 13px/1.6 monospace; margin-bottom: 0.5rem; min-height: 1.2em; }
+      #alg .alg-move { margin-right: 0.4em; padding: 0.05em 0.2em; }
+      #alg .alg-move.current { background: #ffdc00; color: #111; }
+      #step-controls { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
     </style>
   </head>
   <body>
@@ -30,10 +34,16 @@
       <div id="chrome">
         <div id="info"></div>
         <div id="presets"></div>
+        <div id="alg"></div>
+        <div id="step-controls">
+          <button id="step-prev" type="button">&#9664; Prev move</button>
+          <button id="step-next" type="button">Next move &#9654;</button>
+        </div>
         <div id="controls">
           <label>Speed &times; <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" /></label>
           <label>Radius <input id="radius" type="range" min="6" max="30" step="0.5" value="12" /></label>
           <label><input id="freecam" type="checkbox" /> Free camera</label>
+          <label><input id="stepmode" type="checkbox" /> Step mode</label>
           <button id="pause" type="button">Pause</button>
         </div>
       </div>

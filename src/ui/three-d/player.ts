@@ -35,6 +35,10 @@ export type Player = {
   play(moves: readonly Move[]): Promise<void>;
   pause(): void;
   resume(): void;
+  // Finishes an in-flight move instantly (its `play()` await still resolves
+  // and applies the move normally) rather than waiting out the duration, so
+  // step mode can advance immediately on a second tap instead of queuing.
+  skipToEnd(): void;
   currentFrame(): PlayerFrame;
 };
 
@@ -69,6 +73,17 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     onFrame();
   }
 
+  // Shared by tick() reaching 100% and skipToEnd() forcing it: clears the
+  // pending move and resolves its promise, letting play()'s own continuation
+  // (not this function) apply the move to `cubies` and clear `inFlight`.
+  function completeCurrentMove(): void {
+    if (currentMove === null) return;
+    const { resolve } = currentMove;
+    currentMove = null;
+    stopLoop();
+    resolve();
+  }
+
   function tick(now: number): void {
     if (currentMove === null) return;
     if (lastTimestamp !== null) elapsed += now - lastTimestamp;
@@ -77,10 +92,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     inFlight = { axis: currentMove.axis, angleDeg: currentMove.angle * progress, movingCubieIndices: currentMove.movingCubieIndices };
     onFrame();
     if (progress >= 1) {
-      const { resolve } = currentMove;
-      currentMove = null;
-      rafId = null;
-      resolve();
+      completeCurrentMove();
       return;
     }
     rafId = requestAnimationFrame(tick);
@@ -119,6 +131,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     play,
     pause,
     resume,
+    skipToEnd: completeCurrentMove,
     currentFrame() {
       return { cubies, inFlight };
     },

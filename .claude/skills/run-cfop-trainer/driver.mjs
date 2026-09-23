@@ -310,8 +310,12 @@ const CLASSIFIER_SETUP = `(() => {
     // positives. This instead asks the one question the historical bugs
     // here were actually about: is there a background gap where a sticker
     // clearly belongs, under a move or a small camera nudge.
+    // Scaled to half the original offsets: the default camera radius
+    // doubled (6 -> 12), so the cube's on-screen silhouette is about half
+    // the size it was when these were first picked, and the un-scaled
+    // points now land outside it.
     INTERIOR_POINTS: [
-      [-0.2, -0.2], [0.2, -0.2], [0, -0.4], [-0.2, 0], [0.2, 0], [-0.2, 0.2], [0.2, 0.2],
+      [-0.1, -0.1], [0.1, -0.1], [0, -0.2], [-0.1, 0], [0.1, 0], [-0.1, 0.1], [0.1, 0.1],
     ],
     checkInterior() {
       return window.__gl3d.INTERIOR_POINTS.map(([fx, fy]) => ({ fx, fy, ...window.__gl3d.sample(fx, fy) }));
@@ -349,9 +353,9 @@ async function threeDCheck() {
   // Chirality: SPEC.md's yellow-up/green-front/orange-right cube, on the
   // default locked camera, solved. A handedness bug in mat4's lookAt or
   // perspective mirrors this and nothing else here would catch it.
-  const u = await b.eval("window.__gl3d.sample(0, -0.3)");
-  const f = await b.eval("window.__gl3d.sample(-0.22, 0.1)");
-  const r = await b.eval("window.__gl3d.sample(0.22, 0.1)");
+  const u = await b.eval("window.__gl3d.sample(0, -0.15)");
+  const f = await b.eval("window.__gl3d.sample(-0.11, 0.05)");
+  const r = await b.eval("window.__gl3d.sample(0.11, 0.05)");
   check("U is on screen-top", u.name === "U", JSON.stringify(u));
   check("F is on screen-left", f.name === "F", JSON.stringify(f));
   check("R is on screen-right", r.name === "R", JSON.stringify(r));
@@ -402,8 +406,8 @@ async function threeDCheck() {
   // same color rule, same code path, still a genuine two-color diagonal.
   // Points are deep on each side of the diagonal, not at its boundary.
   await b.eval('window.__threeD.renderAt("", "R", 0.5)');
-  const diagU = await b.eval("window.__gl3d.sample(-0.10, -0.20)");
-  const diagF = await b.eval("window.__gl3d.sample(-0.10, 0.05)");
+  const diagU = await b.eval("window.__gl3d.sample(-0.05, -0.10)");
+  const diagF = await b.eval("window.__gl3d.sample(-0.05, 0.025)");
   check("R at 45%: exposed UF-edge inner face reads U on the U side of its diagonal", diagU.name === "U", JSON.stringify(diagU));
   check("R at 45%: exposed UF-edge inner face reads F on the F side of its diagonal", diagF.name === "F", JSON.stringify(diagF));
 
