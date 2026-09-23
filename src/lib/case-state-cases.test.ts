@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ALL_CASES, F2L_CASES, OLL_CASES, PLL_CASES } from "../data/algorithms.ts";
-import { caseState } from "./case-state.ts";
+import { caseState, setupCube } from "./case-state.ts";
 import type { CaseState } from "./case-state.ts";
-import { applyMoves, normalize, SOLVED } from "./cube.ts";
-import { parse } from "./notation.ts";
+import { applyMoves, normalize, PIECES, SOLVED, STICKERS } from "./cube.ts";
+import { invert, parse } from "./notation.ts";
+import { homeRotation } from "./orientation.ts";
+import { applyAlgToCubies, homeCubies } from "./physical-cube.ts";
+import { isKeptSticker } from "./sticker-mask.ts";
 
 const colored = (state: CaseState) =>
   state.flatMap((facelet, i) => (facelet === "masked" ? [] : [i]));
@@ -38,14 +41,33 @@ describe("F2L masks", () => {
     ).toBe(true);
   });
 
-  // Restates the selection rule, so it only catches a corrupted PIECES.
-  it.each(F2L_CASES)("$id: colors one corner and one edge", (c) => {
+  // Restates the new rule loosely (found independently, not by calling
+  // case-state.ts's own code), so it only catches gross corruption: every
+  // colored sticker is D/F/side, the target pair is fully colored wherever
+  // it ended up, and no last-layer piece contributes a colored sticker even
+  // when one of its stickers happens to be D/F/side-colored.
+  it.each(F2L_CASES)("$id: colors only D/F/side, the whole pair, and never the last layer", (c) => {
     if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
+    const cube = setupCube(c);
     const state = caseState(c);
     const side = c.mask.slot === "FR" ? "R" : "L";
-    expect(colored(state).map((i) => state[i]).toSorted()).toEqual(
-      ["D", "F", "F", side, side].toSorted(),
-    );
+    const allowed = new Set(["D", "F", side]);
+    const coloredIndices = colored(state);
+    expect(coloredIndices.every((i) => allowed.has(state[i]))).toBe(true);
+
+    const pair = [
+      ["D", "F", side],
+      ["F", side],
+    ];
+    const pairIndices = PIECES.filter((piece) =>
+      pair.some(
+        (colors) => colors.length === piece.length && colors.every((color) => piece.some((i) => cube[i] === color)),
+      ),
+    ).flat();
+    expect(pairIndices.every((i) => coloredIndices.includes(i))).toBe(true);
+
+    const lastLayerIndices = PIECES.filter((piece) => piece.some((i) => cube[i] === "U")).flat();
+    expect(lastLayerIndices.some((i) => coloredIndices.includes(i))).toBe(false);
   });
 });
 
@@ -90,6 +112,44 @@ describe("PLL masks", () => {
       expect(colored(caseState(c))).toHaveLength(21);
     },
   );
+});
+
+// Cross-checks the 2D mask (case-state.ts, position-slot based) against an
+// independent computation on physical stickers (physical-cube.ts, piece-
+// identity based) for every case, not just F2L — the two are expected to
+// agree exactly, since isKeptSticker is the one shared rule either can call.
+// The corrective rotation puts the physical cubies in the same reference
+// frame case-state.ts's normalize() puts the flat array in (see
+// orientation.ts: homeRotation is normalize()'s physical twin) — except for
+// the four cases orientation.test.ts already documents as exceptions: a
+// partial-depth move in the setup (d, M, a wide move) can displace centers
+// in a way no single rigid rotation reproduces alongside the same corners
+// and edges, so relabeling (normalize) and a real rotation (homeRotation)
+// diverge. Not a mask bug; excluded the same way that test excludes them.
+const ROTATION_EXCEPTIONS = ["f2l-slot-3", "f2l-slot-4", "f2l-slot-5", "oll-42"];
+describe("physical sticker mask matches the 2D mask", () => {
+  it.each(ALL_CASES.filter((c) => !ROTATION_EXCEPTIONS.includes(c.id)))("$id", (c) => {
+    const setupMoves = c.setup === null ? invert(parse(c.algs[0].moves)) : parse(c.setup);
+    const corrective = homeRotation(applyMoves(SOLVED, setupMoves));
+    const cubies = applyAlgToCubies(applyAlgToCubies(homeCubies(), setupMoves), corrective);
+
+    const key = (p: readonly number[], n: readonly number[]) => `${p}|${n}`;
+    const physicalKept = new Map<string, boolean>();
+    for (const cubie of cubies) {
+      const pieceColors = cubie.faces.filter((f) => f.isSticker).map((f) => f.colors[0]);
+      for (const face of cubie.faces) {
+        if (!face.isSticker) continue;
+        physicalKept.set(key(cubie.position, face.normal), isKeptSticker(c.mask, pieceColors, face.colors[0]));
+      }
+    }
+
+    const expectedKept = new Set(colored(caseState(c)));
+    STICKERS.forEach((home, i) => {
+      const kept = physicalKept.get(key(home.position, home.normal));
+      if (kept === undefined) throw new Error(`${c.id}: no physical sticker at home slot ${i}`);
+      expect(kept).toBe(expectedKept.has(i));
+    });
+  });
 });
 
 // Vacuous while every setup is null, so the predicate is checked on its own.

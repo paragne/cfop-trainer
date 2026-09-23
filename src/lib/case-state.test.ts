@@ -31,11 +31,13 @@ const FL: Mask = { kind: "f2l", slot: "FL" };
 const FR_HOME = [12, 15, 23, 26, 29];
 const LAST_LAYER = [...range(0, 9), ...[9, 18, 36, 45].flatMap((s) => range(s, s + 3))];
 
-// Index sets read off the face layout in cube.ts, independent of PIECES.
+// FR/FL: every first-two-layer sticker on the D, F and slot-side faces, not
+// just the 5-sticker pair (D face fully colored, F and side faces' bottom
+// two rows colored, last layer entirely gray) — the new F2L mask rule.
 describe("masks on a solved cube", () => {
   it.each<[string, Mask, number[]]>([
-    ["FR", FR, FR_HOME],
-    ["FL", FL, [21, 24, 27, 41, 44]],
+    ["FR", FR, [12, 13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]],
+    ["FL", FL, [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39, 40, 41, 42, 43, 44]],
     ["oll-full", { kind: "oll-full" }, range(0, 9)],
     ["oll-edges", { kind: "oll-edges" }, [1, 3, 4, 5, 7]],
     ["pll-corners", { kind: "pll-corners" }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 18, 20, 36, 38, 45, 47]],
@@ -75,9 +77,8 @@ describe("caseState", () => {
     const moved = applyMoves(marks, parse(setup)).flatMap((m, i) => (m ? [i] : []));
     const state = caseState(caseWith(FR, setup));
 
-    expect(colored(state)).toEqual(moved);
-    expect(colored(state)).not.toEqual(FR_HOME);
-    expect(colored(state).map((i) => state[i]).toSorted()).toEqual(["D", "F", "F", "R", "R"]);
+    expect(moved.every((i) => colored(state).includes(i))).toBe(true);
+    expect(moved.map((i) => state[i]).toSorted()).toEqual(["D", "F", "F", "R", "R"]);
   });
 
   // The pair is read from colors after normalize. Following the home slot
@@ -100,7 +101,7 @@ describe("caseState", () => {
     const fr = caseState(caseWith(FR, "R U' R'"));
     const fl = caseState(caseWith(FL, "L' U L"));
 
-    expect(colored(fl)).toHaveLength(5);
+    expect(colored(fl)).toHaveLength(21);
     expect(fl).toEqual(fr.map((_, j) => swapSides(fr[mirrorIndex(j)])));
   });
 });
