@@ -257,27 +257,37 @@ async function smoke() {
 }
 
 // Pixel classification for the WebGL 3D prototype (three-d.html), set up
-// once per page load. Colors are the exact values from src/ui/three-d/
-// palette.ts and gl-shaders.ts's EDGE_COLOR/gl-scene.ts's clear color — a
-// second hand-copy, not an import, since this runs inside the page with no
-// module loader for app source. BG is deliberately not pure white: D's own
-// face color is pure white, so a background leak inside the silhouette must
-// be distinguishable from a genuine D face by color alone.
+// once per page load. gl-shaders.ts lights every cube color (Lambert diffuse
+// + ambient + specular against a camera-relative light), so a lit pixel no
+// longer matches its flat src/ui/three-d/palette.ts hex constant — nearest-
+// Euclidean-RGB against exact swatches is unreliable here. Classify by hue
+// (which lighting preserves) and a saturation/lightness floor instead, both
+// duplicated inline from palette.test.ts's colorName bucket thresholds, not
+// imported, since this runs inside the page with no module loader for app
+// source. Background is the one exception: gl.clearColor in gl-scene.ts is
+// never touched by the lighting shader, so it stays a reliable, un-lit exact
+// constant, checked first and separately from the hue buckets.
 const CLASSIFIER_SETUP = `(() => {
   const canvas = document.querySelector("#canvas");
   const gl = canvas.getContext("webgl2");
-  const PALETTE = {
-    U: [255, 229, 0], D: [255, 255, 255], F: [0, 214, 90], B: [30, 107, 255],
-    R: [255, 122, 0], L: [255, 45, 45], EDGE: [26, 26, 26], BG: [217, 217, 217],
-  };
+  const BG = [217, 217, 217];
+  function hueDegrees(r, g, b) {
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    if (d === 0) return null;
+    const sector = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return sector * 60;
+  }
   function nearest(r, g, b) {
-    let best = null, bestDist = Infinity;
-    for (const name in PALETTE) {
-      const [pr, pg, pb] = PALETTE[name];
-      const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
-      if (d < bestDist) { bestDist = d; best = name; }
-    }
-    return { name: best, dist: Math.round(Math.sqrt(bestDist)) };
+    const bgDist = Math.hypot(r - BG[0], g - BG[1], b - BG[2]);
+    if (bgDist < 8) return { name: "BG", dist: Math.round(bgDist) };
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const l = (max + min) / 2 / 255;
+    const s = max === min ? 0 : (max - min) / 255 / (1 - Math.abs(2 * l - 1));
+    if (s < 0.15) return { name: l > 0.55 ? "D" : "dark", dist: 0 };
+    const h = hueDegrees(r, g, b);
+    const name =
+      h >= 340 || h < 10 ? "L" : h >= 15 && h < 40 ? "R" : h >= 45 && h < 70 ? "U" : h >= 90 && h < 170 ? "F" : h >= 190 && h < 250 ? "B" : \`hue \${Math.round(h)}\`;
+    return { name, dist: 0 };
   }
   window.__gl3d = {
     sample(fx, fy) {
@@ -381,6 +391,21 @@ async function threeDCheck() {
     const gaps = interior.filter((p) => p.name === "BG");
     check(`after ${label}: no background gap at any interior point`, gaps.length === 0, JSON.stringify(gaps));
   }
+
+  // R paused at 45%: the nearest-visible-face color rule (face-color.ts,
+  // ported into gl-shaders.ts's fragment shader) on a real newly-exposed
+  // hidden face, not just the pure-function test. At this exact fraction, on
+  // the default camera, a moving R-layer corner's own analogous hidden faces
+  // are either edge-on or occluded by a nearer piece (checked by hand,
+  // dot-with-camera math on every R-layer corner); the stationary UF edge's
+  // +X face is the one that's cleanly, reproducibly visible here instead —
+  // same color rule, same code path, still a genuine two-color diagonal.
+  // Points are deep on each side of the diagonal, not at its boundary.
+  await b.eval('window.__threeD.renderAt("", "R", 0.5)');
+  const diagU = await b.eval("window.__gl3d.sample(-0.10, -0.20)");
+  const diagF = await b.eval("window.__gl3d.sample(-0.10, 0.05)");
+  check("R at 45%: exposed UF-edge inner face reads U on the U side of its diagonal", diagU.name === "U", JSON.stringify(diagU));
+  check("R at 45%: exposed UF-edge inner face reads F on the F side of its diagonal", diagF.name === "F", JSON.stringify(diagF));
 
   b.close();
   console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);
