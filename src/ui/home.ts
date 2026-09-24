@@ -1,8 +1,10 @@
 import type { CaseSet } from "../data/algorithms.ts";
 import type { Mode, VerifyLength } from "../lib/prefs.ts";
 import { VERIFY_LENGTHS } from "../lib/prefs.ts";
+import { tickStates } from "../lib/stats.ts";
 import type { SetStats } from "../lib/stats.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
+import { SHUFFLE_ICON } from "./icons.ts";
 
 type Handlers = {
   // Only modes that exist. A mode added to this list gets a button.
@@ -25,6 +27,15 @@ export type HomeView = {
 };
 
 const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify" };
+
+// One color per set, used only here: it is what tells the strips apart.
+const SET_COLOR: Record<CaseSet, string> = {
+  F2L: "#4ade80",
+  "2-Look OLL": "#facc15",
+  "2-Look PLL": "#fb923c",
+  "Full OLL": "#60a5fa",
+  "Full PLL": "#f472b6",
+};
 
 const percent = (accuracy: number | null) =>
   accuracy === null ? "–" : `${Math.round(accuracy * 100)}%`;
@@ -53,28 +64,27 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLen
 
   // Applies to OLL and PLL cards in every mode, so it sits with the session
   // setup and not on the card screens.
-  const rotation = toggleButton("Random AUF", onRotation);
+  const rotation = toggleButton("", onRotation);
+  rotation.classList.add("icon-toggle");
+  rotation.title = "Toggle Random AUF";
+  rotation.setAttribute("aria-label", "Toggle Random AUF");
+  // Constant markup, never user text.
+  rotation.innerHTML = SHUFFLE_ICON;
   const options = el("div", "options");
   options.append(rotation);
 
-  const head = el("tr", "");
-  head.append(...["Set", "Seen", "Accuracy", "Due"].map((text) => el("th", "", text)));
-  const body = el("tbody", "");
-  const thead = el("thead", "");
-  thead.append(head);
-  const table = el("table", "stats");
-  table.append(thead, body);
+  const stats = el("div", "stats");
 
   const start = keyedButton("primary", "Start", "space", onStart);
   const startBar = el("div", "start");
   startBar.append(start.node);
 
   const element = el("main", "home");
-  element.append(modeBox, setBox, lengthBox, options, table, startBar);
+  element.append(modeBox, setBox, lengthBox, options, stats, startBar);
 
   return {
     element,
-    render({ mode, selected, rotation: randomAuf, verifyLength, learnDue, stats }: HomeView): void {
+    render({ mode, selected, rotation: randomAuf, verifyLength, learnDue, stats: view }: HomeView): void {
       for (const [m, button] of modeButtons) {
         button.textContent = m === "learn" ? `${LABEL[m]} · ${learnDue} due` : LABEL[m];
         button.setAttribute("aria-pressed", String(m === mode));
@@ -86,15 +96,18 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLen
       lengthBox.hidden = mode !== "verify";
       for (const [n, button] of lengthButtons) button.setAttribute("aria-pressed", String(n === verifyLength));
       rotation.setAttribute("aria-pressed", String(randomAuf));
-      body.replaceChildren(
-        ...stats.map(({ set, seen, total, accuracy, due }) => {
-          const row = el("tr", "");
-          row.append(
-            el("th", "", set),
-            el("td", "", `${seen} / ${total}`),
-            el("td", "", percent(accuracy)),
-            el("td", "", String(due)),
-          );
+      stats.replaceChildren(
+        ...view.map(({ set, seen, total, learned, missed, accuracy, due }) => {
+          const strip = el("div", "ticks");
+          strip.append(...tickStates(learned, missed, total).map((tick) => el("span", `tick ${tick}`)));
+          const numbers = el("span", "stat-numbers", `${learned} / ${total} learned · ${percent(accuracy)} · ${due} due`);
+          const head = el("div", "stat-head");
+          head.append(el("span", "stat-name", set), numbers);
+          const row = el("div", "stat");
+          row.style.setProperty("--set", SET_COLOR[set]);
+          row.setAttribute("role", "img");
+          row.setAttribute("aria-label", `${set}: ${learned} of ${total} learned, ${missed} missed, ${total - seen} unseen, ${due} due`);
+          row.append(head, strip);
           return row;
         }),
       );

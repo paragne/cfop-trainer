@@ -1,6 +1,6 @@
 import { SPEED_RANGE } from "../lib/prefs.ts";
 import { el, squareButton } from "./dom.ts";
-import { BUNNY_ICON } from "./icons.ts";
+import { SPEED_ICON } from "./icons.ts";
 
 // A speed slider tucked behind a button, out of the way until asked for and
 // gone again on a click elsewhere or Escape. Not a dialog: nothing else on the
@@ -18,7 +18,7 @@ export function createSpeedPop(onSpeed: (speed: number) => void) {
   popover.hidden = true;
   popover.append(input);
 
-  const button = squareButton("Speed", BUNNY_ICON, () => setOpen(!open));
+  const button = squareButton("Speed", SPEED_ICON, () => setOpen(!open));
   button.setAttribute("aria-expanded", "false");
 
   let open = false;

@@ -1,5 +1,6 @@
 import { logoSvg } from "../lib/logo.ts";
 import { el } from "./dom.ts";
+import { THREE_D_ICON } from "./icons.ts";
 
 type Handlers = {
   onHome: () => void;
@@ -15,6 +16,7 @@ function iconButton(className: string, label: string, markup: string, onClick: (
   const node = el("button", className);
   node.type = "button";
   node.setAttribute("aria-label", label);
+  node.title = label;
   // Markup from lib or a constant above, never from user text.
   node.innerHTML = markup;
   node.addEventListener("click", onClick);
@@ -25,7 +27,7 @@ export function createTopbar({ onHome, onData, onThreeD }: Handlers) {
   const home = iconButton("logo", "CFOP Trainer, home", logoSvg(), onHome);
   const data = iconButton("icon", "Export and import", DATA_ICON, onData);
   data.setAttribute("aria-expanded", "false");
-  const threeD = iconButton("icon", "3D view", "3D", onThreeD);
+  const threeD = iconButton("icon", "3D view", THREE_D_ICON, onThreeD);
   threeD.setAttribute("aria-pressed", "false");
   threeD.hidden = true;
 
@@ -37,8 +39,13 @@ export function createTopbar({ onHome, onData, onThreeD }: Handlers) {
 
   return {
     element,
+    dataButton: data,
     setDataOpen(open: boolean): void {
       data.setAttribute("aria-expanded", String(open));
+    },
+    // Export and import belong to the home screen alone.
+    setDataAvailable(available: boolean): void {
+      data.hidden = !available;
     },
     // A mode, not a per-card choice, so it stays pressed from card to card.
     setThreeD(available: boolean, on: boolean): void {

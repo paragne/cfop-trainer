@@ -30,8 +30,6 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const name = el("p", "name");
   const solution = el("div", "solution");
   const notes = createNotes(onNote);
-  const caption = el("div", "caption");
-  caption.append(name, notes.button);
 
   const reveal = keyedButton("primary", "Reveal", "space", onReveal);
   // Drill's Next shares key 2 with Know it: the same finger, and nothing is graded.
@@ -43,9 +41,12 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const actions = el("nav", "actions");
   actions.append(reveal.node, ...grades, next);
 
-  const meta = el("p", "meta");
-  meta.append(section, count);
-  element.append(meta, figure, caption, solution, ...notes.body, actions);
+  // The note sits under the section line, top left; its button by the count.
+  const side = el("span", "meta-side");
+  side.append(count, notes.button);
+  const meta = el("div", "meta");
+  meta.append(section, side, ...notes.body);
+  element.append(meta, figure, name, solution, actions);
 
   let shown: string | null = null;
   let revealed = false;

@@ -76,17 +76,15 @@ body {
 .modes .toggle { flex: 1; min-height: 2.75rem; }
 .set-toggles .toggle { flex: 1 1 auto; }
 
-.stats {
-  width: 100%;
-  border-collapse: collapse;
-  color: var(--dim);
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-}
-.stats th, .stats td { padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
-.stats th { font-weight: 400; text-align: left; }
-.stats th:not(:first-child), .stats td { text-align: right; }
-.stats tbody th { color: var(--fg); }
+.stats { display: grid; gap: 1rem; padding: 0.5rem 0; }
+.stat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; margin-bottom: 0.4rem; }
+.stat-name { color: var(--set); font-weight: 600; }
+.stat-numbers { color: var(--dim); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.ticks { display: flex; gap: 2px; }
+.tick { flex: 1; min-width: 0; height: 1.1rem; border-radius: 1px; background: #34343a; }
+.tick.learned { background: var(--set); }
+.tick.missed { background: var(--set); opacity: 0.35; }
+.icon-toggle { display: grid; place-items: center; width: 2.75rem; padding: 0; }
 
 /* Thumb range, like the card's action bar. */
 .start {
@@ -100,6 +98,8 @@ body {
 
 .meta {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   margin: 0;
   color: var(--dim);
@@ -167,9 +167,9 @@ body {
 }
 .speed-pop input { flex: 1; min-width: 0; min-height: 2rem; accent-color: var(--fg); }
 
-.caption { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 2rem; }
-.caption .step { margin-left: auto; }
 .name { margin: 0; font-size: 1.15rem; font-weight: 600; }
+.meta-side { display: flex; align-items: center; gap: 0.5rem; }
+.meta > .note-text, .meta > .note { flex-basis: 100%; }
 .note-text { margin: 0; color: var(--dim); font-size: 0.95rem; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
 
 .solution {
@@ -242,18 +242,26 @@ kbd {
 }
 @media (hover: none) { kbd { display: none; } }
 
+/* A card under the data icon; floats, so opening it moves nothing. */
 .data {
-  width: 100%;
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--line);
+  position: fixed;
+  top: 3.5rem;
+  right: 0.75rem;
+  z-index: 1;
+  width: min(22rem, calc(100% - 1.5rem));
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--panel);
   color: var(--dim);
   font-size: 0.875rem;
 }
-.data-actions, .import-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.data-actions { display: grid; gap: 0.5rem; }
+.data-row { display: grid; grid-template-columns: 6rem 1fr; align-items: center; gap: 0.75rem; }
+.data-row p, .import-strip p { margin: 0; }
+.import-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--line); }
+.import-strip p { flex-basis: 100%; color: var(--fg); }
 .data button { min-height: 2.5rem; }
-.import-strip p { flex-basis: 100%; margin: 0; color: var(--fg); }
 
 .summary { justify-content: center; text-align: center; }
 .summary h1 { margin: 0; font-size: 1.5rem; }

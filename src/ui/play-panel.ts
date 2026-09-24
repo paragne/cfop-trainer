@@ -61,8 +61,8 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     squareButton("Center camera", CENTER_ICON, () => session?.view.camera.recenter()),
     speedPop.button,
     squareButton("Step back", "&lt;", () => step("back")),
-    squareButton("Step forward", "&gt;", () => step("forward")),
     squareButton("Play", "▶", play),
+    squareButton("Step forward", "&gt;", () => step("forward")),
     speedPop.popover,
   );
   const transport = el("div", "transport");

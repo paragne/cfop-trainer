@@ -11,6 +11,8 @@ type Handlers = {
   onImport: (text: string, mode: ImportMode) => ImportResult;
   notify: (message: string | null) => void;
   onOpenChange: (open: boolean) => void;
+  // The button that opens it, so pressing that is not also a click elsewhere.
+  trigger: HTMLElement;
 };
 
 const noun = (record: Progress["cards"] | Progress["notes"], word: string) => {
@@ -18,9 +20,11 @@ const noun = (record: Progress["cards"] | Progress["notes"], word: string) => {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 };
 
-// Hidden until the top bar's data icon opens it, and edited in place: no
-// dialog, and the merge or replace choice appears right where the file was picked.
-export function createDataPanel({ cases, cardCount, onExport, onImport, notify, onOpenChange }: Handlers) {
+// A small card under the top bar's data icon, on the home screen: hidden until
+// opened, closed by a click elsewhere or Escape. It is not a dialog, so nothing
+// else is blocked, and the merge or replace choice appears right where the file
+// was picked.
+export function createDataPanel({ cases, cardCount, onExport, onImport, notify, onOpenChange, trigger }: Handlers) {
   const element = el("section", "data");
   element.hidden = true;
 
@@ -31,8 +35,17 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
 
   const exportButton = el("button", "", "Export");
   const importButton = el("button", "", "Import");
+  const row = (button: HTMLButtonElement, text: string) => {
+    const node = el("div", "data-row");
+    node.append(button, el("p", "", text));
+    return node;
+  };
   const actions = el("div", "data-actions");
-  actions.append(exportButton, importButton, input);
+  actions.append(
+    row(exportButton, "Save your progress and notes to a file."),
+    row(importButton, "Load a file you saved before."),
+    input,
+  );
 
   const strip = el("div", "import-strip");
   strip.hidden = true;
@@ -101,12 +114,25 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
   replace.addEventListener("click", () => apply("replace"));
   cancel.addEventListener("click", close);
 
+  let opened = false;
+
+  function setOpen(open: boolean): void {
+    opened = open;
+    element.hidden = !open;
+    if (!open) close();
+    onOpenChange(open);
+  }
+
+  document.addEventListener("pointerdown", (e) => {
+    if (e.target instanceof Node && !element.contains(e.target) && !trigger.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setOpen(false);
+  });
+
   return {
     element,
-    toggle(): void {
-      element.hidden = !element.hidden;
-      if (element.hidden) close();
-      onOpenChange(!element.hidden);
-    },
+    toggle: () => setOpen(!opened),
+    close: () => setOpen(false),
   };
 }

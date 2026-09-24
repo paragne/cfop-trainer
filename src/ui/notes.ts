@@ -1,5 +1,5 @@
 import { el, squareButton } from "./dom.ts";
-import { PENCIL_ICON } from "./icons.ts";
+import { NOTE_EDIT_ICON } from "./icons.ts";
 
 // A note stays out of the way until wanted: a pencil when there is none, the
 // note's text when there is one, and a textarea only while editing it in place.
@@ -11,7 +11,7 @@ export function createNotes(onNote: (text: string) => void) {
   area.hidden = true;
 
   let editing = false;
-  const button = squareButton("Add note", PENCIL_ICON, () => edit());
+  const button = squareButton("Add note", NOTE_EDIT_ICON, () => edit());
 
   function grow(): void {
     area.style.height = "auto";

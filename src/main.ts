@@ -89,6 +89,7 @@ const dataPanel = createDataPanel({
   },
   notify: (message) => status.show(message),
   onOpenChange: (open) => topbar.setDataOpen(open),
+  trigger: topbar.dataButton,
 });
 
 function persist(next: Progress): void {
@@ -123,6 +124,8 @@ function switchSet(set: CaseSet): void {
 
 function render(): void {
   const onHome = screen.kind === "home";
+  topbar.setDataAvailable(onHome);
+  if (!onHome) dataPanel.close();
   home.element.hidden = !onHome;
   prefBar.element.hidden = onHome;
   if (onHome) {
