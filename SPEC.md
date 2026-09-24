@@ -445,11 +445,10 @@ No sidebar. The home screen is the navigation.
 
 ### Brand
 
-Logo: solved 3x3 in the F2L isometric projection, faces in three purples:
-lavender on top, violet and a mid shade on the sides. Generated from
-render.ts so it matches in-app cubes exactly. Used in the top bar, as the SVG
-favicon, and as a PNG apple-touch-icon. The accent color matches the logo's
-violet.
+Logo pack designed outside the app, committed as static files. `logo-mark.svg`
+(transparent mark) is the top-bar button, in `src/assets/`. The favicons,
+apple-touch-icon, PWA icons and `site.webmanifest` are in `public/`, served from
+the site root. The accent color matches the mark's violet.
 
 ### Contact sheet
 

@@ -35,7 +35,7 @@ body {
 .topbar button { min-height: 2.75rem; border-color: transparent; background: none; }
 .topbar button:hover { border-color: var(--dim); }
 .logo { padding: 0.25rem 0.5rem; }
-.logo svg { display: block; width: auto; height: 2rem; }
+.logo img { display: block; width: auto; height: 2rem; }
 .topbar-left { justify-self: start; min-width: 0; }
 .tools { justify-self: end; display: flex; }
 .icon { display: grid; place-items: center; width: 2.75rem; padding: 0; }

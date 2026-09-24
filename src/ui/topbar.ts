@@ -1,4 +1,4 @@
-import { logoSvg } from "../lib/logo.ts";
+import logoMark from "../assets/logo-mark.svg";
 import { el } from "./dom.ts";
 import { THREE_D_ICON } from "./icons.ts";
 
@@ -17,14 +17,14 @@ function iconButton(className: string, label: string, markup: string, onClick: (
   node.type = "button";
   node.setAttribute("aria-label", label);
   node.title = label;
-  // Markup from lib or a constant above, never from user text.
+  // Markup from a constant or a bundled asset URL, never from user text.
   node.innerHTML = markup;
   node.addEventListener("click", onClick);
   return node;
 }
 
 export function createTopbar({ onHome, onData, onThreeD }: Handlers) {
-  const home = iconButton("logo", "CFOP Trainer, home", logoSvg(), onHome);
+  const home = iconButton("logo", "CFOP Trainer, home", `<img src="${logoMark}" alt="" />`, onHome);
   const data = iconButton("icon", "Export and import", DATA_ICON, onData);
   data.setAttribute("aria-expanded", "false");
   const threeD = iconButton("icon", "3D view", THREE_D_ICON, onThreeD);
