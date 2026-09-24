@@ -80,6 +80,11 @@ function a(display: string, moves: string): Alg {
   return { display, moves };
 }
 
+// J Perm highlights these as affecting more than one slot.
+function multi(display: string, moves: string): Alg {
+  return { display, moves, affectsOtherSlots: true };
+}
+
 // The full sheet carries no case names, so these are named by their standard
 // number. The number was derived by matching orientation patterns against two
 // public tables, not read off the sheet.
@@ -131,53 +136,77 @@ export const F2L_CASES: Case[] = [
   // --- Disconnected Pairs (10) -------------------------------------------
   f2l("f2l-disconnected-1", "Disconnected Pairs", FR, [
     a("U' (R U R') [U2 R U' R']", "U' R U R' U2 R U' R'"),
+    a("y U l' U L U' L' U' l", "y U l' U L U' L' U' l"),
   ]),
   f2l("f2l-disconnected-2", "Disconnected Pairs", FR, [
     a("U' (R U2' R') [U2 R U' R']", "U' R U2' R' U2 R U' R'"),
+    a("y l U2 L2' U' L2 U' l'", "y l U2 L2' U' L2 U' l'"),
   ]),
   f2l("f2l-disconnected-3", "Disconnected Pairs", FR, [
     a("U' (R U R') [U R U R']", "U' R U R' U R U R'"),
+    a("U2 (R U' R') U' (R U R')", "U2 R U' R' U' R U R'"),
+    multi("R' U R2 U R'", "R' U R2 U R'"),
   ]),
   f2l("f2l-disconnected-4", "Disconnected Pairs", FR, [
     a("U (R U2' R') [U R U' R']", "U R U2' R' U R U' R'"),
   ]),
   f2l("f2l-disconnected-5", "Disconnected Pairs", FR, [
     a("U2 (R U R') [U R U' R']", "U2 R U R' U R U' R'"),
+    a("y F R U2 R' F'", "y F R U2 R' F'"),
   ]),
   f2l("f2l-disconnected-6", "Disconnected Pairs", FL, [
     a("U (L' U' L) [U2' L' U L]", "U L' U' L U2' L' U L"),
+    a("y' U' r U' R' U R U r'", "y' U' r U' R' U R U r'"),
   ]),
   f2l("f2l-disconnected-7", "Disconnected Pairs", FL, [
     a("U (L' U2 L) [U2' L' U L]", "U L' U2 L U2' L' U L"),
+    a("y' r' U2 R2 U R2' U r", "y' r' U2 R2 U R2' U r"),
   ]),
   f2l("f2l-disconnected-8", "Disconnected Pairs", FL, [
     a("U (L' U' L) [U' L' U' L]", "U L' U' L U' L' U' L"),
+    a("U2 (L' U L) U (L' U' L)", "U2 L' U L U L' U' L"),
+    multi("L U' L2' U' L", "L U' L2' U' L"),
   ]),
   f2l("f2l-disconnected-9", "Disconnected Pairs", FL, [
     a("U' (L' U2 L) [U' L' U L]", "U' L' U2 L U' L' U L"),
   ]),
   f2l("f2l-disconnected-10", "Disconnected Pairs", FL, [
     a("U2 (L' U' L) [U' L' U L]", "U2 L' U' L U' L' U L"),
+    a("y' F' L' U2 L F", "y' F' L' U2 L F"),
   ]),
 
   // --- Corner in Slot (6) -------------------------------------------------
   f2l("f2l-corner-1", "Corner in Slot", FR, [
     a("U' (R' F R F') [R U R']", "U' R' F R F' R U R'"),
+    a("(R' F' R) (U R U' R') F", "R' F' R U R U' R' F"),
+    a("U' F' (R U R' U') (R' F R)", "U' F' R U R' U' R' F R"),
+    a("y U' (L' U L) (F' L F L')", "y U' L' U L F' L F L'"),
+    a("y2 U' M U L U' M' U L'", "y2 U' M U L U' M' U L'"),
+    a("y' U' R' U M U' R U M'", "y' U' R' U M U' R U M'"),
   ]),
   f2l("f2l-corner-2", "Corner in Slot", FR, [
     a("(R U' R') [U R U' R']", "R U' R' U R U' R'"),
   ]),
   f2l("f2l-corner-3", "Corner in Slot", FR, [
     a("(R U R') [U' R U R']", "R U R' U' R U R'"),
+    a("y M' (U' L' U L) (U' L' U l)", "y M' U' L' U L U' L' U l"),
+    a("y (L F' L' F)*2", "y L F' L' F L F' L' F"),
   ]),
   f2l("f2l-corner-4", "Corner in Slot", FL, [
     a("U (L F' L' F) [L' U' L]", "U L F' L' F L' U' L"),
+    a("(L F L') (U' L' U L) F'", "L F L' U' L' U L F'"),
+    a("U F (L' U' L U) (L F' L')", "U F L' U' L U L F' L'"),
+    a("y' U (R U' R') (F R' F' R)", "y' U R U' R' F R' F' R"),
+    a("y2 U M U' R' U M' U' R", "y2 U M U' R' U M' U' R"),
+    a("y U L U' M U L' U' M'", "y U L U' M U L' U' M'"),
   ]),
   f2l("f2l-corner-5", "Corner in Slot", FL, [
     a("(L' U L) [U' L' U L]", "L' U L U' L' U L"),
   ]),
   f2l("f2l-corner-6", "Corner in Slot", FL, [
     a("(L' U' L) [U L' U' L]", "L' U' L U L' U' L"),
+    a("y' M' (U R U' R') (U R U' r')", "y' M' U R U' R' U R U' r'"),
+    a("y' (R' F R F')*2", "y' R' F R F' R' F R F'"),
   ]),
 
   // --- Edge in Slot (6) ---------------------------------------------------
@@ -186,67 +215,126 @@ export const F2L_CASES: Case[] = [
   ]),
   f2l("f2l-edge-2", "Edge in Slot", FR, [
     a("U' (R' F R F') [R U' R']", "U' R' F R F' R U' R'"),
+    a("(R U' R') (F' U2 F)", "R U' R' F' U2 F"),
+    a("y' R' U R' F R F' R", "y' R' U R' F R F' R"),
+    a("y' U' (R' U2 R) (f R f')", "y' U' R' U2 R f R f'"),
   ]),
   f2l("f2l-edge-3", "Edge in Slot", FR, [
     a("U' (R U' R') [U2 R U' R']", "U' R U' R' U2 R U' R'"),
+    a("y U' (L' U' L) U2 (L' U' L)", "y U' L' U' L U2 L' U' L"),
+    a("y U (L' U2 L) U' (L' U' L)", "y U L' U2 L U' L' U' L"),
   ]),
   f2l("f2l-edge-4", "Edge in Slot", FR, [
     a("U (R U R') [U2' R U R']", "U R U R' U2' R U R'"),
+    a("U' (R U2 R') U (R U R')", "U' R U2 R' U R U R'"),
+    a("y U (L' U L) U2 (L' U L)", "y U L' U L U2 L' U L"),
   ]),
   f2l("f2l-edge-5", "Edge in Slot", FR, [
     a("U2 (R U R') [F R' F' R]", "U2 R U R' F R' F' R"),
+    a("y U' (F U F') U (L' U' L)", "y U' F U F' U L' U' L"),
+    a("U M' (U R U' r') (R U' R')", "U M' U R U' r' R U' R'"),
+    multi("U (R' U' F R F') (R U' R')", "U R' U' F R F' R U' R'"),
+    a("y2 U2 (L U L') y' U' (L' U L)", "y2 U2 L U L' y' U' L' U L"),
+    a("y2 U2 L U M U L' U' M'", "y2 U2 L U M U L' U' M'"),
+    a("y' U' (f R f') U (R' U' R)", "y' U' f R f' U R' U' R"),
   ]),
   f2l("f2l-edge-6", "Edge in Slot", FR, [
     a("U2 (F' U' F) [U R U' R']", "U2 F' U' F U R U' R'"),
+    a("U (F' U' F) U' (R U R')", "U F' U' F U' R U R'"),
+    a("y U2 (L' U' L) (F' L F L')", "y U2 L' U' L F' L F L'"),
+    a("y U' M' (U' L' U l) (L' U L)", "y U' M' U' L' U l L' U L"),
+    multi("y U' (L U F' L' F) (L' U L)", "y U' L U F' L' F L' U L"),
+    a("y' U2 (R' U' R) y U (R U' R')", "y' U2 R' U' R y U R U' R'"),
+    a("y' U2 R' U' M U' R U M'", "y' U2 R' U' M U' R U M'"),
+    a("y2 U (f' L' f) U' (L U L')", "y2 U f' L' f U' L U L'"),
   ]),
 
   // --- Connected Pairs (10) -----------------------------------------------
   f2l("f2l-connected-1", "Connected Pairs", FR, [
     a("(R U' R') (U R U' R') [U2 R U' R']", "R U' R' U R U' R' U2 R U' R'"),
+    a("R' U2 R2 U R2' U R", "R' U2 R2 U R2' U R"),
+    multi("R' U2 R2 U R'", "R' U2 R2 U R'"),
+    a("y U L' U2 L U' y' R U R'", "y U L' U2 L U' y' R U R'"),
   ]),
   f2l("f2l-connected-2", "Connected Pairs", FR, [
     a("U' (R U' R') [U R U R']", "U' R U' R' U R U R'"),
   ]),
   f2l("f2l-connected-3", "Connected Pairs", FR, [
     a("(R U R') (U2 R U' R') [U R U' R']", "R U R' U2 R U' R' U R U' R'"),
+    a("M U (L F' L') U' M'", "M U L F' L' U' M'"),
+    multi("U' (R' U R) U' (R U R')", "U' R' U R U' R U R'"),
+    a("y (L' U L) y' U2 (R U R')", "y L' U L y' U2 R U R'"),
+    a("y' (R2' F R F' R) U2 (R' U R)", "y' R2' F R F' R U2 R' U R"),
+    a("y2 (f' L f) U2 (L U L')", "y2 f' L f U2 L U L'"),
   ]),
   f2l("f2l-connected-4", "Connected Pairs", FR, [
     a("(R U2' R') [U' R U R']", "R U2' R' U' R U R'"),
   ]),
   f2l("f2l-connected-5", "Connected Pairs", FR, [
     a("U (R U' R') (U' R U' R') [U R U' R']", "U R U' R' U' R U' R' U R U' R'"),
+    a("U (F R' F' R) U (R U R')", "U F R' F' R U R U R'"),
+    multi("U2 (L F' L' F) (R U R')", "U2 L F' L' F R U R'"),
+    a("y U L' U' (L2 F' L' F) (L' U L)", "y U L' U' L2 F' L' F L' U L"),
+    a("y F' (U' L' U L) F (L' U L)", "y F' U' L' U L F L' U L"),
+    multi("y' U2 R U' R' U' S R' S'", "y' U2 R U' R' U' S R' S'"),
   ]),
   f2l("f2l-connected-6", "Connected Pairs", FL, [
     a("(L' U L) (U' L' U L) [U2' L' U L]", "L' U L U' L' U L U2' L' U L"),
+    a("L U2 L2' U' L2 U' L'", "L U2 L2' U' L2 U' L'"),
+    multi("L U2 L2' U' L", "L U2 L2' U' L"),
+    a("y' U' (R U2 R') U y (L' U' L)", "y' U' R U2 R' U y L' U' L"),
   ]),
   f2l("f2l-connected-7", "Connected Pairs", FL, [
     a("U (L' U L) [U' L' U' L]", "U L' U L U' L' U' L"),
   ]),
   f2l("f2l-connected-8", "Connected Pairs", FL, [
     a("(L' U' L) (U2' L' U L) [U' L' U L]", "L' U' L U2' L' U L U' L' U L"),
+    a("M U' (R' F R) U M'", "M U' R' F R U M'"),
+    multi("U (L U' L') U (L' U' L)", "U L U' L' U L' U' L"),
+    a("y' (R U' R') y U2 (L' U' L)", "y' R U' R' y U2 L' U' L"),
+    a("y (L2 F' L' F L') U2 (L U' L')", "y L2 F' L' F L' U2 L U' L'"),
+    a("y2 (f R' f') U2 R' U' R", "y2 f R' f' U2 R' U' R"),
   ]),
   f2l("f2l-connected-9", "Connected Pairs", FL, [
     a("(L' U2 L) [U L' U' L]", "L' U2 L U L' U' L"),
   ]),
   f2l("f2l-connected-10", "Connected Pairs", FL, [
     a("U' (L' U L) (U L' U L) [U' L' U L]", "U' L' U L U L' U L U' L' U L"),
+    a("U' (F' L F L') U' (L' U' L)", "U' F' L F L' U' L' U' L"),
+    a("y' U' R U (R2' F R F') (R U' R')", "y' U' R U R2' F R F' R U' R'"),
+    a("y' F (U R U' R') F' (R U' R')", "y' F U R U' R' F' R U' R'"),
+    multi("y U2 L' U L U S' L S", "y U2 L' U L U S' L S"),
   ]),
 
   // --- Pieces in Slot (5) -------------------------------------------------
   f2l("f2l-slot-1", "Pieces in Slot", FR, [
     a("(R U' R') (U' R U R') [U2 R U' R']", "R U' R' U' R U R' U2 R U' R'"),
+    a("y (L' U L) U' (L' U2' L U' L' U L)", "y L' U L U' L' U2' L U' L' U L"),
   ]),
   f2l("f2l-slot-2", "Pieces in Slot", FR, [
     a("(R U' R') (U R U2' R') [U R U' R']", "R U' R' U R U2' R' U R U' R'"),
+    a("y (L' U L) U (L' U' L U2' L' U L)", "y L' U L U L' U' L U2' L' U L"),
   ]),
   f2l("f2l-slot-3", "Pieces in Slot", FR, [
     a("(R U' R') (U' R U' R') [d R' U' R]", "R U' R' U' R U' R' d R' U' R"),
+    a("y (L' U L) (F R U2' R' F')", "y L' U L F R U2' R' F'"),
+    a("(F' L' U2 L F) (R U R')", "F' L' U2 L F R U R'"),
+    a("y' R2' F' U' F U R U' R", "y' R2' F' U' F U R U' R"),
+    a("y2 L U' L U F U' F' L2'", "y2 L U' L U F U' F' L2'"),
   ]),
   f2l("f2l-slot-4", "Pieces in Slot", FR, [
     a("(R U R') (U' R U' R') [U2 y' R' U' R]", "R U R' U' R U' R' U2 y' R' U' R"),
+    a("(R U' R') (F' L' U2 L F)", "R U' R' F' L' U2 L F"),
+    a("y (F R U2' R' F') (L' U' L)", "y F R U2' R' F' L' U' L"),
+    a("y2 L2 F U F' U' L' U L'", "y2 L2 F U F' U' L' U L'"),
+    a("y' R' U R' U' F' U F R2", "y' R' U R' U' F' U F R2"),
   ]),
   f2l("f2l-slot-5", "Pieces in Slot", FR, [
     a("(R U' R') (d R' U2' R) [U R' U2' R]", "R U' R' d R' U2' R U R' U2' R"),
+    a("R2' U2' F R2 F' U2' R' U R'", "R2' U2' F R2 F' U2' R' U R'"),
+    a("y L2 U2 F' L2' F U2 L U' L", "y L2 U2 F' L2' F U2 L U' L"),
+    a("y' (f R' f') U (R' U2' R) U (R' U2' R)", "y' f R' f' U R' U2' R U R' U2' R"),
+    a("y2 (f' L f) U' (L U2 L') U' (L U2 L')", "y2 f' L f U' L U2 L' U' L U2 L'"),
   ]),
 ];
 

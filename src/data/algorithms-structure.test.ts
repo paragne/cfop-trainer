@@ -20,11 +20,25 @@ const F2L_STICKERS = [
   ...[9, 18, 36, 45].flatMap((start) => range(start + 3, start + 9)),
 ];
 const SLOT = { FR: [29, 26, 15, 23, 12], FL: [27, 24, 44, 21, 41] };
+// The D face's edges and center with the side sticker of each cross edge.
+const CROSS = [28, 30, 31, 32, 34, 25, 16, 43, 52];
+const CENTERS = [4, 13, 22, 31, 40, 49];
 
 const BASIC = F2L_CASES.filter((c) => c.sets.includes("F2L"));
 
 const unsolved = (cube: Cube, indices: number[]) =>
   indices.filter((i) => cube[i] !== SOLVED[i]);
+
+// Turns a cube held rotated about y back home by really rotating it, so the
+// target slot keeps its name. normalize would recolor the cube in place, and
+// the slot solved by an alg that ends rotated would take another slot's name.
+function turnedHome(cube: Cube): Cube {
+  for (const turn of ["", "y", "y2", "y'"]) {
+    const turned = applyMoves(cube, parse(turn));
+    if (unsolved(turned, CENTERS).length === 0) return turned;
+  }
+  throw new Error("the centers are not home under any y rotation");
+}
 
 const orientedEdges = (cube: Cube) => U_EDGES.filter((i) => cube[i] === "U");
 
@@ -68,6 +82,19 @@ describe("F2L", () => {
       for (const alg of c.algs.filter((alg) => alg.affectsOtherSlots !== true)) {
         const after = normalize(applyMoves(setupCube(c), parse(alg.moves)));
         expect(unsolved(after, F2L_STICKERS)).toEqual([]);
+      }
+    },
+  );
+
+  // It may leave another slot unsolved, so only its own pair and the cross
+  // are promised.
+  it.each(F2L_CASES.filter((c) => c.algs.some((alg) => alg.affectsOtherSlots === true)))(
+    "$id: every alg that affects other slots solves the pair over the cross",
+    (c) => {
+      if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
+      for (const alg of c.algs.filter((alg) => alg.affectsOtherSlots === true)) {
+        const after = turnedHome(applyMoves(setupCube(c), parse(alg.moves)));
+        expect(unsolved(after, [...CROSS, ...SLOT[c.mask.slot]])).toEqual([]);
       }
     },
   );
