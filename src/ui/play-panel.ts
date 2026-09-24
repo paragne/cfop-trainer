@@ -1,45 +1,26 @@
 import { caseMask } from "../lib/case-state.ts";
-import { toRgb } from "../lib/palette.ts";
-import { cubiesFromColors } from "../lib/physical-cube.ts";
+import { colorsAtCubies, cubiesFromColors } from "../lib/physical-cube.ts";
 import { playStart } from "../lib/play.ts";
 import type { CaseView, PlayView } from "../lib/play.ts";
-import { ZOOM_RANGE } from "../lib/prefs.ts";
 import type { Prefs } from "../lib/prefs.ts";
+import { viewFaces } from "../lib/view-faces.ts";
 import { createAlgStrip } from "./alg-strip.ts";
 import { el, squareButton } from "./dom.ts";
 import { CENTER_ICON } from "./icons.ts";
 import type { Step } from "./keys.ts";
 import { createTransport } from "./transport.ts";
 import { withCore } from "./three-d/core-cubie.ts";
-import { createCubeView } from "./three-d/cube-view.ts";
-import type { CubeView } from "./three-d/cube-view.ts";
-import { createGlContext } from "./three-d/gl-context.ts";
-import type { GlContext } from "./three-d/gl-context.ts";
-import { speedToDurationMs } from "./three-d/player.ts";
-import { createStepMode } from "./three-d/step-mode.ts";
-import type { StepMode } from "./three-d/step-mode.ts";
-import { attachZoom } from "./three-d/zoom.ts";
+import { createLegend } from "./three-d/legend.ts";
+import { startPanelSession } from "./three-d/panel-session.ts";
+import type { PanelSession } from "./three-d/panel-session.ts";
 
 export type PlayHandlers = {
   onSpeed: (speed: number) => void;
   onZoom: (zoom: number) => void;
 };
 
-type Session = {
-  gl: GlContext;
-  view: CubeView;
-  stepper: StepMode;
-  // What is loaded, so a render that changes nothing does not restart playback.
-  loaded: string;
-  // Whose case it is, so a new one starts from the locked view again.
-  caseKey: string;
-};
-
 // How long the start position stays up before Play begins from mid-algorithm.
 const START_HOLD_MS = 500;
-
-// style.css's --bg: the 3D view sits in the page's own black.
-const VOID = toRgb("#0b0b0c");
 
 // A card's picture: the 2D one, or the case in 3D. The GPU context lives only
 // while a card is in 3D: created when it first shows, given back on close.
@@ -69,45 +50,55 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   controls.hidden = true;
   controls.append(transport);
   // Free orbit works whether or not the solution is revealed, so this does too.
-  const center = squareButton("Center camera", CENTER_ICON, () => session?.view.camera.recenter());
+  const center = squareButton("Center camera", CENTER_ICON, () => {
+    session?.view.camera.recenter();
+    refreshLegend();
+  });
   center.classList.add("center-camera");
+  const legend = createLegend();
   const frame = el("div", "frame");
-  frame.append(stage, center);
+  frame.append(stage, legend.element, center);
+  // An orbit ends in the free mode, which has no fixed reading to show.
+  stage.addEventListener("pointerup", () => refreshLegend());
   player.append(frame, controls);
   element.append(picture, player);
 
-  let session: Session | null = null;
+  let session: PanelSession | null = null;
   let hold: ReturnType<typeof setTimeout> | undefined;
   let speedValue = 1;
   let zoomValue = 1;
   let shown: CaseView | null = null;
   let solution: PlayView | null = null;
 
-  function start(): Session | null {
-    const canvas = document.createElement("canvas");
-    canvas.setAttribute("role", "img");
-    canvas.setAttribute("aria-label", "Cube in 3D");
-    stage.replaceChildren(canvas);
-    const gl = createGlContext(canvas);
-    if (gl === null) {
-      canvas.remove();
-      return null;
+  // F2L only: the other views have no F, U, R reading to keep up with. The
+  // letters come from where the centers are now, so an x, y or z in the
+  // algorithm turns them while the camera follows.
+  function refreshLegend(): void {
+    const mask = shown === null ? null : caseMask(shown.c);
+    if (session === null || mask === null || mask.kind !== "f2l" || session.view.camera.getMode() !== "locked") {
+      legend.update(null);
+      return;
     }
-    const view = createCubeView(canvas, gl, () => speedValue, VOID);
-    view.setFit(true);
-    view.camera.attachDrag(stage);
-    attachZoom(canvas, (farther) => onZoom(Math.min(ZOOM_RANGE.max, Math.max(ZOOM_RANGE.min, zoomValue / farther))));
-    const stepper: StepMode = createStepMode(view.player, {
-      onSettled: () => strip.setPosition(stepper.boundary()),
-      onProgress: strip.setPosition,
-      durationMs: () => speedToDurationMs(speedValue),
-    });
-    return { gl, view, stepper, loaded: "", caseKey: "" };
+    legend.update(viewFaces(colorsAtCubies(session.view.player.currentFrame().cubies), mask.slot));
   }
+
+  const start = () =>
+    startPanelSession({
+      stage,
+      speed: () => speedValue,
+      zoom: () => zoomValue,
+      onZoom,
+      onSettled: () => {
+        if (session === null) return;
+        strip.setPosition(session.stepper.boundary());
+        refreshLegend();
+      },
+      onProgress: strip.setPosition,
+    });
 
   // Back to the start of the case, so a half-played solution never outlives
   // the controls that were showing it.
-  function load({ view, stepper }: Session): void {
+  function load({ view, stepper }: PanelSession): void {
     if (shown === null) return;
     view.showCase(caseMask(shown.c), withCore(cubiesFromColors(playStart(shown.c, shown.auf))));
     const moves = solution?.moves ?? [];
@@ -141,6 +132,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   function close(): void {
     clearTimeout(hold);
     speedPop.close();
+    legend.update(null);
     picture.hidden = false;
     player.hidden = true;
     controls.hidden = true;

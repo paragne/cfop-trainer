@@ -23,8 +23,8 @@ export type FaceGeometry = { origin: Vec; column: Vec; row: Vec };
 export type Sticker = { position: Vec; normal: Vec };
 type Table = readonly number[];
 
-const FACES: readonly Color[] = ["U", "R", "F", "D", "L", "B"];
-const CENTERS = [4, 13, 22, 31, 40, 49];
+export const FACES: readonly Color[] = ["U", "R", "F", "D", "L", "B"];
+export const CENTERS = [4, 13, 22, 31, 40, 49];
 
 export const SOLVED: Cube = FACES.flatMap((face) => Array<Color>(9).fill(face));
 
