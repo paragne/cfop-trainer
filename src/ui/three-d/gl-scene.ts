@@ -22,8 +22,16 @@ import type { Mask } from "../../data/algorithms.ts";
 export type GlScene = {
   render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void;
   // Recolors every sticker for the given case's mask (null: every sticker
-  // shows its true color, no case loaded).
-  setMask(mask: Mask | null): void;
+  // shows its true color, no case loaded) — `home` is the same cubies array
+  // the case was just snapped to, index-aligned with every later animated
+  // `cubies` (a move only ever rotates an element in place, see
+  // physical-cube.ts, so index i keeps meaning "the same physical piece"
+  // for as long as this case is loaded). A case whose setup needs
+  // case-state.ts's normalize() (f2l-slot-3/4/5's partial-depth d) relabels
+  // colors at each home slot instead of rotating a shared physical cube —
+  // there is no single fixed "true color" identity to bake once at scene
+  // creation and reuse across every case the way OLL/PLL cases allow.
+  setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void;
 };
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
@@ -154,8 +162,8 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
     gl.bindVertexArray(null);
   }
 
-  function setMask(mask: Mask | null): void {
-    faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, mask)));
+  function setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void {
+    faceUniforms = home.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, mask)));
   }
 
   return { render, setMask };

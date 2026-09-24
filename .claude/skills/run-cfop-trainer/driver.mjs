@@ -471,6 +471,30 @@ async function threeDCheck() {
     check(`${label}: last layer gray, pair's F and R sides colored`, top.name === "gray" && f.name === "F" && r.name === "R", JSON.stringify({ top, f, r }));
   }
 
+  // The loop above drives renderAt's own raw-move-replay path, which is
+  // NOT what the real app shows at case load: main.ts's loadCase builds the
+  // initial cubies from case-state.ts's setupCube() (see cubiesFromColors's
+  // docstring in physical-cube.ts), since f2l-slot-3/4's setup includes a
+  // partial-depth move that replaying moves on a physical cube can't
+  // reconcile with the 2D card's picture by camera rotation alone. Both
+  // paths pass the weak "gray/F/R present somewhere" check above even when
+  // one of them shows the wrong picture, so this instead clicks the actual
+  // preset button (step mode on, so it stops at the unsolved setup instead
+  // of autoplaying) and checks for the white cross sticker the 2D card
+  // shows scattered next to the pair — the bug this regressed to showed an
+  // already-solved-looking flat block with no white visible at all. Points
+  // calibrated against a live run, not computed by hand.
+  await b.eval("document.querySelector('#stepmode').checked = true");
+  for (const [id, fx, fy] of [
+    ["f2l-slot-3", -0.025, 0.225],
+    ["f2l-slot-4", 0.06, 0.2],
+  ]) {
+    await b.eval(`[...document.querySelectorAll('#presets button')].find((btn) => btn.textContent === '${id}').click()`);
+    await b.sleep(300);
+    const white = await b.eval(`window.__gl3d.sample(${fx}, ${fy})`);
+    check(`${id}: real preset click shows the unsolved setup, not an already-solved pair (white cross visible)`, white.name === "D", JSON.stringify(white));
+  }
+
   b.close();
   console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);
   process.exitCode = failed === 0 ? 0 : 1;

@@ -9,10 +9,11 @@
  */
 import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
-import { invert, parse } from "../../lib/notation.ts";
-import { applyAlgToCubies, colorsAtCubies, homeCubies } from "../../lib/physical-cube.ts";
+import { parse } from "../../lib/notation.ts";
+import { colorsAtCubies, cubiesFromColors, homeCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
-import { homeCubiesWithCore } from "./core-cubie.ts";
+import { setupCube } from "../../lib/case-state.ts";
+import { homeCubiesWithCore, withCore } from "./core-cubie.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import { createGlContext } from "./gl-context.ts";
@@ -67,15 +68,11 @@ if (glContext === null) {
   let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
 
   let scheduled = false;
-  // The camera's corrective rotation is a pure function of whatever cubies
-  // are currently at rest, recomputed only when they've actually changed
-  // (a new snapTo or a move settling) — see case-camera.ts for why a single
-  // correction computed once at load doesn't stay right through the whole
-  // animation for every case.
+  // The camera correction is a pure function of the cubies at rest,
+  // recomputed only when they change (see case-camera.ts).
   let lastCorrected: readonly PhysicalCubie[] | null = null;
-  // Set right before a fresh case's first snapTo, so its own first
-  // correction lands instantly instead of tweening from whatever the
-  // previous case last showed — a case switch is an unrelated cut anyway.
+  // Set before a fresh case's snapTo so its first correction lands
+  // instantly instead of tweening from the previous case's view.
   let snapNextCorrection = true;
   function requestRedraw(): void {
     if (scheduled) return;
@@ -147,11 +144,14 @@ if (glContext === null) {
     resetPlayback();
     syncCameraMode();
     const solutionMoves = parse(c.algs[0].moves);
-    const setupMoves = invert(solutionMoves);
     applyEyeForCase(camera, c.mask);
-    glScene.setMask(c.mask);
+    // From case-state.ts's setupCube(), not a physical replay of the inverse
+    // solution (see cubiesFromColors), and the mask is baked from these same
+    // cubies: this case's setup defines which piece is "the target corner".
+    const cubies = withCore(cubiesFromColors(setupCube(c)));
+    glScene.setMask(c.mask, cubies);
     snapNextCorrection = true;
-    player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
+    player.snapTo(cubies);
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     stepControls.loadCase(solutionMoves);
     if (!stepControls.isStepMode()) await player.play(solutionMoves);
@@ -161,9 +161,10 @@ if (glContext === null) {
     resetPlayback();
     syncCameraMode();
     applyEyeForCase(camera, null);
-    glScene.setMask(null);
+    const cubies = homeCubiesWithCore();
+    glScene.setMask(null, cubies);
     snapNextCorrection = true;
-    player.snapTo(homeCubiesWithCore());
+    player.snapTo(cubies);
     info.textContent = "Solved";
     stepControls.loadCase([]);
   }
@@ -193,5 +194,5 @@ if (glContext === null) {
   });
 
   loadSolved();
-  installDebugHook(camera, (mask) => glScene.setMask(mask), (cubies) => player.snapTo(cubies), renderNow);
+  installDebugHook(camera, (mask, home) => glScene.setMask(mask, home), (cubies) => player.snapTo(cubies), renderNow);
 }

@@ -58,7 +58,7 @@ function maskFor(kind: Mask["kind"] | undefined, slot: "FR" | "FL" | undefined):
 
 export function renderAt(
   camera: Camera,
-  setMask: (mask: Mask | null) => void,
+  setMask: (mask: Mask | null, home: readonly PhysicalCubie[]) => void,
   // Keeps the player's own state in sync with whatever renderAt just drew:
   // main.ts's continuous render loop reads player.currentFrame() on every
   // rAF, including ones queued by earlier, unrelated onChange() calls (a
@@ -82,8 +82,8 @@ export function renderAt(
   if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
   const mask = maskFor(maskKind, maskSlot);
   camera.setMode("locked");
-  setMask(mask);
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
+  setMask(mask, before);
   applyEyeForCase(camera, mask);
   applyCorrectiveForCubies(camera, before, true);
   snapTo(before);
@@ -96,7 +96,7 @@ export function renderAt(
 // Registers window.__threeD when ?debug is present; inert otherwise.
 export function installDebugHook(
   camera: Camera,
-  setMask: (mask: Mask | null) => void,
+  setMask: (mask: Mask | null, home: readonly PhysicalCubie[]) => void,
   snapTo: (cubies: readonly PhysicalCubie[]) => void,
   renderNow: (cubies: readonly PhysicalCubie[], inFlight: InFlight | null) => void,
 ): void {

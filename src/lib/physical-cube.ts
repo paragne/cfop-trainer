@@ -1,9 +1,8 @@
 /**
- * Physical sticker tracking for the 3D animator. cube.ts's 54-array models
- * fixed positions with colors permuted between them; animation needs the
- * opposite — 54 physical stickers with a fixed color and a moving
- * position/orientation, so a sticker's on-screen transform can be updated
- * one move at a time instead of recomputed from scratch.
+ * Physical sticker tracking for the 3D animator: 54 stickers with a fixed
+ * color and a moving position/orientation (cube.ts's 54-array is the
+ * opposite — fixed positions, permuted colors), so a transform updates one
+ * move at a time instead of being recomputed from scratch.
  */
 import { MOVE_AXES, PIECES, quarterTurns, rotate, SOLVED, STICKERS } from "./cube.ts";
 import type { Color, Cube, Vec } from "./cube.ts";
@@ -25,23 +24,26 @@ const cross = (a: Vec, b: Vec): Vec => [
   a[0] * b[1] - a[1] * b[0],
 ];
 
-// Any unit vector not parallel to `normal` gives a perpendicular pair via
-// two cross products; normals are always axis-aligned, so [0,1,0] only fails
-// for U and D, where [1,0,0] stands in instead. Exported for anything else
-// that needs a flat plane's in-plane basis from just its normal — the 3D
-// renderer's cut-plane caps, for one.
+// Any unit vector not parallel to `normal` gives a perpendicular pair via two
+// cross products; normals are axis-aligned, so [0,1,0] only fails for U/D,
+// where [1,0,0] stands in. Exported for anything else needing a flat plane's
+// in-plane basis from just its normal — the 3D renderer's cut-plane caps.
 export function perpendicularBasis(normal: Vec): { column: Vec; row: Vec } {
   const seed: Vec = Math.abs(normal[1]) === 1 ? [1, 0, 0] : [0, 1, 0];
   const column = cross(seed, normal);
   return { column, row: cross(normal, column) };
 }
 
-export function homeStickers(): PhysicalSticker[] {
+function stickersFromColors(cube: Cube): PhysicalSticker[] {
   return STICKERS.map((sticker, i) => ({
     ...sticker,
     ...perpendicularBasis(sticker.normal),
-    color: SOLVED[i],
+    color: cube[i],
   }));
+}
+
+export function homeStickers(): PhysicalSticker[] {
+  return stickersFromColors(SOLVED);
 }
 
 export function applyMovePhysical(
@@ -70,11 +72,9 @@ export function applyAlgPhysical(
   return moves.reduce(applyMovePhysical, stickers as PhysicalSticker[]);
 }
 
-// `position` is the sticker's cubie center (needed as-is for layer-
-// membership tests against depths -1/0/1) — a facelet's actual visible
-// surface sits half a cubie further out along its own normal. Anything that
-// renders or verifies where a sticker's face really is must use this, not
-// `position` directly.
+// `position` is the cubie center (for layer tests against depths -1/0/1); a
+// facelet's visible surface sits half a cubie out along its normal — use this
+// wherever a sticker's face location matters, not `position`.
 export function surfacePosition(sticker: PhysicalSticker): Vec {
   return [
     sticker.position[0] + 0.5 * sticker.normal[0],
@@ -83,9 +83,7 @@ export function surfacePosition(sticker: PhysicalSticker): Vec {
   ];
 }
 
-// A cubie's position is shared by up to three stickers (one per sticker on
-// that cubie); position plus normal is what identifies a single sticker,
-// exactly as cube.ts's own INDEX map keys it.
+// Position plus normal identifies a single sticker, as in cube.ts's INDEX.
 const key = (position: Vec, normal: Vec) => `${position}|${normal}`;
 
 // Reconstructs the engine's flat 54-slot color array by reading, at each
@@ -106,15 +104,12 @@ export const ALL_AXES: readonly Vec[] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -
 const negate = (v: Vec): Vec => [-v[0], -v[1], -v[2]];
 const sameVec = (a: Vec, b: Vec) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
-// One of a cubie's 6 body-fixed faces, replacing the old shared-core model:
-// a per-cubie body has no geometry to share with a neighbour or hide when a
-// layer turns. A sticker face is a genuine facelet; every other face is
-// invisible at rest and is only ever seen through a gap opened by a
-// neighbouring cubie moving away. `colors` has two entries only for a middle
-// edge's one un-stickered axis, split diagonally; every other face is one
-// color — its own sticker's color if it has one, otherwise the sticker
-// color on the opposite side of the same axis, otherwise (a center's other
-// two axes) the center's own single color.
+// One of a cubie's 6 body-fixed faces: a per-cubie body has no geometry to
+// share with a neighbour or hide when a layer turns, so a non-sticker face
+// still needs a color, for the gap a moving neighbour can open onto it.
+// `colors` has two entries only for a middle edge's un-stickered axis, split
+// diagonally; every other face is one color — its own sticker's if it has
+// one, else the opposite sticker's, else (a center's other axes) its own.
 export type CubieFace = {
   readonly normal: Vec; // rotates with the cubie, like a sticker's normal
   readonly column: Vec;
@@ -128,13 +123,11 @@ export type PhysicalCubie = {
   readonly faces: readonly CubieFace[]; // always 6, one per axis direction
 };
 
-// Built once from home, per PIECES's grouping of STICKERS by cubie, so a
-// cubie's identity (which physical piece it is) and its 6-face order are
-// stable forever after — later moves rotate a cubie's own fields in place,
-// the same way applyMovePhysical rotates a flat sticker, never re-derived
-// from scratch (a hidden face has no sticker of its own to re-derive from).
-export function homeCubies(): PhysicalCubie[] {
-  const home = homeStickers();
+// Built once from a set of home-positioned stickers, per PIECES's grouping
+// of STICKERS by cubie, so a cubie's identity is stable forever after —
+// later moves rotate a cubie's own fields in place, never re-derived from
+// scratch (a hidden face has no sticker of its own to re-derive from).
+function cubiesFromStickers(home: readonly PhysicalSticker[]): PhysicalCubie[] {
   return PIECES.map((indices) => {
     const stickers = indices.map((i) => home[i]);
     const position = stickers[0].position;
@@ -153,6 +146,23 @@ export function homeCubies(): PhysicalCubie[] {
     });
     return { position, faces };
   });
+}
+
+export function homeCubies(): PhysicalCubie[] {
+  return cubiesFromStickers(homeStickers());
+}
+
+// Places every cubie at its home position/orientation, colored from an
+// arbitrary (already normalized) flat Cube instead of SOLVED — the physical
+// twin of case-state.ts's setupCube() for cases whose setup includes a
+// partial-depth move (f2l-slot-3/4/5). normalize() there relabels every
+// sticker in place, which has no rotation equivalent once corners and edges
+// are independently scrambled too (confirmed by direct computation:
+// homeRotation's best single-rotation candidate still disagreed with
+// normalize() at 25 of 54 facelets for f2l-slot-3's setup) — building the
+// physical model straight from case-state.ts's own array sidesteps that.
+export function cubiesFromColors(cube: Cube): PhysicalCubie[] {
+  return cubiesFromStickers(stickersFromColors(cube));
 }
 
 export function applyMoveToCubies(cubies: readonly PhysicalCubie[], move: Move): PhysicalCubie[] {
@@ -178,9 +188,8 @@ export function applyAlgToCubies(cubies: readonly PhysicalCubie[], moves: readon
   return moves.reduce(applyMoveToCubies, cubies as PhysicalCubie[]);
 }
 
-// Reconstructs colorsAt's flat array from cubies instead of flat stickers,
-// so applyMoveToCubies can be checked against the already-proven
-// applyMovePhysical without a second copy of the exhaustive per-case test.
+// colorsAt's flat array, from cubies — lets applyMoveToCubies be checked
+// against the already-proven applyMovePhysical.
 export function colorsAtCubies(cubies: readonly PhysicalCubie[]): Cube {
   const stickers = cubies.flatMap((c) =>
     c.faces

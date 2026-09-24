@@ -18,6 +18,10 @@ const CORE_CUBIE: PhysicalCubie = {
   faces: ALL_AXES.map((normal): CubieFace => ({ normal, ...perpendicularBasis(normal), colors: ["U"], isSticker: true })),
 };
 
+export function withCore(cubies: readonly PhysicalCubie[]): readonly PhysicalCubie[] {
+  return [...cubies, CORE_CUBIE];
+}
+
 export function homeCubiesWithCore(): readonly PhysicalCubie[] {
-  return [...homeCubies(), CORE_CUBIE];
+  return withCore(homeCubies());
 }
