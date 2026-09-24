@@ -3,12 +3,14 @@ import { parseProgress } from "../lib/progress.ts";
 import type { Progress } from "../lib/progress.ts";
 import type { ImportMode, ImportResult } from "../lib/storage.ts";
 import { el } from "./dom.ts";
+import { dismissable } from "./panel.ts";
 
 type Handlers = {
   cases: readonly Case[];
   cardCount: () => number;
   onExport: () => { filename: string; text: string };
   onImport: (text: string, mode: ImportMode) => ImportResult;
+  onWipe: () => void;
   notify: (message: string | null) => void;
   onOpenChange: (open: boolean) => void;
   // The button that opens it, so pressing that is not also a click elsewhere.
@@ -20,11 +22,17 @@ const noun = (record: Progress["cards"] | Progress["notes"], word: string) => {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 };
 
-// A small card under the top bar's data icon, on the home screen: hidden until
-// opened, closed by a click elsewhere or Escape. It is not a dialog, so nothing
-// else is blocked, and the merge or replace choice appears right where the file
-// was picked.
-export function createDataPanel({ cases, cardCount, onExport, onImport, notify, onOpenChange, trigger }: Handlers) {
+// Where the shared link points, whatever host the app is being viewed from.
+const SITE_URL = "https://cfop.paragone.dev";
+
+// How long a Wipe Data press stays armed before it needs pressing again.
+const ARMED_MS = 4000;
+
+// The menu under the top bar's menu button, on the home screen. The merge or
+// replace choice for a loaded file appears right where the file was picked,
+// and wiping asks for a second press on the button itself, so nothing is a
+// dialog.
+export function createMenu({ cases, cardCount, onExport, onImport, onWipe, notify, onOpenChange, trigger }: Handlers) {
   const element = el("section", "data");
   element.hidden = true;
 
@@ -33,8 +41,10 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
   input.accept = ".json,application/json";
   input.hidden = true;
 
-  const exportButton = el("button", "", "Export");
-  const importButton = el("button", "", "Import");
+  const exportButton = el("button", "", "Save Data");
+  const importButton = el("button", "", "Load Data");
+  const wipeButton = el("button", "", "Wipe Data");
+  const shareButton = el("button", "", "Share");
   const row = (button: HTMLButtonElement, text: string) => {
     const node = el("div", "data-row");
     node.append(button, el("p", "", text));
@@ -44,6 +54,8 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
   actions.append(
     row(exportButton, "Save your progress and notes to a file."),
     row(importButton, "Load a file you saved before."),
+    row(wipeButton, "Erase progress, notes and settings from this browser."),
+    row(shareButton, "Copy a link to this site."),
     input,
   );
 
@@ -57,10 +69,17 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
   element.append(actions, strip);
 
   let pending: string | null = null;
+  let disarm: ReturnType<typeof setTimeout> | undefined;
+
+  function disarmWipe(): void {
+    clearTimeout(disarm);
+    wipeButton.textContent = "Wipe Data";
+  }
 
   function close(): void {
     pending = null;
     strip.hidden = true;
+    disarmWipe();
   }
 
   function apply(mode: ImportMode): void {
@@ -89,6 +108,25 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
 
   importButton.addEventListener("click", () => input.click());
 
+  wipeButton.addEventListener("click", () => {
+    if (wipeButton.textContent === "Wipe Data") {
+      wipeButton.textContent = "Tap again to wipe";
+      disarm = setTimeout(disarmWipe, ARMED_MS);
+      return;
+    }
+    disarmWipe();
+    onWipe();
+  });
+
+  shareButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(SITE_URL);
+      notify("Link copied.");
+    } catch {
+      notify(`Could not copy the link. It is ${SITE_URL}`);
+    }
+  });
+
   input.addEventListener("change", async () => {
     const file = input.files?.[0];
     input.value = "";
@@ -114,25 +152,10 @@ export function createDataPanel({ cases, cardCount, onExport, onImport, notify, 
   replace.addEventListener("click", () => apply("replace"));
   cancel.addEventListener("click", close);
 
-  let opened = false;
-
-  function setOpen(open: boolean): void {
-    opened = open;
-    element.hidden = !open;
+  const panel = dismissable(element, trigger, (open) => {
     if (!open) close();
     onOpenChange(open);
-  }
-
-  document.addEventListener("pointerdown", (e) => {
-    if (e.target instanceof Node && !element.contains(e.target) && !trigger.contains(e.target)) setOpen(false);
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setOpen(false);
   });
 
-  return {
-    element,
-    toggle: () => setOpen(!opened),
-    close: () => setOpen(false),
-  };
+  return { element, ...panel };
 }

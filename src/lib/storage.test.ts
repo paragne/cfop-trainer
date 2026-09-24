@@ -3,7 +3,7 @@ import { ALL_CASES } from "../data/algorithms.ts";
 import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
 import type { Card } from "./srs.ts";
-import { exportJson, importJson, load, save } from "./storage.ts";
+import { exportJson, importJson, load, save, wipe } from "./storage.ts";
 import { stubStorage } from "./storage-stub.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
@@ -155,5 +155,25 @@ describe("importJson", () => {
     stubStorage({}, true);
     const result = importJson(file, "replace", local, ALL_CASES, NOW);
     expect(result).toMatchObject({ ok: true, saved: false });
+  });
+});
+
+describe("wipe", () => {
+  it("removes the progress and both set-aside copies, and nothing else", () => {
+    const data = stubStorage({ [KEY]: "x", [UNREADABLE]: "y", [`${KEY}:pre-v2`]: "z", other: "keep" });
+    expect(wipe()).toBe(true);
+    expect([...data.keys()]).toEqual(["other"]);
+  });
+
+  it("loads as a fresh start afterwards", () => {
+    stubStorage();
+    save(progress({ notes: { [A]: "hook" } }), NOW);
+    wipe();
+    expect(load(ALL_CASES)).toEqual({ progress: defaultProgress(), problem: null });
+  });
+
+  it("says so when the browser refuses", () => {
+    stubStorage({ [KEY]: "x" }, true);
+    expect(wipe()).toBe(false);
   });
 });

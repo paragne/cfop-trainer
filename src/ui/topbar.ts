@@ -1,16 +1,13 @@
 import logoMark from "../assets/logo-mark.svg";
 import { el } from "./dom.ts";
-import { THREE_D_ICON } from "./icons.ts";
+import { HELP_ICON, MENU_ICON, THREE_D_ICON } from "./icons.ts";
 
 type Handlers = {
   onHome: () => void;
-  onData: () => void;
+  onMenu: () => void;
+  onHelp: () => void;
   onThreeD: () => void;
 };
-
-// A tray with a down arrow: the file that export and import move.
-const DATA_ICON =
-  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v5h16v-5"/></svg>';
 
 function iconButton(className: string, label: string, markup: string, onClick: () => void) {
   const node = el("button", className);
@@ -23,32 +20,40 @@ function iconButton(className: string, label: string, markup: string, onClick: (
   return node;
 }
 
-export function createTopbar({ onHome, onData, onThreeD }: Handlers) {
+export function createTopbar({ onHome, onMenu, onHelp, onThreeD }: Handlers) {
   const home = iconButton("logo", "CFOP Trainer, home", `<img src="${logoMark}" alt="" />`, onHome);
-  const data = iconButton("icon", "Export and import", DATA_ICON, onData);
-  data.setAttribute("aria-expanded", "false");
+  const menu = iconButton("icon", "Menu", MENU_ICON, onMenu);
+  menu.setAttribute("aria-expanded", "false");
+  const help = iconButton("icon", "How to use", HELP_ICON, onHelp);
+  help.setAttribute("aria-expanded", "false");
   const threeD = iconButton("icon", "3D view", THREE_D_ICON, onThreeD);
   threeD.setAttribute("aria-pressed", "false");
   threeD.hidden = true;
 
-  // The left cell holds the card's toggles; empty, it keeps the logo centered
-  // against the tools.
+  // The left cell holds the menu on the home screen and the card's toggles
+  // elsewhere; empty, it would let the logo drift off center.
   const left = el("div", "topbar-left");
+  left.append(menu);
   const tools = el("div", "tools");
-  tools.append(threeD, data);
+  tools.append(threeD, help);
   const element = el("header", "topbar");
   element.append(left, home, tools);
 
   return {
     element,
     left,
-    dataButton: data,
-    setDataOpen(open: boolean): void {
-      data.setAttribute("aria-expanded", String(open));
+    menuButton: menu,
+    helpButton: help,
+    setMenuOpen(open: boolean): void {
+      menu.setAttribute("aria-expanded", String(open));
     },
-    // Export and import belong to the home screen alone.
-    setDataAvailable(available: boolean): void {
-      data.hidden = !available;
+    setHelpOpen(open: boolean): void {
+      help.setAttribute("aria-expanded", String(open));
+    },
+    // The menu and the how-to belong to the home screen alone.
+    setHomeTools(available: boolean): void {
+      menu.hidden = !available;
+      help.hidden = !available;
     },
     // A mode, not a per-card choice, so it stays pressed from card to card.
     setThreeD(available: boolean, on: boolean): void {

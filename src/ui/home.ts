@@ -59,6 +59,8 @@ const ROWS: readonly (readonly CaseSet[])[] = [
   ["2-Look PLL", "Full PLL"],
 ];
 
+const REPO_URL = "https://github.com/paragne/cfop-trainer";
+
 const percent = (accuracy: number | null) =>
   accuracy === null ? "–" : `${Math.round(accuracy * 100)}%`;
 
@@ -104,8 +106,13 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
   const startBar = el("div", "start");
   startBar.append(start.node);
 
+  const credit = el("p", "credit");
+  const author = el("a", "", "Paragone on GitHub");
+  author.href = REPO_URL;
+  credit.append(author, ` · v${__APP_VERSION__}`);
+
   const element = el("main", "home");
-  element.append(modeBox, ...setRows, options, stats, startBar);
+  element.append(modeBox, ...setRows, options, stats, credit, startBar);
 
   return {
     element,

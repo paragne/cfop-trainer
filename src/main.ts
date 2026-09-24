@@ -4,17 +4,19 @@ import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { caseView, playView } from "./lib/play.ts";
+import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
 import { setStats } from "./lib/stats.ts";
-import { exportJson, importJson, load, save } from "./lib/storage.ts";
-import { createDataPanel } from "./ui/data-panel.ts";
+import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
+import { createHelp } from "./ui/help.ts";
 import { createHome } from "./ui/home.ts";
 import { bindKeys } from "./ui/keys.ts";
+import { createMenu } from "./ui/menu.ts";
 import { createPrefBar } from "./ui/pref-bar.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
@@ -32,7 +34,14 @@ let screen: Screen = { kind: "home" };
 const status = createStatus();
 const topbar = createTopbar({
   onHome: () => goHome(),
-  onData: () => dataPanel.toggle(),
+  onMenu: () => {
+    help.close();
+    menu.toggle();
+  },
+  onHelp: () => {
+    menu.close();
+    help.toggle();
+  },
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
 });
 const play = {
@@ -76,7 +85,7 @@ const verify = createVerify({
   play,
 });
 const summary = createSummary(() => handle("reveal"));
-const dataPanel = createDataPanel({
+const menu = createMenu({
   cases: ALL_CASES,
   cardCount: () => Object.keys(progress.cards).length,
   onExport: () => exportJson(progress, Date.now()),
@@ -89,10 +98,18 @@ const dataPanel = createDataPanel({
     }
     return result;
   },
+  onWipe: () => {
+    const wiped = wipe();
+    progress = defaultProgress();
+    menu.close();
+    status.show(wiped ? "Data wiped from this browser." : "Could not wipe this browser's storage.");
+    render();
+  },
   notify: (message) => status.show(message),
-  onOpenChange: (open) => topbar.setDataOpen(open),
-  trigger: topbar.dataButton,
+  onOpenChange: (open) => topbar.setMenuOpen(open),
+  trigger: topbar.menuButton,
 });
+const help = createHelp(topbar.helpButton, (open) => topbar.setHelpOpen(open));
 
 function persist(next: Progress): void {
   progress = next;
@@ -122,8 +139,11 @@ function switchSet(set: CaseSet): void {
 
 function render(): void {
   const onHome = screen.kind === "home";
-  topbar.setDataAvailable(onHome);
-  if (!onHome) dataPanel.close();
+  topbar.setHomeTools(onHome);
+  if (!onHome) {
+    menu.close();
+    help.close();
+  }
   home.element.hidden = !onHome;
   prefBar.element.hidden = onHome;
   if (onHome) {
@@ -164,7 +184,8 @@ function handle(action: Action): void {
 
 document.body.append(
   topbar.element,
-  dataPanel.element,
+  menu.element,
+  help.element,
   status.element,
   home.element,
   flashcard.element,

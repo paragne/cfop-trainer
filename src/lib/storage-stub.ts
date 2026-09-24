@@ -10,6 +10,10 @@ export function stubStorage(seed: Record<string, string> = {}, failWrites = fals
       if (failWrites) throw new DOMException("full", "QuotaExceededError");
       data.set(k, v);
     },
+    removeItem: (k: string) => {
+      if (failWrites) throw new DOMException("denied", "SecurityError");
+      data.delete(k);
+    },
   });
   return data;
 }

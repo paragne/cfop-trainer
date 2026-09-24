@@ -62,6 +62,17 @@ export function save(progress: Progress, now: number): boolean {
   return write(KEY, serialize(progress, now));
 }
 
+// Everything this app keeps in the browser, including the copies set aside by
+// a migration or an unreadable blob: wiping is meant to leave nothing behind.
+export function wipe(): boolean {
+  try {
+    for (const key of [KEY, UNREADABLE_KEY, PRE_V2_KEY]) localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function exportJson(progress: Progress, now: number): { filename: string; text: string } {
   return { filename: exportName(new Date(now)), text: serialize(progress, now) };
 }

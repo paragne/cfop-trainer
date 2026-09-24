@@ -40,7 +40,7 @@ body {
 .tools { justify-self: end; display: flex; }
 .icon { display: grid; place-items: center; width: 2.75rem; padding: 0; }
 /* The same chip as Names and Auto-reveal on the other side of the logo. */
-.topbar .tools .icon { min-height: 2rem; width: 2.5rem; border-color: var(--line); background: var(--panel); }
+.topbar .tools .icon, .topbar-left .icon { min-height: 2rem; width: 2.5rem; border-color: var(--line); background: var(--panel); }
 .tools { gap: 0.25rem; }
 .topbar .tools .icon[aria-expanded="true"], .topbar .tools .icon[aria-pressed="true"], .icon[aria-expanded="true"], .icon[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
 
@@ -255,11 +255,11 @@ kbd {
 }
 @media (hover: none) { kbd { display: none; } }
 
-/* A card under the data icon; floats, so opening it moves nothing. */
+/* A card under the top bar; floats, so opening it moves nothing. */
 .data {
   position: fixed;
   top: 3.5rem;
-  right: 0.75rem;
+  left: 0.75rem;
   z-index: 1;
   width: min(22rem, calc(100% - 1.5rem));
   padding: 0.75rem;
@@ -270,11 +270,19 @@ kbd {
   font-size: 0.875rem;
 }
 .data-actions { display: grid; gap: 0.5rem; }
-.data-row { display: grid; grid-template-columns: 6rem 1fr; align-items: center; gap: 0.75rem; }
+.data-row { display: grid; grid-template-columns: 8.5rem 1fr; align-items: center; gap: 0.75rem; }
 .data-row p, .import-strip p { margin: 0; }
 .import-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--line); }
 .import-strip p { flex-basis: 100%; color: var(--fg); }
 .data button { min-height: 2.5rem; }
+/* The how-to sits under the button on its own side. */
+.data.help { left: auto; right: 0.75rem; }
+.help-list { display: grid; gap: 0.25rem 0.75rem; margin: 0; }
+.help-list dt { color: var(--fg); font-weight: 600; }
+.help-list dd { margin: 0 0 0.5rem; }
+
+.credit { margin: 0; color: var(--dim); font-size: 0.75rem; text-align: right; }
+.credit a { color: inherit; }
 
 .summary { justify-content: center; text-align: center; }
 .summary h1 { margin: 0; font-size: 1.5rem; }
