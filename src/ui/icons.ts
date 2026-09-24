@@ -14,14 +14,13 @@ export const THREE_D_ICON = icon(
 );
 
 export const SPEED_ICON = icon(
-  20,
+  16,
   "M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z",
 );
 
-export const CENTER_ICON = icon(
-  20,
-  "M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M19,19H15V21H19A2,2 0 0,0 21,19V15H19M19,3H15V5H19V9H21V5A2,2 0 0,0 19,3M5,5H9V3H5A2,2 0 0,0 3,5V9H5M5,15H3V19A2,2 0 0,0 5,21H9V19H5V15Z",
-);
+// Framing corners around a cube: the view goes back to its frame.
+export const CENTER_ICON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3H8"/><path d="M16 3H21V8"/><path d="M3 16V21H8"/><path d="M16 21H21V16"/><path d="M12 5.5L17 8.2L12 11L7 8.2L12 5.5Z"/><path d="M7 8.2V14.8L12 17.8V11"/><path d="M17 8.2V14.8L12 17.8"/></svg>';
 
 export const NOTE_EDIT_ICON = icon(
   20,

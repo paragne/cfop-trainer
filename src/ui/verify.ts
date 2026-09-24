@@ -39,7 +39,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
   const actions = el("nav", "actions");
   actions.append(primary.node, mismatch.node, match.node);
 
-  element.append(count, ready, figure, name, solution, altLabel, altPicker, regripLine, actions);
+  element.append(name, count, ready, figure, solution, altLabel, altPicker, regripLine, actions);
 
   function renderAlts(v: Verify): void {
     const indices = choices(v);

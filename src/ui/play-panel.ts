@@ -58,7 +58,6 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
 
   const buttons = el("div", "step-buttons");
   buttons.append(
-    squareButton("Center camera", CENTER_ICON, () => session?.view.camera.recenter()),
     speedPop.button,
     squareButton("Step back", "&lt;", () => step("back")),
     squareButton("Play", "▶", play),
@@ -70,7 +69,12 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const controls = el("div", "controls");
   controls.hidden = true;
   controls.append(transport);
-  player.append(stage, controls);
+  // Free orbit works whether or not the solution is revealed, so this does too.
+  const center = squareButton("Center camera", CENTER_ICON, () => session?.view.camera.recenter());
+  center.classList.add("center-camera");
+  const frame = el("div", "frame");
+  frame.append(stage, center);
+  player.append(frame, controls);
   element.append(picture, player);
 
   let session: Session | null = null;

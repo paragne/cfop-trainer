@@ -51,6 +51,7 @@ const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
 });
+topbar.left.append(prefBar.element);
 const flashcard = createFlashcard({
   onReveal: () => handle("reveal"),
   onDontKnow: () => handle("dontKnow"),
@@ -171,7 +172,6 @@ document.body.append(
   dataPanel.element,
   status.element,
   home.element,
-  prefBar.element,
   flashcard.element,
   verify.element,
   summary.element,

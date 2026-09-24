@@ -31,14 +31,17 @@ export function createTopbar({ onHome, onData, onThreeD }: Handlers) {
   threeD.setAttribute("aria-pressed", "false");
   threeD.hidden = true;
 
-  // The empty first cell keeps the logo centered against the tools.
+  // The left cell holds the card's toggles; empty, it keeps the logo centered
+  // against the tools.
+  const left = el("div", "topbar-left");
   const tools = el("div", "tools");
   tools.append(threeD, data);
   const element = el("header", "topbar");
-  element.append(el("span", ""), home, tools);
+  element.append(left, home, tools);
 
   return {
     element,
+    left,
     dataButton: data,
     setDataOpen(open: boolean): void {
       data.setAttribute("aria-expanded", String(open));

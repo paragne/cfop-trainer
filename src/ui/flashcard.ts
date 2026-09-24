@@ -41,12 +41,13 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const actions = el("nav", "actions");
   actions.append(reveal.node, ...grades, next);
 
-  // The note sits under the section line, top left; its button by the count.
-  const side = el("span", "meta-side");
-  side.append(count, notes.button);
+  // The title line: the section, then the card's place in the session. The
+  // note sits under it, its button at the far right.
+  const title = el("span", "title");
+  title.append(section, " · ", count);
   const meta = el("div", "meta");
-  meta.append(section, side, ...notes.body);
-  element.append(meta, figure, name, solution, actions);
+  meta.append(title, notes.button, ...notes.body);
+  element.append(name, meta, figure, solution, actions);
 
   let shown: string | null = null;
   let revealed = false;
