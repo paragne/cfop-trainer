@@ -18,7 +18,8 @@
  * point means the camera always matches whatever's genuinely on screen —
  * for the common case (no twist anywhere in the sequence) homeRotation
  * returns an empty correction throughout and this is a no-op, same as a
- * plain default camera.
+ * plain default camera. main.ts snaps the very first correction after a
+ * case loads and tweens every one after — see camera.ts's setCorrective.
  *
  * The correction itself is homeRotation's — inverted. homeRotation finds
  * the rotation that, applied to a cube's *data*, brings U/F home; camera.ts
@@ -45,6 +46,6 @@ export function applyEyeForCase(camera: Camera, mask: Mask | null): void {
   camera.setTarget(ORIGIN);
 }
 
-export function applyCorrectiveForCubies(camera: Camera, cubies: readonly PhysicalCubie[]): void {
-  camera.setCorrective(invert(homeRotation(colorsAtCubies(cubies))));
+export function applyCorrectiveForCubies(camera: Camera, cubies: readonly PhysicalCubie[], snap: boolean): void {
+  camera.setCorrective(invert(homeRotation(colorsAtCubies(cubies))), snap);
 }

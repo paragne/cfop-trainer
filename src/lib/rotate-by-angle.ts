@@ -31,6 +31,61 @@ export function rotateByAngle(v: Vec, axis: Vec, degrees: number): Vec {
   ];
 }
 
+export type Frame = { right: Vec; up: Vec; back: Vec };
+
+// Finds the single axis and angle that carries `from`'s three orthonormal,
+// right-handed vectors onto `to`'s — lets a camera tween its locked basis
+// between two corrective orientations instead of snapping, since a snap
+// mid-algorithm reads as the view breaking. Extracted via a quaternion
+// (Shepperd's method) rather than the simpler cross-product-sum identity,
+// which degenerates exactly at a 180° swing — the case a corrective flip
+// actually produces.
+export function rotationBetweenFrames(from: Frame, to: Frame): { axis: Vec; degrees: number } {
+  const pairs: [Vec, Vec][] = [
+    [from.right, to.right],
+    [from.up, to.up],
+    [from.back, to.back],
+  ];
+  // Transposed (from[i]*to[j], not to[i]*from[j]): rotateByAngle sweeps
+  // clockwise as seen from the axis tip, the mirror of the plain math
+  // convention the untransposed matrix would extract a quaternion for.
+  const r = (i: number, j: number) => pairs.reduce((sum, [f, t]) => sum + f[i] * t[j], 0);
+  const trace = r(0, 0) + r(1, 1) + r(2, 2);
+  let qw: number;
+  let qx: number;
+  let qy: number;
+  let qz: number;
+  if (trace > 0) {
+    const s = Math.sqrt(trace + 1) * 2;
+    qw = s / 4;
+    qx = (r(2, 1) - r(1, 2)) / s;
+    qy = (r(0, 2) - r(2, 0)) / s;
+    qz = (r(1, 0) - r(0, 1)) / s;
+  } else if (r(0, 0) > r(1, 1) && r(0, 0) > r(2, 2)) {
+    const s = Math.sqrt(1 + r(0, 0) - r(1, 1) - r(2, 2)) * 2;
+    qw = (r(2, 1) - r(1, 2)) / s;
+    qx = s / 4;
+    qy = (r(0, 1) + r(1, 0)) / s;
+    qz = (r(0, 2) + r(2, 0)) / s;
+  } else if (r(1, 1) > r(2, 2)) {
+    const s = Math.sqrt(1 + r(1, 1) - r(0, 0) - r(2, 2)) * 2;
+    qw = (r(0, 2) - r(2, 0)) / s;
+    qx = (r(0, 1) + r(1, 0)) / s;
+    qy = s / 4;
+    qz = (r(1, 2) + r(2, 1)) / s;
+  } else {
+    const s = Math.sqrt(1 + r(2, 2) - r(0, 0) - r(1, 1)) * 2;
+    qw = (r(1, 0) - r(0, 1)) / s;
+    qx = (r(0, 2) + r(2, 0)) / s;
+    qy = (r(1, 2) + r(2, 1)) / s;
+    qz = s / 4;
+  }
+  const sinHalf = Math.hypot(qx, qy, qz);
+  const degrees = (2 * Math.atan2(sinHalf, qw) * 180) / Math.PI;
+  const axis: Vec = sinHalf < 1e-9 ? [1, 0, 0] : [qx / sinHalf, qy / sinHalf, qz / sinHalf];
+  return { axis, degrees };
+}
+
 // The angle to sweep a move's visual animation through, in the engine's own
 // clockwise-from-tip-of-axis sense (mat4.ts's rotationAboutAxis and this
 // file's own rotateByAngle both use that sense, so this needs no sign flip

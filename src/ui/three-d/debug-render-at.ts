@@ -85,7 +85,7 @@ export function renderAt(
   setMask(mask);
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
   applyEyeForCase(camera, mask);
-  applyCorrectiveForCubies(camera, before);
+  applyCorrectiveForCubies(camera, before, true);
   snapTo(before);
   const { axis, depths } = MOVE_AXES[move.name];
   const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));

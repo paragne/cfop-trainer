@@ -73,6 +73,10 @@ if (glContext === null) {
   // correction computed once at load doesn't stay right through the whole
   // animation for every case.
   let lastCorrected: readonly PhysicalCubie[] | null = null;
+  // Set right before a fresh case's first snapTo, so its own first
+  // correction lands instantly instead of tweening from whatever the
+  // previous case last showed — a case switch is an unrelated cut anyway.
+  let snapNextCorrection = true;
   function requestRedraw(): void {
     if (scheduled) return;
     scheduled = true;
@@ -81,7 +85,8 @@ if (glContext === null) {
       const { cubies, inFlight } = player.currentFrame();
       if (inFlight === null && cubies !== lastCorrected) {
         lastCorrected = cubies;
-        applyCorrectiveForCubies(camera, cubies);
+        applyCorrectiveForCubies(camera, cubies, snapNextCorrection);
+        snapNextCorrection = false;
       }
       renderNow(cubies, inFlight);
     });
@@ -145,6 +150,7 @@ if (glContext === null) {
     const setupMoves = invert(solutionMoves);
     applyEyeForCase(camera, c.mask);
     glScene.setMask(c.mask);
+    snapNextCorrection = true;
     player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     stepControls.loadCase(solutionMoves);
@@ -156,6 +162,7 @@ if (glContext === null) {
     syncCameraMode();
     applyEyeForCase(camera, null);
     glScene.setMask(null);
+    snapNextCorrection = true;
     player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";
     stepControls.loadCase([]);
