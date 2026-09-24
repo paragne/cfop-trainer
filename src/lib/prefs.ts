@@ -10,6 +10,7 @@ export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify"];
 export type Prefs = {
   showNames: boolean;
   showSolutions: boolean;
+  showNotes: boolean;
   randomRotation: boolean;
   shuffle: boolean;
   mode: Mode;
@@ -30,6 +31,7 @@ export function defaultPrefs(): Prefs {
   return {
     showNames: true,
     showSolutions: false,
+    showNotes: true,
     randomRotation: false,
     shuffle: true,
     mode: "learn",
@@ -93,7 +95,7 @@ function readInRange(
 
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions" | "randomRotation" | "shuffle" | "threeD"): boolean => {
+  const flag = (key: "showNames" | "showSolutions" | "showNotes" | "randomRotation" | "shuffle" | "threeD"): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -101,6 +103,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
   return {
     showNames: flag("showNames"),
     showSolutions: flag("showSolutions"),
+    showNotes: flag("showNotes"),
     randomRotation: flag("randomRotation"),
     shuffle: flag("shuffle"),
     mode: readMode(raw.mode, defaults.mode),

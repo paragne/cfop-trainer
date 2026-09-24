@@ -17,7 +17,7 @@ export type Screen =
   | { kind: "drill"; drill: Drill; auf: Auf }
   | { kind: "verify"; verify: Verify };
 
-export type Action = "reveal" | "dontKnow" | "know" | "toggleNames";
+export type Action = "reveal" | "dontKnow" | "know" | "next" | "toggleNames";
 
 export type Context = {
   progress: Progress;
@@ -53,7 +53,8 @@ export function start(mode: Mode, ctx: Context): Screen {
   return { kind: "verify", verify: startVerify(cases, progress, random) };
 }
 
-// In Drill, "know" is Next and "dontKnow" is not bound.
+// In Drill, "next" moves on and the grades are not bound; elsewhere "next" is
+// not bound.
 export function press(
   screen: Screen,
   action: Action,
@@ -73,10 +74,10 @@ export function press(
     return verify === screen.verify ? unchanged : { screen: { kind: "verify", verify }, progress };
   }
   if (screen.kind === "drill") {
-    if (action === "dontKnow") return unchanged;
     if (action === "reveal") {
       return { screen: { ...screen, drill: toggleReveal(screen.drill) }, progress };
     }
+    if (action !== "next") return unchanged;
     const drill = nextCase(screen.drill, progress, random);
     return { screen: { kind: "drill", drill, auf: aufFor(drill.current, ctx) }, progress };
   }
@@ -86,6 +87,7 @@ export function press(
   if (action === "reveal") {
     return { screen: { ...screen, session: toggleReveal(screen.session) }, progress };
   }
+  if (action === "next") return unchanged;
   const result = answer(screen.session, progress, action === "know", ctx.now);
   const auf = aufFor(current(result.session), ctx);
   return { screen: { kind: "learn", session: result.session, auf }, progress: result.progress };

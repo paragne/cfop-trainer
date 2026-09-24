@@ -59,7 +59,7 @@ describe("random AUF on the card screens", () => {
   it("is redrawn on Next in Drill", () => {
     const progress = rotated("drill", sets(["Full OLL"]));
     const first = start("drill", withRandom(() => 0.5, progress));
-    const next = press(first, "know", withRandom(() => 0.25, progress)).screen;
+    const next = press(first, "next", withRandom(() => 0.25, progress)).screen;
     expect(cardView(next)?.auf).toBe("U");
   });
 

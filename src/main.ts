@@ -3,14 +3,12 @@ import { ALL_CASES } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
-import { caseView, playView } from "./lib/play.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
-import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
+import { cardView, chooseAlt, press, start } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
-import { setStats } from "./lib/stats.ts";
 import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
 import { createHelp } from "./ui/help.ts";
@@ -18,9 +16,9 @@ import { createHome } from "./ui/home.ts";
 import { bindKeys } from "./ui/keys.ts";
 import { createMenu } from "./ui/menu.ts";
 import { createPrefBar } from "./ui/pref-bar.ts";
+import { renderApp } from "./ui/render-app.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
-import { webgl2Available } from "./ui/three-d/webgl-support.ts";
 import { createTopbar } from "./ui/topbar.ts";
 import { createVerify } from "./ui/verify.ts";
 
@@ -42,6 +40,7 @@ const topbar = createTopbar({
     menu.close();
     help.toggle();
   },
+  onNotes: () => flashcard.editNote(),
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
 });
 const play = {
@@ -60,13 +59,14 @@ const home = createHome({
 const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
+  onNotes: () => commit(setPref(progress, "showNotes", !progress.prefs.showNotes)),
 });
 topbar.left.append(prefBar.element);
 const flashcard = createFlashcard({
   onReveal: () => handle("reveal"),
   onDontKnow: () => handle("dontKnow"),
   onKnow: () => handle("know"),
-  onNext: () => handle("know"),
+  onNext: () => handle("next"),
   onNote: (text) => {
     const view = cardView(screen);
     if (view === null) throw new Error("note edited with no card on screen");
@@ -84,7 +84,7 @@ const verify = createVerify({
   },
   play,
 });
-const summary = createSummary(() => handle("reveal"));
+const summary = createSummary(() => handle("reveal"), goHome);
 const menu = createMenu({
   cases: ALL_CASES,
   cardCount: () => Object.keys(progress.cards).length,
@@ -137,43 +137,7 @@ function switchSet(set: CaseSet): void {
   commit(toggleSet(progress, progress.prefs.mode, set));
 }
 
-function render(): void {
-  const onHome = screen.kind === "home";
-  topbar.setHomeTools(onHome);
-  if (!onHome) {
-    menu.close();
-    help.close();
-  }
-  home.element.hidden = !onHome;
-  prefBar.element.hidden = onHome;
-  if (onHome) {
-    home.render({
-      mode: progress.prefs.mode,
-      selected: progress.prefs.sets[progress.prefs.mode],
-      shuffle: progress.prefs.shuffle,
-      rotation: progress.prefs.randomRotation,
-      stats: setStats(ALL_CASES, progress.cards, Date.now()),
-    });
-  } else {
-    prefBar.render(progress);
-  }
-  const view = cardView(screen);
-  const verifying = verifyView(screen);
-  const result = resultText(screen);
-  flashcard.element.hidden = view === null;
-  verify.element.hidden = verifying === null;
-  summary.element.hidden = result === null;
-  if (view !== null) flashcard.render(view, progress);
-  if (verifying !== null) verify.render(verifying, progress);
-  if (result !== null) summary.render(result);
-
-  const available = webgl2Available();
-  const shown = progress.prefs.threeD && available ? caseView(screen) : null;
-  const playing = shown === null ? null : playView(screen);
-  topbar.setThreeD(available && (view !== null || verifying !== null), progress.prefs.threeD);
-  flashcard.setPlay(view === null ? null : shown, playing, progress.prefs);
-  verify.setPlay(verifying === null ? null : shown, playing, progress.prefs);
-}
+const render = (): void => renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());

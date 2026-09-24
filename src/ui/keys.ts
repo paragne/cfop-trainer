@@ -1,18 +1,21 @@
 import type { Action } from "../lib/screen.ts";
 
-type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean };
+// `control` is a focused button, link or field, where Enter already means
+// something and must keep meaning it.
+type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean };
 
 const BINDINGS = new Map<string, Action>([
   [" ", "reveal"],
   ["1", "dontKnow"],
   ["2", "know"],
   ["n", "toggleNames"],
+  ["enter", "next"],
 ]);
 
 // Typing in a note must not grade, a held modifier is a browser shortcut
 // (Ctrl+1 switches tabs), and auto-repeat must not grade five cards.
-export function actionForKey({ key, typing, modifier, repeat }: KeyInput): Action | null {
-  if (typing || modifier || repeat) return null;
+export function actionForKey({ key, typing, modifier, repeat, control = false }: KeyInput): Action | null {
+  if (typing || modifier || repeat || (control && key === "Enter")) return null;
   return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
@@ -48,6 +51,7 @@ export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step
       typing: typing(e),
       modifier: e.ctrlKey || e.metaKey || e.altKey,
       repeat: e.repeat,
+      control: e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement || e.target instanceof HTMLInputElement,
     });
     if (action === null) return;
     e.preventDefault();

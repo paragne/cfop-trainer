@@ -67,13 +67,18 @@ describe("drill", () => {
     expect(next.progress).toBe(context.progress);
   });
 
-  it("know is Next: a different case, and nothing graded", () => {
+  it("next moves to a different case, and nothing is graded", () => {
     const context = ctx();
     const before = drill();
-    const next = press(before, "know", context);
+    const next = press(before, "next", context);
     expect(cardView(next.screen)?.c.id).not.toBe(cardView(before)?.c.id);
     expect(cardView(next.screen)?.count).toBe("2");
     expect(next.progress).toBe(context.progress);
+  });
+
+  it("does nothing on know, which is no longer Next", () => {
+    const before = drill();
+    expect(press(before, "know", ctx()).screen).toBe(before);
   });
 
   it("does nothing on dontKnow", () => {

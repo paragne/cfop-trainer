@@ -27,6 +27,7 @@ describe("a frozen version 2 blob", () => {
         prefs: {
           showNames: false,
           showSolutions: true,
+          showNotes: true,
           randomRotation: true,
           mode: "drill",
           shuffle: true,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { actionForKey, stepForKey } from "./keys.ts";
 import type { Action } from "../lib/screen.ts";
 
-const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean }> = {}) =>
+const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean; control: boolean }> = {}) =>
   actionForKey({ key, typing: false, modifier: false, repeat: false, ...over });
 
 describe("actionForKey", () => {
@@ -12,11 +12,12 @@ describe("actionForKey", () => {
     ["2", "know"],
     ["n", "toggleNames"],
     ["N", "toggleNames"],
+    ["Enter", "next"],
   ])("maps %j to %s", (key, action) => {
     expect(press(key)).toBe(action);
   });
 
-  it.each(["a", "Enter", "3", "0", "Escape", "Tab", "ArrowLeft", "constructor"])(
+  it.each(["a", "3", "0", "Escape", "Tab", "ArrowLeft", "constructor"])(
     "ignores %j",
     (key) => {
       expect(press(key)).toBeNull();
@@ -33,6 +34,20 @@ describe("actionForKey", () => {
 
   it.each([" ", "1", "2", "n"])("does nothing for an auto-repeated %j", (key) => {
     expect(press(key, { repeat: true })).toBeNull();
+  });
+});
+
+describe("Enter", () => {
+  it("does nothing while typing in a note", () => {
+    expect(press("Enter", { typing: true })).toBeNull();
+  });
+
+  it("does nothing on a focused button, link or field, where it already activates them", () => {
+    expect(press("Enter", { control: true })).toBeNull();
+  });
+
+  it("leaves the other keys alone when a control has focus", () => {
+    expect(press(" ", { control: true })).toBe("reveal");
   });
 });
 

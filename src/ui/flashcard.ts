@@ -32,22 +32,23 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const notes = createNotes(onNote);
 
   const reveal = keyedButton("primary", "Reveal", "space", onReveal);
-  // Drill's Next shares key 2 with Know it: the same finger, and nothing is graded.
   const grades = [
     keyedButton("", "Don't know", "1", onDontKnow).node,
     keyedButton("", "Know it", "2", onKnow).node,
   ];
-  const next = keyedButton("", "Next", "2", onNext).node;
+  const next = keyedButton("", "Next", "enter", onNext).node;
   const actions = el("nav", "actions");
   actions.append(reveal.node, ...grades, next);
 
-  // The title line: the section, then the card's place in the session. The
-  // note sits under it, its button at the far right.
+  // The title line: the section, then the card's place in the session.
   const title = el("span", "title");
   title.append(section, " · ", count);
   const meta = el("div", "meta");
-  meta.append(title, notes.button, ...notes.body);
-  element.append(name, meta, figure, solution, actions);
+  meta.append(title);
+  // The note shares the name's row, on the right.
+  const headline = el("div", "headline");
+  headline.append(name, notes.element);
+  element.append(headline, meta, figure, solution, actions);
 
   let shown: string | null = null;
   let revealed = false;
@@ -73,7 +74,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
       shown = key;
     }
 
-    notes.show(progress.notes[c.id] ?? "");
+    notes.show(progress.notes[c.id] ?? "", progress.prefs.showNotes);
 
     name.hidden = !progress.prefs.showNames || name.textContent === "";
     revealed = view.revealed;
@@ -93,5 +94,6 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
       showSolution();
     },
     step: stage.step,
+    editNote: notes.edit,
   };
 }
