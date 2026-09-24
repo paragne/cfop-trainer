@@ -1,50 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parse, stringify } from "../../lib/notation.ts";
-import type { Move } from "../../lib/notation.ts";
-import type { Player } from "./player.ts";
-import { createStepMode, FAST_MOVE_MS } from "./step-mode.ts";
-
-const SLOW = 400;
-
-// A player whose moves finish when the test says so, so a step can be caught
-// mid-animation.
-function fakePlayer() {
-  const played: { moves: string; ms: number | undefined }[] = [];
-  const finishers: (() => void)[] = [];
-  const reporters: ((index: number, fraction: number) => void)[] = [];
-  const player: Player = {
-    snapTo: () => {},
-    pause: () => {},
-    resume: () => {},
-    currentFrame: () => ({ cubies: [], inFlight: null }),
-    play(moves: readonly Move[], ms?: number, onProgress?: (index: number, fraction: number) => void) {
-      played.push({ moves: stringify(moves), ms });
-      if (onProgress !== undefined) reporters.push(onProgress);
-      return new Promise<void>((resolve) => finishers.push(resolve));
-    },
-  };
-  const finish = async () => {
-    finishers.shift()?.();
-    await Promise.resolve();
-    await Promise.resolve();
-  };
-  // Reports that move `index` of the latest play is `fraction` of the way turned.
-  const turn = (index: number, fraction: number) => reporters[reporters.length - 1]?.(index, fraction);
-  return { player, played, finish, turn };
-}
-
-function setup(alg = "R U R'") {
-  const fake = fakePlayer();
-  const positions: number[] = [];
-  let settled = 0;
-  const mode = createStepMode(fake.player, {
-    onSettled: () => settled++,
-    onProgress: (boundary) => positions.push(boundary),
-    durationMs: () => SLOW,
-  });
-  mode.load(parse(alg));
-  return { ...fake, mode, positions, settled: () => settled };
-}
+import { FAST_MOVE_MS } from "./step-mode.ts";
+import { setup, SLOW } from "./step-mode.fixture.ts";
 
 describe("stepping inside the algorithm", () => {
   it("plays the next move forward, and the previous move inverted backward", async () => {

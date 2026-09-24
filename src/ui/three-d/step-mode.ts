@@ -8,12 +8,15 @@
  * spamming Prev/Next can't overlap two animations on the same player.
  * Wraps the existing Player rather than re-animating.
  *
+ * Jumping to the start or the end skips the animation and snaps the cube there.
+ *
  * Stepping past either end goes full circle: forward from the end replays the
  * whole algorithm backward, and back from the start replays it forward, both
  * at a fixed fast pace that ignores the speed setting.
  */
 import { invert } from "../../lib/notation.ts";
 import type { Move } from "../../lib/notation.ts";
+import { applyAlgToCubies } from "../../lib/physical-cube.ts";
 import type { Player } from "./player.ts";
 
 export const FAST_MOVE_MS = 60;
@@ -33,6 +36,8 @@ export type StepMode = {
   load(moves: readonly Move[]): void;
   stepForward(): void;
   stepBackward(): void;
+  goToStart(): void;
+  goToEnd(): void;
   // From the start, steps forward move after move until the end, unless a
   // step of the user's own interrupts it.
   playAll(): void;
@@ -40,7 +45,7 @@ export type StepMode = {
   moves(): readonly Move[];
 };
 
-type Direction = "forward" | "backward";
+type Direction = "forward" | "backward" | "start" | "end";
 
 export function createStepMode(player: Player, { onSettled, onProgress, durationMs }: StepEvents): StepMode {
   let moves: readonly Move[] = [];
@@ -49,8 +54,23 @@ export function createStepMode(player: Player, { onSettled, onProgress, duration
   let auto = false;
   let pending: Direction | null = null;
 
+  // Snaps rather than animates, so the state has to be computed here: the
+  // player is at rest, since a request made mid-move waits in `pending`.
+  function jump(direction: "start" | "end"): void {
+    const toEnd = direction === "end";
+    const remaining = toEnd ? moves.slice(index) : invert(moves.slice(0, index));
+    player.snapTo(applyAlgToCubies(player.currentFrame().cubies, remaining));
+    index = toEnd ? moves.length : 0;
+    auto = false;
+    onSettled();
+  }
+
   function runStep(direction: Direction): void {
     if (moves.length === 0) return;
+    if (direction === "start" || direction === "end") {
+      jump(direction);
+      return;
+    }
     const forward = direction === "forward";
     const wraps = forward ? index >= moves.length : index <= 0;
     const target = wraps ? (forward ? 0 : moves.length) : index + (forward ? 1 : -1);
@@ -99,6 +119,14 @@ export function createStepMode(player: Player, { onSettled, onProgress, duration
     stepBackward() {
       auto = false;
       requestStep("backward");
+    },
+    goToStart() {
+      auto = false;
+      requestStep("start");
+    },
+    goToEnd() {
+      auto = false;
+      requestStep("end");
     },
     playAll() {
       auto = true;

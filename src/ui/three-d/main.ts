@@ -79,7 +79,7 @@ if (glContext === null) {
 
   document.addEventListener("keydown", (e) => {
     const step = stepForKey({ key: e.key, typing: editingKey(e.target), modifier: e.ctrlKey || e.metaKey || e.altKey });
-    if (step === null) return;
+    if (step !== "forward" && step !== "back") return;
     if (step === "forward") stepControls.stepForward();
     else stepControls.stepBackward();
     e.preventDefault();

@@ -16,14 +16,16 @@ export function actionForKey({ key, typing, modifier, repeat }: KeyInput): Actio
   return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
-export type Step = "back" | "forward";
+export type Step = "back" | "forward" | "start" | "end";
 
-// Arrows also move a caret in a note and a slider's thumb, so they yield to
+// Left and right step, up and down jump to the end and the start. Arrows also move a caret in a note and a slider's thumb, so they yield to
 // both. They are not an Action: they never grade, reveal or reach the screen.
 export function stepForKey({ key, typing, modifier }: Omit<KeyInput, "repeat">): Step | null {
   if (typing || modifier) return null;
   if (key === "ArrowLeft") return "back";
-  return key === "ArrowRight" ? "forward" : null;
+  if (key === "ArrowRight") return "forward";
+  if (key === "ArrowUp") return "end";
+  return key === "ArrowDown" ? "start" : null;
 }
 
 // Whether an arrow key belongs to the control that has focus instead.

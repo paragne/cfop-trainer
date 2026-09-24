@@ -43,21 +43,23 @@ describe("stepForKey", () => {
   it("maps the arrows to steps", () => {
     expect(arrow("ArrowLeft")).toBe("back");
     expect(arrow("ArrowRight")).toBe("forward");
+    expect(arrow("ArrowUp")).toBe("end");
+    expect(arrow("ArrowDown")).toBe("start");
   });
 
-  it.each([" ", "1", "2", "n", "ArrowUp", "ArrowDown", "a"])("ignores %j, so no other key steps", (key) => {
+  it.each([" ", "1", "2", "n", "a"])("ignores %j, so no other key steps", (key) => {
     expect(arrow(key)).toBeNull();
   });
 
-  it.each(["ArrowLeft", "ArrowRight"])("leaves %s to the caret while typing in a note", (key) => {
+  it.each(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])("leaves %s to the caret while typing in a note", (key) => {
     expect(arrow(key, { typing: true })).toBeNull();
   });
 
-  it.each(["ArrowLeft", "ArrowRight"])("leaves %s alone with Ctrl, Cmd or Alt held", (key) => {
+  it.each(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])("leaves %s alone with Ctrl, Cmd or Alt held", (key) => {
     expect(arrow(key, { modifier: true })).toBeNull();
   });
 
-  it.each(["ArrowLeft", "ArrowRight"])("keeps %s off every action, so it cannot collide with Space, 1, 2 or n", (key) => {
+  it.each(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"])("keeps %s off every action, so it cannot collide with Space, 1, 2 or n", (key) => {
     expect(press(key)).toBeNull();
   });
 });
