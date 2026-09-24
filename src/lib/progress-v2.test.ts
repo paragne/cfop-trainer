@@ -31,7 +31,9 @@ describe("a frozen version 2 blob", () => {
           mode: "drill",
           verifyLength: 20,
           threeD: true,
-          speed: 1.5,
+          // The blob predates the fixed speed choices; 1.5 sits halfway between
+          // 1x and 2x and snaps to the slower.
+          speed: 1,
           zoom: 2,
           sets: {
             learn: ["Full OLL", "F2L"],

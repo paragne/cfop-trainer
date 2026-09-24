@@ -13,14 +13,20 @@ export const THREE_D_ICON = icon(
   "M5,7H9A2,2 0 0,1 11,9V15A2,2 0 0,1 9,17H5V15H9V13H6V11H9V9H5V7M13,7H16A3,3 0 0,1 19,10V14A3,3 0 0,1 16,17H13V7M16,15A1,1 0 0,0 17,14V10A1,1 0 0,0 16,9H15V15H16Z",
 );
 
-export const SPEED_ICON = icon(
+// Double chevrons, as on a TV remote: skip to either end of the algorithm.
+export const SKIP_BACK_ICON = icon(
   16,
-  "M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z",
+  "M18.41,7.41L17,6L11,12L17,18L18.41,16.59L13.83,12L18.41,7.41M12.41,7.41L11,6L5,12L11,18L12.41,16.59L7.83,12L12.41,7.41Z",
+);
+
+export const SKIP_FORWARD_ICON = icon(
+  16,
+  "M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M11.59,7.41L16.18,12L11.59,16.59L13,18L19,12L13,6L11.59,7.41Z",
 );
 
 // Framing corners around a cube: the view goes back to its frame.
 export const CENTER_ICON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3H8"/><path d="M16 3H21V8"/><path d="M3 16V21H8"/><path d="M16 21H21V16"/><path d="M12 5.5L17 8.2L12 11L7 8.2L12 5.5Z"/><path d="M7 8.2V14.8L12 17.8V11"/><path d="M17 8.2V14.8L12 17.8"/></svg>';
+  '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3H8"/><path d="M16 3H21V8"/><path d="M3 16V21H8"/><path d="M16 21H21V16"/><path d="M12 6.8L16.5 9.4L12 12L7.5 9.4L12 6.8Z"/><path d="M7.5 9.4L7.5 14.6L12 17.2L12 12"/><path d="M16.5 9.4L16.5 14.6L12 17.2"/></svg>';
 
 export const NOTE_EDIT_ICON = icon(
   20,

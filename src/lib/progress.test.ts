@@ -54,7 +54,7 @@ describe("serialize and parseProgress", () => {
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         verifyLength: 5,
-        threeD: true, speed: 2.5, zoom: 2,
+        threeD: true, speed: 2, zoom: 2,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultPrefs, readPrefs, SPEED_RANGE, ZOOM_RANGE } from "./prefs.ts";
+import { defaultPrefs, readPrefs, SPEEDS, ZOOM_RANGE } from "./prefs.ts";
 
 describe("readPrefs for the 3D view", () => {
   it("takes the defaults when a stored blob predates them", () => {
@@ -11,18 +11,32 @@ describe("readPrefs for the 3D view", () => {
     expect(readPrefs({ stepMode: true, radius: 99 })).toEqual(defaultPrefs());
   });
 
+  it("accepts both ends of the zoom slider", () => {
+    expect(readPrefs({ zoom: ZOOM_RANGE.min }).zoom).toBe(ZOOM_RANGE.min);
+    expect(readPrefs({ zoom: ZOOM_RANGE.max }).zoom).toBe(ZOOM_RANGE.max);
+  });
+
+  it.each(SPEEDS)("keeps the offered speed %s", (speed) => {
+    expect(readPrefs({ speed }).speed).toBe(speed);
+  });
+
   it.each([
-    ["speed", SPEED_RANGE],
-    ["zoom", ZOOM_RANGE],
-  ] as const)("accepts both ends of the %s slider", (key, { min, max }) => {
-    expect(readPrefs({ [key]: min })[key]).toBe(min);
-    expect(readPrefs({ [key]: max })[key]).toBe(max);
+    [0.25, 0.2],
+    [0.4, 0.5],
+    [1.4, 1],
+    [3, 2],
+    [3.1, 4],
+    [7, 4],
+    [8, 10],
+    [100, 10],
+    [0, 0.2],
+  ])("snaps a slider-era speed of %s to %s", (stored, snapped) => {
+    expect(readPrefs({ speed: stored }).speed).toBe(snapped);
   });
 
   it.each([
     ["a non-boolean threeD", { threeD: "on" }, "prefs.threeD"],
-    ["a speed below the slider", { speed: SPEED_RANGE.min / 2 }, "prefs.speed"],
-    ["a speed above the slider", { speed: SPEED_RANGE.max + 1 }, "prefs.speed"],
+    ["a null speed (what JSON makes of NaN)", { speed: null }, "prefs.speed"],
     ["a string speed", { speed: "2" }, "prefs.speed"],
     ["a zoom below the range", { zoom: ZOOM_RANGE.min - 0.1 }, "prefs.zoom"],
     ["a null zoom (what JSON makes of NaN)", { zoom: null }, "prefs.zoom"],

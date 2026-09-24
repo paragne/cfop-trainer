@@ -19,9 +19,8 @@ export type Prefs = {
   zoom: number;
 };
 
-// The 3D view's speed slider shares this with the validation below, so a
-// stored value can never sit outside what the slider can show.
-export const SPEED_RANGE = { min: 0.25, max: 4, step: 0.25 } as const;
+// The playback speeds the 3D view offers, as multipliers of the base pace.
+export const SPEEDS = [0.2, 0.5, 1, 2, 4, 10] as const;
 // A multiplier on the size that fits the canvas, so 1 is always "fills it".
 export const ZOOM_RANGE = { min: 0.5, max: 3 } as const;
 
@@ -85,6 +84,14 @@ function readVerifyLength(value: unknown, fallback: VerifyLength): VerifyLength 
   return VERIFY_LENGTHS.find((n) => n === value) ?? reject(`prefs.verifyLength must be one of ${VERIFY_LENGTHS.join(", ")}`);
 }
 
+// A speed saved by an earlier build's slider snaps to the nearest choice
+// instead of discarding the whole blob.
+function readSpeed(value: unknown, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (typeof value !== "number" || !Number.isFinite(value)) return reject("prefs.speed must be a number");
+  return SPEEDS.reduce((best, s) => (Math.abs(s - value) < Math.abs(best - value) ? s : best));
+}
+
 function readInRange(
   value: unknown,
   range: { min: number; max: number },
@@ -111,7 +118,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     sets: raw.sets === undefined ? defaults.sets : readSets(raw.sets, defaults.sets),
     verifyLength: readVerifyLength(raw.verifyLength, defaults.verifyLength),
     threeD: flag("threeD"),
-    speed: readInRange(raw.speed, SPEED_RANGE, defaults.speed, "prefs.speed"),
+    speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
   };
 }

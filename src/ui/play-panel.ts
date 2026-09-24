@@ -9,7 +9,7 @@ import { createAlgStrip } from "./alg-strip.ts";
 import { el, squareButton } from "./dom.ts";
 import { CENTER_ICON } from "./icons.ts";
 import type { Step } from "./keys.ts";
-import { createSpeedPop } from "./speed-pop.ts";
+import { createTransport } from "./transport.ts";
 import { withCore } from "./three-d/core-cubie.ts";
 import { createCubeView } from "./three-d/cube-view.ts";
 import type { CubeView } from "./three-d/cube-view.ts";
@@ -52,19 +52,17 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const stage = el("div", "stage");
   const strip = createAlgStrip();
 
-  const speedPop = createSpeedPop((speed) => {
-    speedValue = speed;
-    onSpeed(speed);
+  const { element: buttons, speedPop } = createTransport({
+    onSpeed: (speed) => {
+      speedValue = speed;
+      onSpeed(speed);
+    },
+    onStart: () => step("start"),
+    onBack: () => step("back"),
+    onPlay: play,
+    onForward: () => step("forward"),
+    onEnd: () => step("end"),
   });
-
-  const buttons = el("div", "step-buttons");
-  buttons.append(
-    speedPop.button,
-    squareButton("Step back", "&lt;", () => step("back")),
-    squareButton("Play", "▶", play),
-    squareButton("Step forward", "&gt;", () => step("forward")),
-    speedPop.popover,
-  );
   const transport = el("div", "transport");
   transport.append(strip.element, buttons);
   const controls = el("div", "controls");
@@ -133,8 +131,11 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
 
   function step(direction: Step): void {
     clearTimeout(hold);
-    if (direction === "forward") session?.stepper.stepForward();
-    else session?.stepper.stepBackward();
+    const stepper = session?.stepper;
+    if (direction === "forward") stepper?.stepForward();
+    else if (direction === "back") stepper?.stepBackward();
+    else if (direction === "start") stepper?.goToStart();
+    else stepper?.goToEnd();
   }
 
   function close(): void {
