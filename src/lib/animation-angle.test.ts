@@ -32,6 +32,7 @@ const MOVES: readonly Move[] = [
   { name: "R", turns: 1, prime: false },
   { name: "R", turns: 1, prime: true },
   { name: "F", turns: 2, prime: false },
+  { name: "U", turns: 2, prime: true },
   { name: "M", turns: 1, prime: false },
   { name: "r", turns: 1, prime: false },
   { name: "y", turns: 1, prime: false },

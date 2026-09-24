@@ -93,7 +93,9 @@ export function rotationBetweenFrames(from: Frame, to: Frame): { axis: Vec; degr
 // rotate(). A prime quarter turn animates through -90°, one turn backward,
 // rather than +270° (three forward quarters) — same end state, shorter
 // visual sweep. Half turns (180°) have no direction, so the sign doesn't
-// matter there.
+// matter there — and a half turn can carry a prime ("U2'"), which must not
+// be read as a quarter turn.
 export function animationAngleDegrees(move: Move): number {
-  return move.prime ? -90 : move.turns === 2 ? 180 : 90;
+  if (move.turns === 2) return 180;
+  return move.prime ? -90 : 90;
 }
