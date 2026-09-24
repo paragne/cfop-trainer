@@ -121,9 +121,11 @@ describe("toggleSet", () => {
     expect(toggleSet(withLearn(["Full PLL"]), "learn", "F2L").prefs.sets.learn).toEqual(["Full PLL", "F2L"]);
   });
 
-  it("refuses to switch off the last set, returning the same object", () => {
-    const only = withLearn(["Full OLL"]);
-    expect(toggleSet(only, "learn", "Full OLL")).toBe(only);
+  it("switches off the last set, and the empty selection survives a save and reload", () => {
+    const empty = toggleSet(withLearn(["Full OLL"]), "learn", "Full OLL");
+    expect(empty.prefs.sets.learn).toEqual([]);
+    const loaded = parseProgress(serialize(empty, 1), ALL_CASES);
+    expect(loaded.ok && loaded.progress.prefs.sets.learn).toEqual([]);
   });
 
   it("changes only the chosen mode, and not its input", () => {

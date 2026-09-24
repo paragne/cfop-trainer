@@ -62,7 +62,8 @@ export function press(
   const { progress, random } = ctx;
   const unchanged = { screen, progress };
   if (screen.kind === "home") {
-    return action === "reveal" ? { screen: start(progress.prefs.mode, ctx), progress } : unchanged;
+    const startable = progress.prefs.sets[progress.prefs.mode].length > 0;
+    return action === "reveal" && startable ? { screen: start(progress.prefs.mode, ctx), progress } : unchanged;
   }
   if (action === "toggleNames") {
     return { screen, progress: setPref(progress, "showNames", !progress.prefs.showNames) };

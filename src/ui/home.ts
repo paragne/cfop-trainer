@@ -1,10 +1,11 @@
 import { SET_GROUP } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import type { Mode } from "../lib/prefs.ts";
+import { SET_ORDER } from "../lib/selection.ts";
 import { tickStates } from "../lib/stats.ts";
 import type { SetStats } from "../lib/stats.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
-import { SHUFFLE_ICON } from "./icons.ts";
+import { AUF_ICON, SHUFFLE_ICON } from "./icons.ts";
 
 type Handlers = {
   // Only modes that exist. A mode added to this list gets a button.
@@ -13,6 +14,7 @@ type Handlers = {
   sets: readonly CaseSet[];
   onMode: (mode: Mode) => void;
   onSet: (set: CaseSet) => void;
+  onShuffle: () => void;
   onRotation: () => void;
   onStart: () => void;
 };
@@ -20,8 +22,8 @@ type Handlers = {
 export type HomeView = {
   mode: Mode;
   selected: readonly CaseSet[];
+  shuffle: boolean;
   rotation: boolean;
-  learnDue: number;
   stats: readonly SetStats[];
 };
 
@@ -38,22 +40,39 @@ const SET_LABEL: Record<CaseSet, string> = {
   "Full PLL": "Full PLL",
 };
 
-// One color per set, used only here: it is what tells the strips apart. The
-// F2L sets share a green family.
+// A rainbow down the page, in the order the sets are listed: it is what tells
+// the strips apart.
 const SET_COLOR: Record<CaseSet, string> = {
-  F2L: "#4ade80",
-  "Advanced F2L": "#2dd4bf",
-  "Expert F2L": "#a3e635",
-  "2-Look OLL": "#facc15",
-  "2-Look PLL": "#fb923c",
+  F2L: "#f87171",
+  "Advanced F2L": "#fb923c",
+  "Expert F2L": "#facc15",
+  "2-Look OLL": "#4ade80",
   "Full OLL": "#60a5fa",
-  "Full PLL": "#f472b6",
+  "2-Look PLL": "#818cf8",
+  "Full PLL": "#c084fc",
 };
+
+// The set toggles, a row per family. Each row is narrower than the one above.
+const ROWS: readonly (readonly CaseSet[])[] = [
+  ["F2L", "Advanced F2L", "Expert F2L"],
+  ["2-Look OLL", "Full OLL"],
+  ["2-Look PLL", "Full PLL"],
+];
 
 const percent = (accuracy: number | null) =>
   accuracy === null ? "–" : `${Math.round(accuracy * 100)}%`;
 
-export function createHome({ modes, sets, onMode, onSet, onRotation, onStart }: Handlers) {
+function iconToggle(label: string, markup: string, onClick: () => void): HTMLButtonElement {
+  const button = toggleButton("", onClick);
+  button.classList.add("icon-toggle");
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  // Constant markup, never user text.
+  button.innerHTML = markup;
+  return button;
+}
+
+export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, onStart }: Handlers) {
   const modeButtons = new Map(modes.map((mode) => [mode, toggleButton(LABEL[mode], () => onMode(mode))]));
   const setButtons = new Map(sets.map((set) => [set, toggleButton(SET_LABEL[set], () => onSet(set))]));
 
@@ -62,21 +81,22 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onStart }: 
   modeBox.setAttribute("aria-label", "Mode");
   modeBox.append(...modeButtons.values());
 
-  const setBox = el("div", "set-toggles");
-  setBox.setAttribute("role", "group");
-  setBox.setAttribute("aria-label", "Case sets");
-  setBox.append(...setButtons.values());
+  const setRows = ROWS.map((row, i) => {
+    const buttons = row.flatMap((set) => setButtons.get(set) ?? []);
+    const box = el("div", i === 0 ? "set-row f2l" : "set-row last-layer");
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", "Case sets");
+    box.append(...buttons);
+    box.hidden = buttons.length === 0;
+    return box;
+  });
 
-  // Applies to OLL and PLL cards in every mode, so it sits with the session
-  // setup and not on the card screens.
-  const rotation = toggleButton("", onRotation);
-  rotation.classList.add("icon-toggle");
-  rotation.title = "Toggle Random AUF";
-  rotation.setAttribute("aria-label", "Toggle Random AUF");
-  // Constant markup, never user text.
-  rotation.innerHTML = SHUFFLE_ICON;
+  // Both apply in every mode, so they sit with the session setup and not on
+  // the card screens. A random AUF turns the OLL and PLL pictures.
+  const shuffle = iconToggle("Toggle Shuffle", SHUFFLE_ICON, onShuffle);
+  const rotation = iconToggle("Toggle Random AUF", AUF_ICON, onRotation);
   const options = el("div", "options");
-  options.append(rotation);
+  options.append(shuffle, rotation);
 
   const stats = el("div", "stats");
 
@@ -85,13 +105,12 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onStart }: 
   startBar.append(start.node);
 
   const element = el("main", "home");
-  element.append(modeBox, setBox, options, stats, startBar);
+  element.append(modeBox, ...setRows, options, stats, startBar);
 
   return {
     element,
-    render({ mode, selected, rotation: randomAuf, learnDue, stats: view }: HomeView): void {
+    render({ mode, selected, shuffle: shuffled, rotation: randomAuf, stats: view }: HomeView): void {
       for (const [m, button] of modeButtons) {
-        button.textContent = m === "learn" ? `${LABEL[m]} · ${learnDue} due` : LABEL[m];
         button.setAttribute("aria-pressed", String(m === mode));
       }
       for (const [set, button] of setButtons) {
@@ -100,9 +119,11 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onStart }: 
         // disabled rather than hidden, staying legible as "not offered here".
         if (SET_GROUP[set] === "F2L") button.disabled = mode === "verify";
       }
+      start.node.disabled = selected.length === 0;
+      shuffle.setAttribute("aria-pressed", String(shuffled));
       rotation.setAttribute("aria-pressed", String(randomAuf));
       stats.replaceChildren(
-        ...view.map(({ set, seen, total, learned, missed, accuracy, due }) => {
+        ...view.toSorted((a, b) => SET_ORDER.indexOf(a.set) - SET_ORDER.indexOf(b.set)).map(({ set, seen, total, learned, missed, accuracy, due }) => {
           const strip = el("div", "ticks");
           strip.append(...tickStates(learned, missed, total).map((tick) => el("span", `tick ${tick}`)));
           const numbers = el("span", "stat-numbers", `${learned} / ${total} learned · ${percent(accuracy)} · ${due} due`);

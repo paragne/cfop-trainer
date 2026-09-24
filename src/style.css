@@ -49,7 +49,7 @@ body {
 .topbar .prefs .toggle { min-height: 2rem; padding: 0.125rem 0.5rem; border-color: var(--line); background: var(--panel); font-size: 0.75rem; white-space: nowrap; }
 .topbar .prefs kbd { display: none; }
 .topbar .prefs .toggle[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
-.set-toggles, .modes, .options { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.set-toggles, .modes, .options, .set-row { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 
 /* Pressed is inverted grayscale, so the accent stays on the primary action. */
 .toggle { min-height: 2.25rem; padding: 0.25rem 0.75rem; font-size: 0.875rem; }
@@ -76,6 +76,13 @@ body {
 
 .modes .toggle { flex: 1; min-height: 2.75rem; }
 .set-toggles .toggle { flex: 1 1 auto; }
+/* Each row narrower than the last, centered: modes, F2L, then the last layer. */
+.set-row { align-self: center; }
+.set-row .toggle { flex: 1; }
+.set-row.f2l { width: 88%; }
+.set-row.last-layer { width: 68%; }
+.options { align-self: center; justify-content: center; width: 40%; min-width: 9rem; }
+.options .icon-toggle { flex: 1; width: auto; }
 
 .stats { display: grid; gap: 1rem; padding: 0.5rem 0; }
 .stat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; margin-bottom: 0.4rem; }

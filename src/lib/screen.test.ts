@@ -33,6 +33,15 @@ describe("home", () => {
     expect(next.screen.kind).toBe(mode);
   });
 
+  it("does not start a mode with no sets selected", () => {
+    const base = defaultProgress();
+    const none = { ...base, prefs: { ...base.prefs, sets: { ...base.prefs.sets, learn: [] } } };
+    const context = ctx(none);
+    const next = press(home, "reveal", context);
+    expect(next.screen).toBe(home);
+    expect(next.progress).toBe(context.progress);
+  });
+
   it.each<Action>(["dontKnow", "know", "toggleNames"])("ignores %s", (action) => {
     const context = ctx();
     const next = press(home, action, context);

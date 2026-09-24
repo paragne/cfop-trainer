@@ -9,7 +9,7 @@ import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progr
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
-import { dueCount, setStats } from "./lib/stats.ts";
+import { setStats } from "./lib/stats.ts";
 import { exportJson, importJson, load, save } from "./lib/storage.ts";
 import { createDataPanel } from "./ui/data-panel.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
@@ -44,6 +44,7 @@ const home = createHome({
   sets: offeredSets(ALL_CASES),
   onMode: (mode) => commit(setMode(progress, mode)),
   onSet: (set) => switchSet(set),
+  onShuffle: () => commit(setPref(progress, "shuffle", !progress.prefs.shuffle)),
   onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),
   onStart: () => startMode(progress.prefs.mode),
 });
@@ -115,12 +116,8 @@ function startMode(mode: Mode): void {
   render();
 }
 
-// Switching off the last set is a no-op that toggleSet reports by returning
-// its input.
 function switchSet(set: CaseSet): void {
-  const next = toggleSet(progress, progress.prefs.mode, set);
-  if (next !== progress) persist(next);
-  render();
+  commit(toggleSet(progress, progress.prefs.mode, set));
 }
 
 function render(): void {
@@ -130,13 +127,12 @@ function render(): void {
   home.element.hidden = !onHome;
   prefBar.element.hidden = onHome;
   if (onHome) {
-    const now = Date.now();
     home.render({
       mode: progress.prefs.mode,
       selected: progress.prefs.sets[progress.prefs.mode],
+      shuffle: progress.prefs.shuffle,
       rotation: progress.prefs.randomRotation,
-      learnDue: dueCount(ALL_CASES, progress.cards, progress.prefs.sets.learn, now),
-      stats: setStats(ALL_CASES, progress.cards, now),
+      stats: setStats(ALL_CASES, progress.cards, Date.now()),
     });
   } else {
     prefBar.render(progress);

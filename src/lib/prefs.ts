@@ -45,9 +45,7 @@ export function defaultPrefs(): Prefs {
 }
 
 function readSetList(value: unknown, where: string): CaseSet[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    return reject(`${where} must be a non-empty list`);
-  }
+  if (!Array.isArray(value)) return reject(`${where} must be a list`);
   return value.map(
     (s: unknown) =>
       CASE_SETS.find((known) => known === s) ??

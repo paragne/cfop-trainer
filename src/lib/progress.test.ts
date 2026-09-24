@@ -99,8 +99,6 @@ describe("parseProgress rejects", () => {
     ["an F2L set for verify among others", bad({ prefs: { sets: { verify: ["Full OLL", "F2L"] } } }), "prefs.sets.verify"],
     ["a shuffle that is not a boolean", bad({ prefs: { shuffle: "on" } }), "prefs.shuffle"],
     ["sets that is not an object", bad({ prefs: { sets: ["F2L"] } }), "prefs.sets"],
-    ["an empty learn list", bad({ prefs: { sets: { learn: [] } } }), "prefs.sets.learn"],
-    ["an empty verify list", bad({ prefs: { sets: { verify: [] } } }), "prefs.sets.verify"],
     ["an unknown set", bad({ prefs: { sets: { drill: ["F2L", "ZBLL"] } } }), "ZBLL"],
     ["a v1 group name used as a set", bad({ prefs: { sets: { learn: ["OLL"] } } }), '"OLL"'],
     ["a set list that is not a list", bad({ prefs: { sets: { learn: "F2L" } } }), "prefs.sets.learn"],
