@@ -76,6 +76,14 @@ function f2l(
   return { id, group: "F2L", sets: ["F2L"], section, name: null, aliases: [], algs, mask, setup: null, videoUrl: null };
 }
 
+// J Perm presents every Advanced case in the front-right slot. A setup is
+// given only where algs[0] starts with a rotation: the picture is then the
+// cube as seen after that rotation, and the setup reaches it with the rotation
+// undone, so the 3D model and the 2D picture start from the same cube.
+function f2lAdvanced(id: string, section: string, algs: Alg[], setup: string | null = null): Case {
+  return { ...f2l(id, section, FR, algs), sets: ["Advanced F2L"], setup };
+}
+
 function a(display: string, moves: string): Alg {
   return { display, moves };
 }
@@ -335,6 +343,139 @@ export const F2L_CASES: Case[] = [
     a("y L2 U2 F' L2' F U2 L U' L", "y L2 U2 F' L2' F U2 L U' L"),
     a("y' (f R' f') U (R' U2' R) U (R' U2' R)", "y' f R' f' U R' U2' R U R' U2' R"),
     a("y2 (f' L f) U' (L U2 L') U' (L U2 L')", "y2 f' L f U' L U2 L' U' L U2 L'"),
+  ]),
+
+  // --- Advanced F2L, J Perm Section 2 (36) --------------------------------
+  // Each cell's picture colors only the cross and the target corner, so a cell
+  // can pool algorithms for loose-piece arrangements it does not distinguish.
+  // Only algs that solve the displayed state are kept.
+  f2lAdvanced("f2l-adv-edge-up-1", "White Sticker Faces Up", [
+    a("U' R' U R2 U' R'", "U' R' U R2 U' R'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-up-2", "White Sticker Faces Up", [
+    a("y U L U' L2' U L", "y U L U' L2' U L"),
+  ], "y L' U' L2' U L' U' y'"),
+  f2lAdvanced("f2l-adv-edge-up-3", "White Sticker Faces Up", [
+    a("U2 (R' U R) U' (S R S')", "U2 R' U R U' S R S'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-up-4", "White Sticker Faces Up", [
+    a("y U2 (L U' L') U (S' L' S)", "y U2 L U' L' U S' L' S"),
+  ], "y S' L S U' L U L' U2 y'"),
+  f2lAdvanced("f2l-adv-edge-up-5", "White Sticker Faces Up", [
+    a("U2 L2' u L2 u' L2'", "U2 L2' u L2 u' L2'"),
+    a("y U2 R2 u' R2' u R2", "y U2 R2 u' R2' u R2"),
+    a("y' U2 L2' u' L2 u L2'", "y' U2 L2' u' L2 u L2'"),
+    a("y2 U2 R2 u R2' u' R2", "y2 U2 R2 u R2' u' R2"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-up-6", "White Sticker Faces Up", [
+    a("L F' U F L'", "L F' U F L'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-1", "White Sticker Faces Side/Front", [
+    a("R' U' R2 U R'", "R' U' R2 U R'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-2", "White Sticker Faces Side/Front", [
+    a("y L U L2' U' L", "y L U L2' U' L"),
+  ], "y L' U L2' U' L' y'"),
+  f2lAdvanced("f2l-adv-edge-side-3", "White Sticker Faces Side/Front", [
+    a("F D R D' F'", "F D R D' F'"),
+    a("y' R u R u' R'", "y' R u R u' R'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-4", "White Sticker Faces Side/Front", [
+    a("y F' D' L' D F", "y F' D' L' D F"),
+    a("y2 L' u' L' u L", "y2 L' u' L' u L"),
+  ], "y F' D' L D F y'"),
+  f2lAdvanced("f2l-adv-edge-side-5", "White Sticker Faces Side/Front", [
+    a("U' (L' U' L) (R U' R')", "U' L' U' L R U' R'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-6", "White Sticker Faces Side/Front", [
+    a("y U (R U R') (L' U L)", "y U R U R' L' U L"),
+  ], "y L' U' L R U' R' U' y'"),
+  f2lAdvanced("f2l-adv-edge-side-7", "White Sticker Faces Side/Front", [
+    a("(F U2 F') (R U R')", "F U2 F' R U R'"),
+    a("y L U2 L' F U F'", "y L U2 L' F U F'"),
+    a("y' R U2 R' f R f'", "y' R U2 R' f R f'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-8", "White Sticker Faces Side/Front", [
+    a("y (F' U2 F) (L' U' L)", "y F' U2 F L' U' L"),
+    a("R' U2 R F' U' F", "R' U2 R F' U' F"),
+    a("y2 L' U2 L f' L' f", "y2 L' U2 L f' L' f"),
+  ], "y L' U L F' U2 F y'"),
+  f2lAdvanced("f2l-adv-edge-side-9", "White Sticker Faces Side/Front", [
+    a("U (R U R') (L U L')", "U R U R' L U L'"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-10", "White Sticker Faces Side/Front", [
+    a("y U' (L' U' L) (R' U' R)", "y U' L' U' L R' U' R"),
+  ], "y R' U R L' U L U y'"),
+  f2lAdvanced("f2l-adv-edge-side-11", "White Sticker Faces Side/Front", [
+    a("U2 F' (L U L') F", "U2 F' L U L' F"),
+    a("y U2 L' (B U B') L", "y U2 L' B U B' L"),
+    a("y' U2 R' (F U F') R", "y' U2 R' F U F' R"),
+    a("y2 U2 f' U L U' f", "y2 U2 f' U L U' f"),
+  ]),
+  f2lAdvanced("f2l-adv-edge-side-12", "White Sticker Faces Side/Front", [
+    a("y U2' F (R' U' R) F'", "y U2' F R' U' R F'"),
+    a("U2' R (B' U' B) R'", "U2' R B' U' B R'"),
+    a("y2 U2' L (F' U' F) L'", "y2 U2' L F' U' F L'"),
+    a("y' U2 f U' R' U f'", "y' U2 f U' R' U f'"),
+  ], "y F R' U R F' U2' y'"),
+  f2lAdvanced("f2l-adv-corner-right-1", "Corner In The Right Slot", [
+    a("U (R U' R') (L' U L)", "U R U' R' L' U L"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-right-2", "Corner In The Right Slot", [
+    a("y (L' U2 L) U' (L U L')", "y L' U2 L U' L U L'"),
+  ], "y L U' L' U L' U2 L y'"),
+  f2lAdvanced("f2l-adv-corner-right-3", "Corner In The Right Slot", [
+    a("U2 (R U' R') U (L' U' L)", "U2 R U' R' U L' U' L"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-right-4", "Corner In The Right Slot", [
+    a("y U' L' U' L2 U2 L'", "y U' L' U' L2 U2 L'"),
+  ], "y L U2 L2 U L U y'"),
+  f2lAdvanced("f2l-adv-corner-right-5", "Corner In The Right Slot", [
+    a("(R U R') U' (L' U L)", "R U R' U' L' U L"),
+    a("y (S' L S)", "y S' L S"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-right-6", "Corner In The Right Slot", [
+    a("U' (R U R') (F U F')", "U' R U R' F U F'"),
+    a("y U' (F U F') (L U L')", "y U' F U F' L U L'"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-left-1", "Corner In The Left Slot", [
+    a("y U' (L' U L) (R U' R')", "y U' L' U L R U' R'"),
+  ], "y R U R' L' U' L U y'"),
+  f2lAdvanced("f2l-adv-corner-left-2", "Corner In The Left Slot", [
+    a("(R U2 R') U (R' U' R)", "R U2 R' U R' U' R"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-left-3", "Corner In The Left Slot", [
+    a("(F R' F' R) U (R' U2 R)", "F R' F' R U R' U2 R"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-left-4", "Corner In The Left Slot", [
+    a("U R U R2' U2 R", "U R U R2' U2 R"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-left-5", "Corner In The Left Slot", [
+    a("(S R' S')", "S R' S'"),
+    a("y (L' U' L) U (R U' R')", "y L' U' L U R U' R'"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-left-6", "Corner In The Left Slot", [
+    a("y U (L' U' L) (F' U' F)", "y U L' U' L F' U' F"),
+  ], "y F' U F L' U L U' y'"),
+  f2lAdvanced("f2l-adv-corner-opposite-1", "Corner In The Opposite Slot", [
+    a("U' (F' U F) (L U2 L')", "U' F' U F L U2 L'"),
+    a("y U' (L' U L) U' (f R' f')", "y U' L' U L U' f R' f'"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-opposite-2", "Corner In The Opposite Slot", [
+    a("U (R U' R') U (f' L f)", "U R U' R' U f' L f"),
+    a("y U (F U' F') (R' U2 R)", "y U F U' F' R' U2 R"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-opposite-3", "Corner In The Opposite Slot", [
+    a("(R U' R') (L U2 L')", "R U' R' L U2 L'"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-opposite-4", "Corner In The Opposite Slot", [
+    a("(R U R') (f' L f)", "R U R' f' L f"),
+  ]),
+  f2lAdvanced("f2l-adv-corner-opposite-5", "Corner In The Opposite Slot", [
+    a("y (L F' L' F) (R' U2 R)", "y L F' L' F R' U2 R"),
+  ], "y R' U2 R F' L F L' y'"),
+  f2lAdvanced("f2l-adv-corner-opposite-6", "Corner In The Opposite Slot", [
+    a("(R' F R F') (L U2 L')", "R' F R F' L U2 L'"),
   ]),
 ];
 

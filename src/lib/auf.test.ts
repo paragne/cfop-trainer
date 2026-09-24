@@ -123,7 +123,7 @@ describe("pickAuf", () => {
   });
 
   it("never turns an F2L case, and does not draw for one", () => {
-    expect(f2l).toHaveLength(41);
+    expect(f2l).toHaveLength(77);
     for (const c of f2l) expect(pickAuf(c, true, boom)).toBe("");
   });
 

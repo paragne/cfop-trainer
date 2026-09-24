@@ -10,6 +10,7 @@ describe("setStats", () => {
   it("counts every set's cases against the real data", () => {
     expect(setStats(ALL_CASES, {}, NOW).map((s) => [s.set, s.total])).toEqual([
       ["F2L", 41],
+      ["Advanced F2L", 36],
       ["2-Look OLL", 10],
       ["2-Look PLL", 6],
       ["Full OLL", 57],

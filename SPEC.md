@@ -402,6 +402,9 @@ record, however many sets include it.
   case presented in the front-right slot. Section 1 of the same sheet adds
   alternates to the Basic cases rather than new cases.
 - A set with no cases is not offered: it gets no home toggle and no stat row.
+- An Advanced or Expert cell may pool algorithms for loose-piece arrangements
+  its picture does not distinguish; only those solving the displayed state are
+  kept.
 
 - OLL 21-27 belong to both 2-Look OLL and Full OLL.
 - Ua, Ub, H and Z belong to both 2-Look PLL and Full PLL.
