@@ -17,10 +17,10 @@
  * roughly ±1.5), not CSS pixels — there is no separate pixel scale once a
  * projection matrix does that job.
  */
-import { MOVE_AXES, quarterTurns, rotate } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { screenAxes } from "../../lib/camera-projection.ts";
 import { rotateByAngle } from "../../lib/rotate-by-angle.ts";
+import { rotateBasis } from "./basis-rotation.ts";
 import { createBasisTransition } from "./basis-transition.ts";
 import type { Basis } from "./basis-transition.ts";
 import type { Move } from "../../lib/notation.ts";
@@ -34,6 +34,8 @@ export type CameraMode = "locked" | "free";
 
 export type Camera = {
   setMode(mode: CameraMode): void;
+  // Tweens from wherever a free orbit left the view back to the locked pose.
+  recenter(): void;
   // Rotates from whichever eye direction setEyeDirection last set (default
   // [1,1,1]) — composable with it, so an FL case's mirrored eye and a
   // case's corrective rotation both apply together. Snaps instantly the
@@ -61,23 +63,6 @@ export type Camera = {
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const scale = (v: Vec, k: number): Vec => [v[0] * k, v[1] * k, v[2] * k];
 
-// Rotates the same three basis vectors a physical sticker's would rotate
-// through, via cube.ts's own rotate() — the corrective is always x/y/z
-// moves from orientation.ts's homeRotation, which by construction turn
-// everything, so there is no layer/depths test to make here.
-function rotateBasis(basis: Basis, moves: readonly Move[]): Basis {
-  let { right, up, back } = basis;
-  for (const move of moves) {
-    const { axis } = MOVE_AXES[move.name];
-    for (let q = 0; q < quarterTurns(move); q++) {
-      right = rotate(right, axis);
-      up = rotate(up, axis);
-      back = rotate(back, axis);
-    }
-  }
-  return { right, up, back };
-}
-
 const DEFAULT_BASIS: Basis = screenAxes(EYE);
 
 export function createCamera(onChange: () => void): Camera {
@@ -89,6 +74,9 @@ export function createCamera(onChange: () => void): Camera {
   // mirrored eye) so the two compose regardless of call order.
   let baseBasis = DEFAULT_BASIS;
   const lockedBasis = createBasisTransition(DEFAULT_BASIS, onChange);
+  // Where the locked view is heading, which recenter() returns to. It keeps
+  // following the case's corrective rotation while a free orbit hides it.
+  let lockedTarget = DEFAULT_BASIS;
   let freeBasis = DEFAULT_BASIS;
   // Degrees pitched from the default, level view — tracked separately from
   // freeBasis so a drag past the limit can be clamped (a per-event delta
@@ -100,7 +88,7 @@ export function createCamera(onChange: () => void): Camera {
     return mode === "free" ? freeBasis : lockedBasis.current();
   }
 
-  return {
+  const camera: Camera = {
     setMode(next) {
       // Free cam always re-enters at the current fixed angle rather than
       // resuming wherever a previous drag left it.
@@ -112,11 +100,19 @@ export function createCamera(onChange: () => void): Camera {
       mode = next;
       onChange();
     },
+    recenter() {
+      if (mode !== "free") return;
+      lockedBasis.set(freeBasis, true);
+      mode = "locked";
+      lockedBasis.set(lockedTarget, false);
+    },
     setCorrective(moves, snap = false) {
-      lockedBasis.set(rotateBasis(baseBasis, moves), snap);
+      lockedTarget = rotateBasis(baseBasis, moves);
+      lockedBasis.set(lockedTarget, snap);
     },
     setEyeDirection(eye) {
       baseBasis = screenAxes(eye);
+      lockedTarget = baseBasis;
       lockedBasis.set(baseBasis, true);
     },
     setTarget(point) {
@@ -143,8 +139,16 @@ export function createCamera(onChange: () => void): Camera {
       let dragging = false;
       let lastX = 0;
       let lastY = 0;
+      // A second finger is a pinch, which zoom.ts owns, not an orbit.
+      const down = new Set<number>();
       el.addEventListener("pointerdown", (e) => {
-        if (mode !== "free") return;
+        down.add(e.pointerId);
+        if (down.size > 1) {
+          dragging = false;
+          return;
+        }
+        // Dragging always orbits; recenter() is the way back.
+        if (mode !== "free") camera.setMode("free");
         dragging = true;
         lastX = e.clientX;
         lastY = e.clientY;
@@ -175,11 +179,13 @@ export function createCamera(onChange: () => void): Camera {
         };
         onChange();
       });
-      const stop = () => {
+      const stop = (e: PointerEvent) => {
+        down.delete(e.pointerId);
         dragging = false;
       };
       el.addEventListener("pointerup", stop);
       el.addEventListener("pointercancel", stop);
     },
   };
+  return camera;
 }

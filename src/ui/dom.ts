@@ -26,3 +26,15 @@ export function toggleButton(label: string, onClick: () => void): HTMLButtonElem
   node.addEventListener("click", onClick);
   return node;
 }
+
+// A small square button with a tooltip, for a row of tools. `markup` is a
+// constant, never user text.
+export function squareButton(label: string, markup: string, onClick: () => void): HTMLButtonElement {
+  const node = el("button", "step");
+  node.innerHTML = markup;
+  node.type = "button";
+  node.title = label;
+  node.setAttribute("aria-label", label);
+  node.addEventListener("click", onClick);
+  return node;
+}

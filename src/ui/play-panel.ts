@@ -2,11 +2,13 @@ import { toRgb } from "../lib/palette.ts";
 import { cubiesFromColors } from "../lib/physical-cube.ts";
 import { playStart } from "../lib/play.ts";
 import type { CaseView, PlayView } from "../lib/play.ts";
-import { SPEED_RANGE, ZOOM_RANGE } from "../lib/prefs.ts";
+import { ZOOM_RANGE } from "../lib/prefs.ts";
 import type { Prefs } from "../lib/prefs.ts";
 import { createAlgStrip } from "./alg-strip.ts";
-import { el } from "./dom.ts";
+import { el, squareButton } from "./dom.ts";
+import { CENTER_ICON } from "./icons.ts";
 import type { Step } from "./keys.ts";
+import { createSpeedPop } from "./speed-pop.ts";
 import { withCore } from "./three-d/core-cubie.ts";
 import { createCubeView } from "./three-d/cube-view.ts";
 import type { CubeView } from "./three-d/cube-view.ts";
@@ -28,6 +30,8 @@ type Session = {
   stepper: StepMode;
   // What is loaded, so a render that changes nothing does not restart playback.
   loaded: string;
+  // Whose case it is, so a new one starts from the locked view again.
+  caseKey: string;
 };
 
 // How long the start position stays up before Play begins from mid-algorithm.
@@ -35,15 +39,6 @@ const START_HOLD_MS = 500;
 
 // style.css's --bg: the 3D view sits in the page's own black.
 const VOID = toRgb("#0b0b0c");
-
-function iconButton(label: string, glyph: string, onClick: () => void): HTMLButtonElement {
-  const node = el("button", "step", glyph);
-  node.type = "button";
-  node.title = label;
-  node.setAttribute("aria-label", label);
-  node.addEventListener("click", onClick);
-  return node;
-}
 
 // A card's picture: the 2D one, or the case in 3D. The GPU context lives only
 // while a card is in 3D: created when it first shows, given back on close.
@@ -56,30 +51,25 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const stage = el("div", "stage");
   const strip = createAlgStrip();
 
-  const speedInput = el("input", "");
-  speedInput.type = "range";
-  speedInput.min = String(SPEED_RANGE.min);
-  speedInput.max = String(SPEED_RANGE.max);
-  speedInput.step = String(SPEED_RANGE.step);
-  speedInput.setAttribute("aria-label", "Speed");
-  speedInput.addEventListener("input", () => {
-    speedValue = Number(speedInput.value);
-    onSpeed(speedValue);
+  const speedPop = createSpeedPop((speed) => {
+    speedValue = speed;
+    onSpeed(speed);
   });
-  const speed = el("label", "slider", "Speed");
-  speed.append(speedInput);
 
   const buttons = el("div", "step-buttons");
   buttons.append(
-    iconButton("Step back", "<", () => step("back")),
-    iconButton("Step forward", ">", () => step("forward")),
-    iconButton("Play", "▶", play),
+    squareButton("Center camera", CENTER_ICON, () => session?.view.camera.recenter()),
+    speedPop.button,
+    squareButton("Step back", "&lt;", () => step("back")),
+    squareButton("Step forward", "&gt;", () => step("forward")),
+    squareButton("Play", "▶", play),
+    speedPop.popover,
   );
   const transport = el("div", "transport");
   transport.append(strip.element, buttons);
   const controls = el("div", "controls");
   controls.hidden = true;
-  controls.append(transport, speed);
+  controls.append(transport);
   player.append(stage, controls);
   element.append(picture, player);
 
@@ -102,13 +92,14 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     }
     const view = createCubeView(canvas, gl, () => speedValue, VOID);
     view.setFit(true);
+    view.camera.attachDrag(stage);
     attachZoom(canvas, (farther) => onZoom(Math.min(ZOOM_RANGE.max, Math.max(ZOOM_RANGE.min, zoomValue / farther))));
     const stepper: StepMode = createStepMode(view.player, {
       onSettled: () => strip.setPosition(stepper.boundary()),
       onProgress: strip.setPosition,
       durationMs: () => speedToDurationMs(speedValue),
     });
-    return { gl, view, stepper, loaded: "" };
+    return { gl, view, stepper, loaded: "", caseKey: "" };
   }
 
   // Back to the start of the case, so a half-played solution never outlives
@@ -143,6 +134,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
 
   function close(): void {
     clearTimeout(hold);
+    speedPop.close();
     picture.hidden = false;
     player.hidden = true;
     controls.hidden = true;
@@ -170,11 +162,15 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     const id = `${next.key}|${play === null ? "-" : play.alg}`;
     if (session.loaded !== id) {
       session.loaded = id;
+      if (session.caseKey !== next.key) {
+        session.caseKey = next.key;
+        session.view.camera.setMode("locked");
+      }
       clearTimeout(hold);
       load(session);
     }
     strip.setPosition(session.stepper.boundary());
-    speedInput.value = String(prefs.speed);
+    speedPop.setValue(prefs.speed);
   }
 
   return {
