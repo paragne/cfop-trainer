@@ -9,7 +9,7 @@
  */
 import { FILL, GRAY, toRgb } from "../../lib/palette.ts";
 import { isKeptSticker } from "../../lib/sticker-mask.ts";
-import type { Mask } from "../../data/algorithms.ts";
+import type { ShownMask } from "../../lib/sticker-mask.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 
 export type FaceUniforms = { color: Float32Array; visible: Float32Array };
@@ -20,7 +20,7 @@ export type FaceUniforms = { color: Float32Array; visible: Float32Array };
 const CORE_COLOR = toRgb("#1a1a1a");
 
 // `mask` null means "show every sticker's true color" (no case loaded).
-export function faceColorUniforms(home: PhysicalCubie, mask: Mask | null): FaceUniforms {
+export function faceColorUniforms(home: PhysicalCubie, mask: ShownMask | null): FaceUniforms {
   const pieceColors = home.faces.filter((f) => f.isSticker).map((f) => f.colors[0]);
   const color = new Float32Array(18);
   const visible = new Float32Array(6);

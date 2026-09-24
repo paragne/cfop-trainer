@@ -3,7 +3,7 @@ import { setupCube } from "../lib/case-state.ts";
 import { applyMoves, normalize, SOLVED } from "../lib/cube.ts";
 import type { Cube } from "../lib/cube.ts";
 import { invert, parse } from "../lib/notation.ts";
-import { F2L_CASES, OLL_CASES, PLL_CASES } from "./algorithms.ts";
+import { ALL_CASES, F2L_CASES, OLL_CASES, PLL_CASES } from "./algorithms.ts";
 
 // Unlike the inverse-then-solution round trip, these checks can fail on a
 // mistyped alg: each one asserts what the case's group says must be true.
@@ -20,6 +20,8 @@ const F2L_STICKERS = [
   ...[9, 18, 36, 45].flatMap((start) => range(start + 3, start + 9)),
 ];
 const SLOT = { FR: [29, 26, 15, 23, 12], FL: [27, 24, 44, 21, 41] };
+
+const BASIC = F2L_CASES.filter((c) => c.sets.includes("F2L"));
 
 const unsolved = (cube: Cube, indices: number[]) =>
   indices.filter((i) => cube[i] !== SOLVED[i]);
@@ -49,7 +51,8 @@ const CROSS_SHAPE: Record<string, (oriented: number[]) => boolean> = {
 };
 
 describe("F2L", () => {
-  it.each(F2L_CASES)("$id: only the target slot is unsolved", (c) => {
+  // A Basic fact only: in the other F2L sets another slot is disturbed too.
+  it.each(BASIC)("$id: only the target slot is unsolved", (c) => {
     if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
     const slot = SLOT[c.mask.slot];
     const cube = setupCube(c);
@@ -59,15 +62,25 @@ describe("F2L", () => {
     expect(unsolved(cube, slot)).not.toEqual([]);
   });
 
-  it.each(F2L_CASES.filter((c) => c.algs.length > 1))(
-    "$id: every alternate alg also solves the pair",
+  it.each(F2L_CASES)(
+    "$id: every alg not marked as affecting other slots leaves all of F2L solved",
     (c) => {
-      for (const alt of c.algs.slice(1)) {
-        const after = normalize(applyMoves(setupCube(c), parse(alt.moves)));
+      for (const alg of c.algs.filter((alg) => alg.affectsOtherSlots !== true)) {
+        const after = normalize(applyMoves(setupCube(c), parse(alg.moves)));
         expect(unsolved(after, F2L_STICKERS)).toEqual([]);
       }
     },
   );
+});
+
+describe("affectsOtherSlots", () => {
+  it.each(ALL_CASES)("$id: algs[0] never affects other slots", (c) => {
+    expect(c.algs[0].affectsOtherSlots).not.toBe(true);
+  });
+
+  it.each(ALL_CASES.filter((c) => c.group !== "F2L"))("$id: marks no alg, being no F2L case", (c) => {
+    expect(c.algs.filter((alg) => alg.affectsOtherSlots !== undefined)).toEqual([]);
+  });
 });
 
 describe("OLL", () => {

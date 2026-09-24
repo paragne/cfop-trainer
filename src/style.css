@@ -183,6 +183,7 @@ body {
 }
 .alg { margin: 0.25rem 0; font: 1.15rem/1.4 var(--mono); overflow-wrap: anywhere; }
 .alg.alt { color: var(--dim); font-size: 0.95rem; }
+.alg-flag { margin-left: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--line); border-radius: 2px; color: var(--dim); font-size: 0.7rem; vertical-align: middle; white-space: nowrap; }
 .video { display: inline-block; margin-top: 0.25rem; color: var(--fg); }
 
 .note {

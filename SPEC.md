@@ -8,7 +8,8 @@ it in your head or on a physical cube, then self-grade. Stats drive what you see
 next.
 
 Scope for v1: F2L (41 cases), 2-look OLL (10 cases), 2-look PLL (6 cases).
-v2 adds Full OLL (57) and Full PLL (21); see the v2 section.
+v2 adds Full OLL (57) and Full PLL (21); see the v2 section. J Perm's
+Advanced (36) and Expert (17) F2L follow as their own sets.
 
 ## Data model
 
@@ -28,15 +29,18 @@ type Case = {
   videoUrl: string | null; // J Perm timestamp link, supplied later
 };
 
-type CaseSet = "F2L" | "2-Look OLL" | "2-Look PLL" | "Full OLL" | "Full PLL";
+type CaseSet =
+  | "F2L" | "Advanced F2L" | "Expert F2L"   // "F2L" is labeled "Basic F2L"
+  | "2-Look OLL" | "2-Look PLL" | "Full OLL" | "Full PLL";
 
 type Alg = {
   display: string;         // "U' (R U R') [U2 R U' R']" — parens preserved
   moves: string;           // "U' R U R' U2 R U' R'" — parser input
+  affectsOtherSlots?: boolean; // F2L only: J Perm's highlighted algs
 };
 
 type Mask =
-  | { kind: "f2l"; slot: "FR" | "FL" }   // color the slot's corner+edge only
+  | { kind: "f2l"; slot: "FR" | "FL" }   // cross, target pair, and any displaced F2L piece
   | { kind: "oll-edges" }                // color U edges only, corners gray
   | { kind: "oll-full" }                 // color all U-layer orientation stickers
   | { kind: "pll-corners" }              // color corners and the full U face; edge side stickers gray
@@ -59,7 +63,23 @@ the picture. That alg is added as an alternate with the missing U turns
 prepended and/or appended, in both `display` and `moves`. For PLL this includes
 a trailing AUF, because a PLL alg must leave the cube solved. `algs[0]` of an
 existing case is never changed, and every added U turn is stated in the commit
-message.
+message. The same holds for a whole-cube rotation: an F2L source that presents
+every case in the front-right slot needs a y rotation prepended to solve a case
+shown in the front-left slot, and a y already leading the alg merges with it.
+
+For F2L, "solves" means every F2L piece ends solved, with one exception. An alg
+marked `affectsOtherSlots` (J Perm highlights these as affecting more than one
+slot) must solve the target pair and keep the cross, but may leave another slot
+unsolved. The solution marks it "multi-slot", and it is never `algs[0]`.
+
+The F2L mask colors the white cross, the non-U centers, the target corner and
+edge, and every other F2L piece (D-layer corner or E-slice edge) that the setup
+leaves unsolved. On a Basic case the target pair is the only unsolved one, so
+nothing else is colored. On an Advanced or Expert case the target can sit in a
+back slot, hidden from the camera, and the colored pieces of the slot it
+displaced are what keep the picture recognizable. Which pieces count as
+displaced is fixed once from the case's setup, so the 3D view masks the same
+physical pieces throughout an animation.
 
 A source picture that shows a physically impossible state is a defect in the
 source, not in the data. Report it with the reasoning and do not adjust the
@@ -111,8 +131,8 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 
 ### 2. Verify (no honor code)
 
-- Home screen: chosen sets (F2L excluded, and its toggle disabled while Verify
-  is selected) and a session length of 5, 10 or 20, persisted as
+- Home screen: chosen sets (every F2L set excluded, and their toggles disabled
+  while Verify is selected) and a session length of 5, 10 or 20, persisted as
   `prefs.verifyLength` (default 10), additive to `prefs.sets.verify`.
 - Start screen: "Hold a solved cube yellow up, green front." and Begin.
 - Each step shows the case picture as in Learn, name hideable, turned by the
@@ -262,7 +282,9 @@ lives in the blob), single JSON blob:
 `prefs.sets` holds one selection per mode, each a non-empty list of case sets.
 The values above are the defaults, and a missing mode takes its default. The
 full sets are opt-in, since they add about a hundred cases to a session queue of
-twenty. Verify never offers F2L.
+twenty. Verify never offers an F2L set; it excludes them by group, so every F2L
+set is covered. The Advanced and Expert F2L sets are opt-in too. Adding a set
+needs no version bump: stored set ids are only ever added to.
 
 `prefs.mode` is the last mode used, and the home screen opens on it. It holds
 only a mode that has shipped: `learn`, `drill` or `verify`.
@@ -369,10 +391,17 @@ silent overwrite.
 
 ### Case sets
 
-Five sets, selectable independently: F2L, 2-Look OLL, 2-Look PLL, Full OLL,
-Full PLL. A set is a membership tag and a case may belong to several. A case
-exists once, with one id, one mask and one SRS record, however many sets
-include it.
+Seven sets, selectable independently: Basic F2L, Advanced F2L, Expert F2L,
+2-Look OLL, 2-Look PLL, Full OLL, Full PLL. A set is a membership tag and a case
+may belong to several. A case exists once, with one id, one mask and one SRS
+record, however many sets include it.
+
+- Basic F2L is stored as the id `F2L`, which predates the other F2L sets and
+  keys real stored prefs. Only its label says "Basic".
+- Advanced and Expert F2L come from J Perm's F2L sheet, Sections 2 and 3, each
+  case presented in the front-right slot. Section 1 of the same sheet adds
+  alternates to the Basic cases rather than new cases.
+- A set with no cases is not offered: it gets no home toggle and no stat row.
 
 - OLL 21-27 belong to both 2-Look OLL and Full OLL.
 - Ua, Ub, H and Z belong to both 2-Look PLL and Full PLL.
@@ -405,7 +434,7 @@ No sidebar. The home screen is the navigation.
   The selector lists only modes that exist.
 - The Learn selector shows the due count ("Learn · 7 due"). Due counts every
   case the session queue would take: never seen, or `due <= now`.
-- Verify disables the F2L toggle and adds a session-length group (5/10/20).
+- Verify disables the F2L toggles and adds a session-length group (5/10/20).
 - Stats, per set: cases seen out of total, accuracy (known over seen, summed
   over the set's cases), due count. A case in two sets counts in both.
 - The card screens carry the Names and Auto-reveal toggles. Set toggles live

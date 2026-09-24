@@ -30,3 +30,15 @@ describe("readPrefs for the 3D view", () => {
     expect(() => readPrefs(raw)).toThrow(fragment);
   });
 });
+
+describe("readPrefs for Verify's sets", () => {
+  // Excluded by group, so a new F2L set is covered without being named in prefs.ts.
+  it.each([[["F2L"]], [["Advanced F2L"]], [["Expert F2L"]], [["Full OLL", "Advanced F2L"]]])("rejects %j", (verify) => {
+    expect(() => readPrefs({ sets: { verify } })).toThrow("prefs.sets.verify");
+  });
+
+  it("accepts every last-layer set", () => {
+    const verify = ["2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"];
+    expect(readPrefs({ sets: { verify } }).sets.verify).toEqual(verify);
+  });
+});

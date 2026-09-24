@@ -7,7 +7,7 @@ import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
 import { parse } from "../../lib/notation.ts";
 import { colorsAtCubies, cubiesFromColors, homeCubies } from "../../lib/physical-cube.ts";
-import { setupCube } from "../../lib/case-state.ts";
+import { caseMask, setupCube } from "../../lib/case-state.ts";
 import { homeCubiesWithCore, withCore } from "./core-cubie.ts";
 import { createGlContext } from "./gl-context.ts";
 import { createCubeView } from "./cube-view.ts";
@@ -102,7 +102,7 @@ if (glContext === null) {
     const solutionMoves = parse(c.algs[0].moves);
     // From case-state.ts's setupCube(), not a physical replay of the inverse
     // solution (see cubiesFromColors).
-    view.showCase(c.mask, withCore(cubiesFromColors(setupCube(c))));
+    view.showCase(caseMask(c), withCore(cubiesFromColors(setupCube(c))));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     stepControls.loadCase(solutionMoves);
     if (!stepControls.isStepMode()) await player.play(solutionMoves);

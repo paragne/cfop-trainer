@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL_CASES, CASE_SETS } from "../data/algorithms.ts";
+import { ALL_CASES } from "../data/algorithms.ts";
 import { dueCount, setStats, tickStates } from "./stats.ts";
 import { card, DAY, mk, NOW } from "./session.fixture.ts";
 
@@ -15,7 +15,13 @@ describe("setStats", () => {
       ["Full OLL", 57],
       ["Full PLL", 21],
     ]);
-    expect(setStats(ALL_CASES, {}, NOW).map((s) => s.set)).toEqual([...CASE_SETS]);
+  });
+
+  it("has no row for a set with no cases", () => {
+    expect(setStats([mk("a", ["F2L"]), mk("b", ["Full PLL"])], {}, NOW).map((s) => s.set)).toEqual([
+      "F2L",
+      "Full PLL",
+    ]);
   });
 
   it("has no accuracy before a case is graded", () => {
@@ -54,7 +60,7 @@ describe("setStats", () => {
     const s = stats([shared], { shared: card({ seen: 2, known: 1, due: NOW + DAY }) });
     expect(s["2-Look OLL"]).toMatchObject({ total: 1, seen: 1, accuracy: 0.5, due: 0 });
     expect(s["Full OLL"]).toMatchObject({ total: 1, seen: 1, accuracy: 0.5, due: 0 });
-    expect(s.F2L).toMatchObject({ total: 0, seen: 0, accuracy: null, due: 0 });
+    expect(Object.keys(s)).toEqual(["2-Look OLL", "Full OLL"]);
   });
 });
 

@@ -1,3 +1,4 @@
+import { SET_GROUP } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import type { Mode, VerifyLength } from "../lib/prefs.ts";
 import { VERIFY_LENGTHS } from "../lib/prefs.ts";
@@ -9,6 +10,7 @@ import { SHUFFLE_ICON } from "./icons.ts";
 type Handlers = {
   // Only modes that exist. A mode added to this list gets a button.
   modes: readonly Mode[];
+  // Only sets that hold a case. A set added to this list gets a toggle.
   sets: readonly CaseSet[];
   onMode: (mode: Mode) => void;
   onSet: (set: CaseSet) => void;
@@ -28,9 +30,23 @@ export type HomeView = {
 
 const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify" };
 
-// One color per set, used only here: it is what tells the strips apart.
+// The id "F2L" keys stored prefs, so only its label says which F2L set it is.
+const SET_LABEL: Record<CaseSet, string> = {
+  F2L: "Basic F2L",
+  "Advanced F2L": "Advanced F2L",
+  "Expert F2L": "Expert F2L",
+  "2-Look OLL": "2-Look OLL",
+  "2-Look PLL": "2-Look PLL",
+  "Full OLL": "Full OLL",
+  "Full PLL": "Full PLL",
+};
+
+// One color per set, used only here: it is what tells the strips apart. The
+// F2L sets share a green family.
 const SET_COLOR: Record<CaseSet, string> = {
   F2L: "#4ade80",
+  "Advanced F2L": "#2dd4bf",
+  "Expert F2L": "#a3e635",
   "2-Look OLL": "#facc15",
   "2-Look PLL": "#fb923c",
   "Full OLL": "#60a5fa",
@@ -42,7 +58,7 @@ const percent = (accuracy: number | null) =>
 
 export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLength, onStart }: Handlers) {
   const modeButtons = new Map(modes.map((mode) => [mode, toggleButton(LABEL[mode], () => onMode(mode))]));
-  const setButtons = new Map(sets.map((set) => [set, toggleButton(set, () => onSet(set))]));
+  const setButtons = new Map(sets.map((set) => [set, toggleButton(SET_LABEL[set], () => onSet(set))]));
 
   const modeBox = el("div", "modes");
   modeBox.setAttribute("role", "group");
@@ -54,8 +70,9 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLen
   setBox.setAttribute("aria-label", "Case sets");
   setBox.append(...setButtons.values());
 
-  // Verify only: prefs.sets.verify can never include F2L, so its toggle is
-  // disabled rather than hidden, staying legible as "not offered here".
+  // Verify only: prefs.sets.verify can never include an F2L set, so their
+  // toggles are disabled rather than hidden, staying legible as "not offered
+  // here".
   const lengthButtons = new Map(VERIFY_LENGTHS.map((n) => [n, toggleButton(String(n), () => onVerifyLength(n))]));
   const lengthBox = el("div", "set-toggles");
   lengthBox.setAttribute("role", "group");
@@ -91,7 +108,7 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLen
       }
       for (const [set, button] of setButtons) {
         button.setAttribute("aria-pressed", String(selected.includes(set)));
-        if (set === "F2L") button.disabled = mode === "verify";
+        if (SET_GROUP[set] === "F2L") button.disabled = mode === "verify";
       }
       lengthBox.hidden = mode !== "verify";
       for (const [n, button] of lengthButtons) button.setAttribute("aria-pressed", String(n === verifyLength));
@@ -102,11 +119,11 @@ export function createHome({ modes, sets, onMode, onSet, onRotation, onVerifyLen
           strip.append(...tickStates(learned, missed, total).map((tick) => el("span", `tick ${tick}`)));
           const numbers = el("span", "stat-numbers", `${learned} / ${total} learned · ${percent(accuracy)} · ${due} due`);
           const head = el("div", "stat-head");
-          head.append(el("span", "stat-name", set), numbers);
+          head.append(el("span", "stat-name", SET_LABEL[set]), numbers);
           const row = el("div", "stat");
           row.style.setProperty("--set", SET_COLOR[set]);
           row.setAttribute("role", "img");
-          row.setAttribute("aria-label", `${set}: ${learned} of ${total} learned, ${missed} missed, ${total - seen} unseen, ${due} due`);
+          row.setAttribute("aria-label", `${SET_LABEL[set]}: ${learned} of ${total} learned, ${missed} missed, ${total - seen} unseen, ${due} due`);
           row.append(head, strip);
           return row;
         }),

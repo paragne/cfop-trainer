@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyMoves, SOLVED } from "../lib/cube.ts";
 import { invert, parse, stringify } from "../lib/notation.ts";
-import { ALL_CASES, CASE_SETS, F2L_CASES, OLL_CASES, PLL_CASES } from "./algorithms.ts";
+import { ALL_CASES, CASE_SETS, F2L_CASES, OLL_CASES, PLL_CASES, SET_GROUP } from "./algorithms.ts";
 import type { CaseSet, Group } from "./algorithms.ts";
 
 const ALGS = ALL_CASES.flatMap((c) =>
@@ -15,7 +15,7 @@ const MASKS_FOR: Record<Group, string[]> = {
 };
 
 const SETS_FOR: Record<Group, CaseSet[]> = {
-  F2L: ["F2L"],
+  F2L: ["F2L", "Advanced F2L", "Expert F2L"],
   OLL: ["2-Look OLL", "Full OLL"],
   PLL: ["2-Look PLL", "Full PLL"],
 };
@@ -61,7 +61,7 @@ describe("case data", () => {
 
 describe("set membership", () => {
   it("sizes each set", () => {
-    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 10, 6, 57, 21]);
+    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 0, 0, 10, 6, 57, 21]);
   });
 
   it("makes Full OLL exactly oll-1 to oll-57", () => {
@@ -101,6 +101,11 @@ describe("set membership", () => {
 
   it.each(ALL_CASES)("$id has only sets that fit its group", (c) => {
     expect(c.sets.filter((set) => !SETS_FOR[c.group].includes(set))).toEqual([]);
+  });
+
+  // Verify excludes F2L by SET_GROUP, so it must agree with the list above.
+  it.each(CASE_SETS)("%s is in the group SET_GROUP says", (set) => {
+    expect(SETS_FOR[SET_GROUP[set]]).toContain(set);
   });
 
   it("shares exactly OLL 21-27 and Ua, Ub, H, Z between a 2-look and a full set", () => {

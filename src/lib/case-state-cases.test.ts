@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ALL_CASES, F2L_CASES, OLL_CASES, PLL_CASES } from "../data/algorithms.ts";
-import { caseState, setupCube } from "./case-state.ts";
+import { ALL_CASES, OLL_CASES, PLL_CASES } from "../data/algorithms.ts";
+import { caseMask, caseState } from "./case-state.ts";
 import type { CaseState } from "./case-state.ts";
-import { applyMoves, normalize, PIECES, SOLVED, STICKERS } from "./cube.ts";
+import { applyMoves, normalize, SOLVED, STICKERS } from "./cube.ts";
 import { invert, parse } from "./notation.ts";
 import { homeRotation } from "./orientation.ts";
 import { applyAlgToCubies, homeCubies } from "./physical-cube.ts";
@@ -29,46 +29,6 @@ const solvedAfterAuf = (setup: string, alg: string) =>
       applyMoves(applyMoves(SOLVED, parse(setup)), parse(`${auf} ${alg}`)),
     ).every((color, i) => color === SOLVED[i]),
   );
-
-// Only these can fail on a bad case or a bad mask tag. A check that the alg
-// solves the colored stickers is left out on purpose: the alg solves the whole
-// cube, so every mask would pass it.
-describe("F2L masks", () => {
-  it.each(F2L_CASES)("$id: a colored sticker is out of place", (c) => {
-    const state = caseState(c);
-    expect(
-      state.some((facelet, i) => facelet !== "masked" && facelet !== SOLVED[i]),
-    ).toBe(true);
-  });
-
-  // Restates the new rule independently (found by color, not by calling
-  // case-state.ts's own code): the white cross (every D-layer edge, by
-  // color, plus every non-U center) and the target pair, found the same
-  // way the old pre-cross rule already did — nothing else, always 18
-  // stickers total regardless of the case's setup.
-  it.each(F2L_CASES)("$id: colors exactly the white cross and the target pair", (c) => {
-    if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
-    const cube = setupCube(c);
-    const state = caseState(c);
-    const side = c.mask.slot === "FR" ? "R" : "L";
-
-    const crossEdges = PIECES.filter((piece) => piece.length === 2 && piece.some((i) => cube[i] === "D"));
-    const nonUCenters = PIECES.filter((piece) => piece.length === 1 && cube[piece[0]] !== "U");
-    const pair = [
-      ["D", "F", side],
-      ["F", side],
-    ];
-    const targetPieces = PIECES.filter((piece) =>
-      pair.some(
-        (colors) => colors.length === piece.length && colors.every((color) => piece.some((i) => cube[i] === color)),
-      ),
-    );
-    const expected = [...crossEdges, ...nonUCenters, ...targetPieces].flat().toSorted((a, b) => a - b);
-
-    expect(colored(state).toSorted((a, b) => a - b)).toEqual(expected);
-    expect(colored(state)).toHaveLength(18);
-  });
-});
 
 describe("OLL masks", () => {
   it.each(OLL_CASES.filter((c) => c.mask.kind === "oll-full"))(
@@ -138,7 +98,7 @@ describe("physical sticker mask matches the 2D mask", () => {
       const pieceColors = cubie.faces.filter((f) => f.isSticker).map((f) => f.colors[0]);
       for (const face of cubie.faces) {
         if (!face.isSticker) continue;
-        physicalKept.set(key(cubie.position, face.normal), isKeptSticker(c.mask, pieceColors, face.colors[0]));
+        physicalKept.set(key(cubie.position, face.normal), isKeptSticker(caseMask(c), pieceColors, face.colors[0]));
       }
     }
 

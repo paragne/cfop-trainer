@@ -1,4 +1,4 @@
-import { CASE_SETS } from "../data/algorithms.ts";
+import { CASE_SETS, SET_GROUP } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import { isRecord, reject } from "./blob.ts";
 
@@ -29,7 +29,7 @@ export const VERIFY_LENGTHS = [5, 10, 20] as const;
 export type VerifyLength = (typeof VERIFY_LENGTHS)[number];
 
 // The full sets are opt-in: they add about a hundred cases to a session queue
-// of twenty. Verify never offers F2L.
+// of twenty. Verify never offers an F2L set.
 export function defaultPrefs(): Prefs {
   return {
     showNames: true,
@@ -59,14 +59,14 @@ function readSetList(value: unknown, where: string): CaseSet[] {
   );
 }
 
-// Verify never offers F2L, so an F2L id here can only come from a hand-edited
+// Verify never offers an F2L set, so one here can only come from a hand-edited
 // import, not the UI, and is rejected rather than silently dropped.
 function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
   if (!isRecord(value)) return reject("prefs.sets must be an object");
   const list = (mode: Mode) =>
     value[mode] === undefined ? defaults[mode] : readSetList(value[mode], `prefs.sets.${mode}`);
   const verify = list("verify");
-  if (verify.includes("F2L")) reject("prefs.sets.verify must not include F2L");
+  if (verify.some((set) => SET_GROUP[set] === "F2L")) reject("prefs.sets.verify must not include an F2L set");
   return { learn: list("learn"), drill: list("drill"), verify };
 }
 

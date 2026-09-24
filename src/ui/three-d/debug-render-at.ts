@@ -4,11 +4,13 @@
  * without flakiness. Applies setup instantly, then freezes one move at
  * `fraction` through its animation.
  */
-import { MOVE_AXES } from "../../lib/cube.ts";
+import { applyMoves, MOVE_AXES, normalize, SOLVED } from "../../lib/cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { parse } from "../../lib/notation.ts";
 import { applyAlgToCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
+import { showMask } from "../../lib/sticker-mask.ts";
+import type { ShownMask } from "../../lib/sticker-mask.ts";
 import { homeCubiesWithCore } from "./core-cubie.ts";
 import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
 import { applyCorrectiveForCubies, applyEyeForCase } from "./case-camera.ts";
@@ -58,7 +60,7 @@ function maskFor(kind: Mask["kind"] | undefined, slot: "FR" | "FL" | undefined):
 
 export function renderAt(
   camera: Camera,
-  setMask: (mask: Mask | null, home: readonly PhysicalCubie[]) => void,
+  setMask: (mask: ShownMask | null, home: readonly PhysicalCubie[]) => void,
   // Keeps the player's own state in sync with whatever renderAt just drew:
   // main.ts's continuous render loop reads player.currentFrame() on every
   // rAF, including ones queued by earlier, unrelated onChange() calls (a
@@ -80,7 +82,8 @@ export function renderAt(
   const setupMoves = parse(setupMovesText);
   const move = parse(moveText)[0];
   if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
-  const mask = maskFor(maskKind, maskSlot);
+  const kind = maskFor(maskKind, maskSlot);
+  const mask = kind === null ? null : showMask(kind, normalize(applyMoves(SOLVED, setupMoves)));
   camera.setMode("locked");
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
   setMask(mask, before);
@@ -96,7 +99,7 @@ export function renderAt(
 // Registers window.__threeD when ?debug is present; inert otherwise.
 export function installDebugHook(
   camera: Camera,
-  setMask: (mask: Mask | null, home: readonly PhysicalCubie[]) => void,
+  setMask: (mask: ShownMask | null, home: readonly PhysicalCubie[]) => void,
   snapTo: (cubies: readonly PhysicalCubie[]) => void,
   renderNow: (cubies: readonly PhysicalCubie[], inFlight: InFlight | null) => void,
 ): void {

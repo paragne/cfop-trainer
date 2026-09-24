@@ -17,7 +17,7 @@ import type { InFlight } from "./player.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import type { Vec } from "../../lib/cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
-import type { Mask } from "../../data/algorithms.ts";
+import type { ShownMask } from "../../lib/sticker-mask.ts";
 
 export type GlScene = {
   render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void;
@@ -31,7 +31,7 @@ export type GlScene = {
   // colors at each home slot instead of rotating a shared physical cube —
   // there is no single fixed "true color" identity to bake once at scene
   // creation and reuse across every case the way OLL/PLL cases allow.
-  setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void;
+  setMask(mask: ShownMask | null, home: readonly PhysicalCubie[]): void;
 };
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
@@ -167,7 +167,7 @@ export function createGlScene(
     gl.bindVertexArray(null);
   }
 
-  function setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void {
+  function setMask(mask: ShownMask | null, home: readonly PhysicalCubie[]): void {
     faceUniforms = home.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, mask)));
   }
 

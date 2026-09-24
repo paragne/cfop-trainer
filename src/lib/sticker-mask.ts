@@ -1,5 +1,13 @@
-import type { Color } from "./cube.ts";
+import { PIECES, SOLVED } from "./cube.ts";
+import type { Color, Cube } from "./cube.ts";
 import type { Mask } from "../data/algorithms.ts";
+
+// A case's Mask with what depends on its setup worked out once, at load: for
+// F2L, which other F2L pieces the setup leaves out of place. Carried as piece
+// identities, so the verdict below still never reads a position.
+export type ShownMask =
+  | Exclude<Mask, { kind: "f2l" }>
+  | { kind: "f2l"; slot: "FR" | "FL"; displaced: readonly (readonly Color[])[] };
 
 // Whether a sticker shows its real color under `mask` (false means gray),
 // from the sticker's own color and its whole piece's current colors —
@@ -18,25 +26,46 @@ function hasExactColors(pieceColors: readonly Color[], colors: readonly Color[])
   return pieceColors.length === colors.length && colors.every((c) => pieceColors.includes(c));
 }
 
-export function isKeptSticker(mask: Mask, pieceColors: readonly Color[], stickerColor: Color): boolean {
+const isTargetPiece = (slot: "FR" | "FL", pieceColors: readonly Color[]) => {
+  const side = slot === "FR" ? "R" : "L";
+  return hasExactColors(pieceColors, ["D", "F", side]) || hasExactColors(pieceColors, ["F", side]);
+};
+
+// An F2L piece is a D-layer corner or an E-slice edge. `cube` is the
+// normalized setup, and a piece is displaced when its own home slot does not
+// hold it solved. The target pair is left out, since it is always kept.
+export function showMask(mask: Mask, cube: Cube): ShownMask {
+  if (mask.kind !== "f2l") return mask;
+  const displaced = PIECES.flatMap((piece) => {
+    const home = piece.map((i) => SOLVED[i]);
+    const isF2lPiece = piece.length > 1 && !home.includes("U") && !(piece.length === 2 && home.includes("D"));
+    if (!isF2lPiece || isTargetPiece(mask.slot, home)) return [];
+    return piece.every((i) => cube[i] === SOLVED[i]) ? [] : [home];
+  });
+  return { ...mask, displaced };
+}
+
+export function isKeptSticker(mask: ShownMask, pieceColors: readonly Color[], stickerColor: Color): boolean {
   const isLastLayerPiece = pieceColors.includes("U");
   const isCorner = pieceColors.length === 3;
   switch (mask.kind) {
     // The white cross (every D-layer edge, always solved and shown, plus
-    // every non-U center for context) plus the one corner+edge pair being
-    // practiced, wherever it currently sits. Every other D-layer corner,
-    // every other E-slice edge, and the whole last layer stay gray. Whole
-    // pieces are kept or not — `stickerColor` doesn't filter within one,
-    // unlike every other mask kind below.
+    // every non-U center for context), the one corner+edge pair being
+    // practiced, wherever it currently sits, and any other F2L piece the
+    // setup displaced: with the target in a back slot, those are what keep
+    // the picture recognizable. Solved F2L pieces and the whole last layer
+    // stay gray. Whole pieces are kept or not — `stickerColor` doesn't filter
+    // within one, unlike every other mask kind below.
     case "f2l": {
-      const side = mask.slot === "FR" ? "R" : "L";
       const isCenter = pieceColors.length === 1;
       const isCrossEdge = pieceColors.length === 2 && pieceColors.includes("D");
-      const isTargetPiece =
-        hasExactColors(pieceColors, ["D", "F", side]) || hasExactColors(pieceColors, ["F", side]);
       if (isLastLayerPiece) return false;
       if (isCenter) return true;
-      return isCrossEdge || isTargetPiece;
+      return (
+        isCrossEdge ||
+        isTargetPiece(mask.slot, pieceColors) ||
+        mask.displaced.some((colors) => hasExactColors(pieceColors, colors))
+      );
     }
     case "oll-edges":
       return isLastLayerPiece && !isCorner && stickerColor === "U";

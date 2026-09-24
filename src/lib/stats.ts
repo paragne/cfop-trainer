@@ -1,7 +1,6 @@
-import { CASE_SETS } from "../data/algorithms.ts";
 import type { Case, CaseSet } from "../data/algorithms.ts";
 import { isDue } from "./queue.ts";
-import { inSets } from "./selection.ts";
+import { inSets, offeredSets } from "./selection.ts";
 import type { Card } from "./srs.ts";
 
 type Cards = Readonly<Record<string, Card>>;
@@ -32,7 +31,7 @@ export function dueCount(
 // Summing before dividing weights every attempt equally. Averaging per-card
 // ratios would let a card tried once count as much as one tried twenty times.
 export function setStats(cases: readonly Case[], cards: Cards, now: number): SetStats[] {
-  return CASE_SETS.map((set) => {
+  return offeredSets(cases).map((set) => {
     const members = inSets(cases, [set]);
     const graded = members.flatMap((c) => cards[c.id] ?? []);
     const attempts = graded.reduce((sum, card) => sum + card.seen, 0);

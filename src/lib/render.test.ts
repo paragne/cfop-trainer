@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ALL_CASES, F2L_CASES } from "../data/algorithms.ts";
 import type { Case } from "../data/algorithms.ts";
-import { caseState } from "./case-state.ts";
+import { caseState, setupCube } from "./case-state.ts";
 import type { CaseState, Facelet } from "./case-state.ts";
+import { PIECES } from "./cube.ts";
 import { renderCase, viewFor } from "./render.ts";
 import type { View } from "./render.ts";
 
@@ -107,6 +108,20 @@ describe("visibility", () => {
     const state = caseState(c);
     const shown = new Set(drawn(render(c)).map((cell) => cell.index));
     expect(state.flatMap((f, i) => (f !== "masked" && !shown.has(i) ? [i] : []))).toEqual([]);
+  });
+
+  // A Basic fact only: in the other F2L sets a target piece can sit in a back
+  // slot, and the displaced pieces are what make the picture readable.
+  it.each(F2L_CASES.filter((c) => c.sets.includes("F2L")))("$id: shows a sticker of each target piece", (c) => {
+    if (c.mask.kind !== "f2l") throw new Error(`${c.id} has no f2l mask`);
+    const cube = setupCube(c);
+    const side = c.mask.slot === "FR" ? "R" : "L";
+    const shown = new Set(drawn(render(c)).map((cell) => cell.index));
+    for (const colors of [["D", "F", side], ["F", side]]) {
+      const piece = PIECES.find((p) => p.length === colors.length && colors.every((color) => p.some((i) => cube[i] === color)));
+      if (piece === undefined) throw new Error(`${c.id}: no piece colored ${colors.join("")}`);
+      expect(piece.some((i) => shown.has(i))).toBe(true);
+    }
   });
 });
 

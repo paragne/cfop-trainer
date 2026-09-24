@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inSets } from "./selection.ts";
+import { inSets, offeredSets } from "./selection.ts";
 import { mk } from "./session.fixture.ts";
 
 const cases = [
@@ -28,5 +28,15 @@ describe("inSets", () => {
 
   it("is empty when no chosen set matches", () => {
     expect(inSets(cases, ["Full PLL"])).toEqual([]);
+  });
+});
+
+describe("offeredSets", () => {
+  it("leaves out a set with no cases, in canonical order", () => {
+    expect(offeredSets(cases)).toEqual(["F2L", "2-Look OLL", "Full OLL"]);
+  });
+
+  it("offers nothing for no cases", () => {
+    expect(offeredSets([])).toEqual([]);
   });
 });

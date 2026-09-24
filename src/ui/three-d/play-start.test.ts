@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_CASES } from "../../data/algorithms.ts";
 import { AUFS, prefixed, turnState } from "../../lib/auf.ts";
 import type { Auf } from "../../lib/auf.ts";
-import { caseState } from "../../lib/case-state.ts";
+import { caseMask, caseState } from "../../lib/case-state.ts";
 import { applyMoves, STICKERS } from "../../lib/cube.ts";
 import { parse } from "../../lib/notation.ts";
 import { FILL, GRAY, toRgb } from "../../lib/palette.ts";
@@ -21,7 +21,7 @@ describe("the 3D start state", () => {
   it.each(rows)("%s with AUF %j shows the 2D picture's stickers, mask included", (_id, c, auf) => {
     const shown = turnState(caseState(c), auf);
     for (const cubie of cubiesFromColors(playStart(c, auf))) {
-      const { color } = faceColorUniforms(cubie, c.mask);
+      const { color } = faceColorUniforms(cubie, caseMask(c));
       cubie.faces.forEach((face, i) => {
         if (!face.isSticker) return;
         const slot = STICKERS.findIndex((s) => sameVec(s.position, cubie.position) && sameVec(s.normal, face.normal));

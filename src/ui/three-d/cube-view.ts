@@ -4,7 +4,7 @@
  * change, a resize or an in-flight move asks for it. At rest no rAF callback
  * fires at all.
  */
-import type { Mask } from "../../data/algorithms.ts";
+import type { ShownMask } from "../../lib/sticker-mask.ts";
 import { blendFit, fitMatrix, lockedFit, sphereFit } from "../../lib/fit.ts";
 import type { Fit } from "../../lib/fit.ts";
 import { multiply } from "../../lib/mat4.ts";
@@ -34,8 +34,8 @@ export type CubeView = {
   // (this case's setup defines which piece is "the target corner"), and the
   // player snapped to them. The first camera correction after it lands
   // instantly instead of tweening from the previous case's view.
-  showCase(mask: Mask | null, cubies: readonly PhysicalCubie[]): void;
-  setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void;
+  showCase(mask: ShownMask | null, cubies: readonly PhysicalCubie[]): void;
+  setMask(mask: ShownMask | null, home: readonly PhysicalCubie[]): void;
   renderNow(cubies: readonly PhysicalCubie[], inFlight: InFlight | null): void;
   // Centers the cube in its canvas and scales it to fill it, times `zoom`.
   // Off, the camera's radius alone sets the size and the cube is not centered.
@@ -58,7 +58,7 @@ export function createCubeView(
   // What is applied now, chasing what the view calls for, so a change of
   // fit (entering an orbit, a zoom) eases in instead of jumping.
   let applied: Fit | null = null;
-  let mask: Mask | null = null;
+  let mask: ShownMask | null = null;
   let home: readonly PhysicalCubie[] = initialCubies;
 
   let frame: number | null = null;
@@ -117,7 +117,7 @@ export function createCubeView(
   observer.observe(canvas);
   player.snapTo(initialCubies);
 
-  function setMask(next: Mask | null, cubies: readonly PhysicalCubie[]): void {
+  function setMask(next: ShownMask | null, cubies: readonly PhysicalCubie[]): void {
     mask = next;
     home = cubies;
     glScene.setMask(next, cubies);

@@ -16,8 +16,28 @@ export type Group = "F2L" | "OLL" | "PLL";
 
 // A set is a membership tag, not a container: a case in two sets is still one
 // case with one id and one SRS record.
-export const CASE_SETS = ["F2L", "2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"] as const;
+// "F2L" is the Basic set. The id predates the other F2L sets and keys stored
+// prefs, so it keeps its name; only the label says "Basic".
+export const CASE_SETS = [
+  "F2L",
+  "Advanced F2L",
+  "Expert F2L",
+  "2-Look OLL",
+  "2-Look PLL",
+  "Full OLL",
+  "Full PLL",
+] as const;
 export type CaseSet = (typeof CASE_SETS)[number];
+
+export const SET_GROUP: Readonly<Record<CaseSet, Group>> = {
+  F2L: "F2L",
+  "Advanced F2L": "F2L",
+  "Expert F2L": "F2L",
+  "2-Look OLL": "OLL",
+  "2-Look PLL": "PLL",
+  "Full OLL": "OLL",
+  "Full PLL": "PLL",
+};
 
 export type Mask =
   | { kind: "f2l"; slot: "FR" | "FL" }
@@ -26,7 +46,10 @@ export type Mask =
   | { kind: "pll-corners" }
   | { kind: "pll-full" };
 
-export type Alg = { display: string; moves: string };
+// affectsOtherSlots marks an F2L alg that disturbs a slot besides its own, as
+// J Perm's sheet highlights. It still solves the target pair over the cross,
+// but may leave another slot unsolved, so it is never a case's algs[0].
+export type Alg = { display: string; moves: string; affectsOtherSlots?: boolean };
 
 export type Case = {
   id: string;

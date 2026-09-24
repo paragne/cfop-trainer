@@ -1,3 +1,4 @@
+import { caseMask } from "../lib/case-state.ts";
 import { toRgb } from "../lib/palette.ts";
 import { cubiesFromColors } from "../lib/physical-cube.ts";
 import { playStart } from "../lib/play.ts";
@@ -110,7 +111,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   // the controls that were showing it.
   function load({ view, stepper }: Session): void {
     if (shown === null) return;
-    view.showCase(shown.c.mask, withCore(cubiesFromColors(playStart(shown.c, shown.auf))));
+    view.showCase(caseMask(shown.c), withCore(cubiesFromColors(playStart(shown.c, shown.auf))));
     const moves = solution?.moves ?? [];
     strip.load(moves);
     stepper.load(moves);

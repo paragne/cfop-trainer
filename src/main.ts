@@ -1,5 +1,5 @@
 import "./style.css";
-import { ALL_CASES, CASE_SETS } from "./data/algorithms.ts";
+import { ALL_CASES } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
@@ -8,6 +8,7 @@ import type { Progress } from "./lib/progress.ts";
 import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
+import { offeredSets } from "./lib/selection.ts";
 import { dueCount, setStats } from "./lib/stats.ts";
 import { exportJson, importJson, load, save } from "./lib/storage.ts";
 import { createDataPanel } from "./ui/data-panel.ts";
@@ -40,7 +41,7 @@ const play = {
 };
 const home = createHome({
   modes: SHIPPED_MODES,
-  sets: CASE_SETS,
+  sets: offeredSets(ALL_CASES),
   onMode: (mode) => commit(setMode(progress, mode)),
   onSet: (set) => switchSet(set),
   onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),

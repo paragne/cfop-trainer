@@ -71,6 +71,25 @@ describe("the algs", () => {
   });
 });
 
+describe("the multi-slot marker", () => {
+  const flagged = (flags: boolean[]): Case => ({
+    ...caseWith(flags.map((_, i) => `R${i}`), null),
+    algs: flags.map((flag, i) => ({ display: `R${i}`, moves: "U", ...(flag ? { affectsOtherSlots: true } : {}) })),
+  });
+  const markers = (html: string) => html.match(/class="alg-flag"/g)?.length ?? 0;
+
+  it("marks exactly the alternates that affect other slots, on their own line", () => {
+    const html = renderSolution(flagged([false, true, false, true]), "");
+    expect(markers(html)).toBe(2);
+    expect(html).toMatch(/<p class="alg alt">R1 <span class="alg-flag"[^>]*>multi-slot<\/span><\/p>/);
+    expect(html).toContain('<p class="alg alt">R2</p>');
+  });
+
+  it("marks nothing when no alg is flagged", () => {
+    expect(markers(renderSolution(flagged([false, false]), ""))).toBe(0);
+  });
+});
+
 describe("with an AUF", () => {
   it("prefixes every alg, alternates included, merging a leading U turn", () => {
     const html = renderSolution(caseWith(["R U R'", "U R"], null), "U'");
