@@ -54,6 +54,7 @@ describe("serialize and parseProgress", () => {
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         verifyLength: 5,
+        stepMode: true, speed: 2.5, radius: 18,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },
@@ -71,7 +72,7 @@ describe("serialize and parseProgress", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
     expect(Object.keys(progress().prefs)).toEqual([
-      "showNames", "showSolutions", "randomRotation", "mode", "verifyLength", "sets",
+      "showNames", "showSolutions", "randomRotation", "mode", "verifyLength", "stepMode", "speed", "radius", "sets",
     ]);
   });
 });
@@ -149,6 +150,7 @@ describe("parseProgress tolerates", () => {
       mode: "learn",
       sets: SETS,
       verifyLength: 10,
+      stepMode: false, speed: 1, radius: 12,
     });
   });
 
@@ -161,6 +163,7 @@ describe("parseProgress tolerates", () => {
       mode: "drill",
       sets: SETS,
       verifyLength: 10,
+      stepMode: false, speed: 1, radius: 12,
     });
   });
 

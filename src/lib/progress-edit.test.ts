@@ -3,7 +3,7 @@ import { ALL_CASES } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { setMode, setNote, setPref, setVerifyLength, toggleSet } from "./progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./progress-edit.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
 
@@ -87,6 +87,22 @@ describe("setVerifyLength", () => {
     expect(after.notes).toBe(before.notes);
     const loaded = parseProgress(serialize(after, 1), ALL_CASES);
     expect(loaded.ok && loaded.progress.prefs.verifyLength).toBe(5);
+  });
+});
+
+describe("the 3D view prefs", () => {
+  it("changes only the pref set, and survives a save and reload", () => {
+    const before = progress({ [A]: "keep" });
+    const after = setNumberPref(setNumberPref(setPref(before, "stepMode", true), "speed", 3), "radius", 20);
+    expect(after.prefs).toEqual({ ...before.prefs, stepMode: true, speed: 3, radius: 20 });
+    expect(after.notes).toBe(before.notes);
+    const loaded = parseProgress(serialize(after, 1), ALL_CASES);
+    expect(loaded.ok && loaded.progress.prefs).toMatchObject({ stepMode: true, speed: 3, radius: 20 });
+  });
+
+  it("still writes version 2, so a blob from before them loads without a migration", () => {
+    const written: { version: number } = JSON.parse(serialize(progress({}), 1));
+    expect(written.version).toBe(2);
   });
 });
 
