@@ -119,11 +119,14 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 - Pick sets to drill: any combination of F2L, 2-Look OLL, 2-Look PLL, Full OLL,
   Full PLL.
 - One case shown at a time as a computed SVG.
-- Controls: reveal/hide solution, reveal/hide case name, edit notes.
+- Controls: reveal/hide solution, reveal/hide case name, show/hide notes, edit
+  notes.
 - Grade: "Know it" or "Don't know it".
 - Grading feeds the scheduler. Next case is drawn from the due queue.
 - Name visibility is a sticky stored preference: it is the visible state, and
   toggling it carries across cards.
+- Note visibility is a sticky stored preference, on by default. Hiding notes
+  never removes the edit button, so a note can still be written.
 - Solution auto-reveal is a sticky stored preference, off by default. Revealing
   the solution for the current card is per-card state that resets on every new
   card. Revealing must never write the preference, or one reveal would show
@@ -132,8 +135,8 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 ### 2. Verify (no honor code)
 
 - Home screen: chosen sets (every F2L set excluded, and their toggles disabled
-  while Verify is selected) and a session length of 5, 10 or 20, persisted as
-  `prefs.verifyLength` (default 10), additive to `prefs.sets.verify`.
+  while Verify is selected), in `prefs.sets.verify`. There is no session length:
+  like Drill, Verify runs until the user goes home.
 - Start screen: "Hold a solved cube yellow up, green front." and Begin.
 - Each step shows the case picture as in Learn, name hideable, turned by the
   random AUF like any other card. The user executes that case's algorithm on
@@ -157,9 +160,9 @@ AUF (U, U', U2) is safe because U turns leave centers home.
   identical permutation and never triggers this. The selected alg is what the
   expected picture shows and what Match advances the engine state by.
 - The user answers Match or Mismatch. Mismatch shows the correct algorithm(s)
-  and offers Reset (Finish on the last step): the user solves their physical
-  cube, the engine state returns to solved, and the session continues.
-- Session tally only. Verify never reads or writes `cards`, so it neither
+  and offers Reset: the user solves their physical cube, the engine state
+  returns to solved, and the session continues.
+- Session tally only, shown in the header as the step and the matches so far. Verify never reads or writes `cards`, so it neither
   feeds nor is fed by the scheduler.
 - No immediate case repeats, using the same shuffle bag as Drill. `chosen`
   (see above) resets to `algs[0]` at the start of every step.
@@ -184,12 +187,30 @@ AUF (U, U', U2) is safe because U turns leave centers home.
 - In Verify, that AUF is part of what the user executes and part of the
   expected state.
 
+### 4. Shuffle
+
+- Toggle available in all three modes, persisted as `prefs.shuffle` (default on).
+- On: Learn draws its due cases in random order, and Drill and Verify draw from
+  a shuffle bag.
+- Off: every mode walks the chosen sets in the order the home screen lists them,
+  top to bottom (Basic, Advanced and Expert F2L, 2-Look OLL, Full OLL, 2-Look
+  PLL, Full PLL), each set in the order of the data file. A case in two chosen
+  sets appears once, with the earlier set. Drill and Verify wrap to the top and
+  never repeat the case just shown. Learn queues the first due cases in that
+  order, and the fill after them takes the weakest cards, ties in that order.
+- A first-time user has every case due, so Learn's first session is a random
+  twenty with shuffle on.
+
 ## Notes
 
 Per-case freeform text, unlimited length, plain text. Stored with the user's
-progress. Included in export. Rendered below the solution when revealed, and
-also viewable while the solution is hidden, since a note is often the memory
-hook that lets you recall the alg without seeing it.
+progress. Included in export. Shown on the card at the right of the name's row,
+never wider than 40% of the card, so it stays clear of the 60% line. It is
+clamped to four lines with an ellipsis, and clicking it opens it to its full
+length. It is visible while the solution is hidden, since a note is often the
+memory hook that lets you recall the alg without seeing it. The Notes toggle
+hides the text. Writing starts from the edit button in the top bar, beside 3D,
+and happens in place.
 
 ## Scheduling (SM-2)
 
@@ -265,9 +286,10 @@ lives in the blob), single JSON blob:
   "prefs": {
     "showNames": true,
     "showSolutions": false,
+    "showNotes": true,
     "randomRotation": false,
+    "shuffle": true,
     "mode": "learn",
-    "verifyLength": 10,
     "sets": {
       "learn": ["F2L", "2-Look OLL", "2-Look PLL"],
       "drill": ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -279,7 +301,8 @@ lives in the blob), single JSON blob:
 }
 ```
 
-`prefs.sets` holds one selection per mode, each a non-empty list of case sets.
+`prefs.sets` holds one selection per mode, each a list of case sets. A list may
+be empty: every set can be switched off, and Start is disabled until one is on.
 The values above are the defaults, and a missing mode takes its default. The
 full sets are opt-in, since they add about a hundred cases to a session queue of
 twenty. Verify never offers an F2L set; it excludes them by group, so every F2L
@@ -289,9 +312,12 @@ needs no version bump: stored set ids are only ever added to.
 `prefs.mode` is the last mode used, and the home screen opens on it. It holds
 only a mode that has shipped: `learn`, `drill` or `verify`.
 
-`prefs.randomRotation` and `prefs.verifyLength` (`5 | 10 | 20`, default `10`)
-were added after v2's first release. A missing pref loads as its default, so
-adding one needs no version bump.
+`prefs.randomRotation`, `prefs.shuffle` and `prefs.showNotes` were added after
+v2's first release. A missing pref loads as its default, so adding one needs no
+version bump. `prefs.verifyLength` was removed when Verify lost its session
+length; a stored one is ignored. `prefs.speed` is one of 0.2, 0.5, 1, 2, 4 or
+10, and a stored value from the earlier slider snaps to the nearest, a tie going
+to the slower.
 
 ### Version 1 to 2
 
@@ -314,6 +340,10 @@ starts fresh; it is never overwritten.
 
 Not cookies. Cookies cap at 4KB per domain and are transmitted on every request
 for no benefit here. localStorage gives 5MB+ and the same zero-backend property.
+
+Wipe: removes the blob and both set-aside copies (`:unreadable` and `:pre-v2`)
+from the browser, and the app returns to defaults. It asks for a second press on
+the button, since a dialog is not allowed.
 
 Export: download the blob as `cfop-progress-YYYY-MM-DD.json`.
 Import: file picker, validate `version`, merge or replace (ask the user which).
@@ -364,13 +394,19 @@ silent overwrite.
   renders the cube in 3D and animates each move of an algorithm as a visible
   layer rotation, primarily to teach F2L pair intuition.
 
-  Available in every mode, via a play button at the top right with a speed
-  slider. Speed is a persisted pref. The play button reveals the solution, so
+  Available in every mode. Speed is a persisted pref, chosen from a grid of six
+  (0.2x, 0.5x, 1x, 2x, 4x, 10x) under "Playback Speed", opened from a button
+  that shows the current speed. The transport row is speed, go to start, step
+  back, play, step forward, go to end. Left and right step; down and up snap to
+  the start and the end without animating. The play button reveals the solution, so
   it is unavailable until the solution is revealed in Learn and Drill, and
   until after the attempt in Verify.
 
   Camera: locked by default, following whole-cube rotations and the rotation
-  component of wide moves. Optional free cam: orbit by drag at a fixed radius,
+  component of wide moves. In F2L a small cube names the top, left and right
+  faces as notation does, from where the centers are at each rest point: F, U, R
+  at the start (L, U, F for a front-left case), and after a y' it reads R, U, B.
+  It is hidden in a free orbit. Optional free cam: orbit by drag at a fixed radius,
   radius adjustable by slider.
 
   Technology undecided. Evaluate CSS transform-style: preserve-3d first, since
@@ -417,31 +453,40 @@ record, however many sets include it.
 
 - Learn: the existing SRS flashcard mode.
 - Drill: endless random cycling over the chosen sets. Same card screen, with
-  the grade buttons replaced by Next, which is key `2`. No immediate repeats.
+  the grade buttons replaced by Next, which is the Enter key. Enter yields to a
+  focused button, link or field, where it already activates them. No immediate repeats.
   Nothing graded, scheduled or recorded; notes stay editable, since a note is
   the user's own text and not a grade. Cards come from a shuffle bag: every
   case in the chosen sets once in random order, then a reshuffle whose first
   card is never the one just shown.
-- Verify: see Mode 2 above. Its own session length (5/10/20), no honor code.
+- Verify: see Mode 2 above. Endless, no honor code.
 - Each mode remembers its own set selection.
 
 ### Layout
 
 No sidebar. The home screen is the navigation.
 
-- Top bar: logo centered, returns home. One data icon at right, opening export
-  and import in place under the bar, with no dialog. Leaving a session via the
-  logo needs no confirmation, since grades save on each tap.
-- Home: mode selector, set toggles for the chosen mode, stats, and one Start
-  button in the accent color, pinned at the bottom where a thumb reaches it.
-  The selector lists only modes that exist.
-- The Learn selector shows the due count ("Learn · 7 due"). Due counts every
-  case the session queue would take: never seen, or `due <= now`.
-- Verify disables the F2L toggles and adds a session-length group (5/10/20).
+- Top bar: logo centered, returns home. On the home screen a menu button at the
+  left opens Save Data, Load Data, Wipe Data and Share (which copies
+  https://cfop.paragone.dev), and a `?` at the right opens a how-to, both in
+  place under the bar with no dialog. Leaving a session via the logo needs no
+  confirmation, since grades save on each tap.
+- Home, top to bottom: the mode selector; the F2L sets (Basic, Advanced,
+  Expert); 2-Look OLL and Full OLL; 2-Look PLL and Full PLL, each row narrower
+  than the last; a small Shuffle and Random AUF pair; stats; a credit line
+  ("Paragone on GitHub" and the version from `package.json`) at the bottom
+  right; and one Start button in the accent color, pinned at the bottom where a
+  thumb reaches it. Start is disabled when the mode has no sets selected. The
+  selector lists only modes that exist.
+- Verify disables the F2L toggles.
 - Stats, per set: cases seen out of total, accuracy (known over seen, summed
-  over the set's cases), due count. A case in two sets counts in both.
-- The card screens carry the Names and Auto-reveal toggles. Set toggles live
-  only on the home screen.
+  over the set's cases), due count. A case in two sets counts in both. Due
+  counts every case the session queue would take: never seen, or `due <= now`.
+  The rows run in the order the sets are listed above and take the colors of the
+  rainbow in that order, red to violet.
+- The card screens carry the Names, Auto-reveal and Notes toggles (Verify has
+  neither Auto-reveal nor Notes). On a phone they take a row under the bar so
+  the logo stays centered. Set toggles live only on the home screen.
 
 ### Brand
 

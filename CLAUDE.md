@@ -92,7 +92,8 @@ floors at 1.3, and that intervals grow monotonically on repeated success.
 ## Accessibility and scope
 
 - Keyboard first: space reveals solution, 1 marks unknown, 2 marks known,
-  n hides/shows the case name.
+  n hides/shows the case name, Enter is Next in Drill. In 3D, left and right
+  step, down and up jump to the start and the end.
 - Works offline after first load.
 - No analytics, no telemetry, no external requests at runtime.
 
@@ -103,7 +104,8 @@ hand, not a marketing page.
 
 - Dark background, near-black. The cube renders bright against it.
 - One accent color, used only for the primary action. Everything else is
-  grayscale.
+  grayscale, except the home stats, whose rows run through the rainbow so the
+  sets tell apart.
 - System font stack. No web fonts, no font loading.
 - Sharp or minimally rounded corners. No shadows, no gradients, no glass
   effects, no animated transitions except where they convey state change.
