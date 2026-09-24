@@ -39,9 +39,9 @@ const FROZEN_IDS = [
 const idsIn = (set: CaseSet) => ALL_CASES.filter((c) => c.sets.includes(set)).map((c) => c.id);
 
 describe("case data", () => {
-  it("has 77 F2L, 60 OLL and 23 PLL cases", () => {
+  it("has 94 F2L, 60 OLL and 23 PLL cases", () => {
     expect([F2L_CASES.length, OLL_CASES.length, PLL_CASES.length]).toEqual([
-      77, 60, 23,
+      94, 60, 23,
     ]);
   });
 
@@ -61,7 +61,7 @@ describe("case data", () => {
 
 describe("set membership", () => {
   it("sizes each set", () => {
-    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 36, 0, 10, 6, 57, 21]);
+    expect(CASE_SETS.map((set) => idsIn(set).length)).toEqual([41, 36, 17, 10, 6, 57, 21]);
   });
 
   it("makes Full OLL exactly oll-1 to oll-57", () => {

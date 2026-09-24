@@ -11,6 +11,7 @@ describe("setStats", () => {
     expect(setStats(ALL_CASES, {}, NOW).map((s) => [s.set, s.total])).toEqual([
       ["F2L", 41],
       ["Advanced F2L", 36],
+      ["Expert F2L", 17],
       ["2-Look OLL", 10],
       ["2-Look PLL", 6],
       ["Full OLL", 57],

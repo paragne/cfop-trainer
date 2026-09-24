@@ -84,6 +84,10 @@ function f2lAdvanced(id: string, section: string, algs: Alg[], setup: string | n
   return { ...f2l(id, section, FR, algs), sets: ["Advanced F2L"], setup };
 }
 
+function f2lExpert(id: string, section: string, algs: Alg[], setup: string | null = null): Case {
+  return { ...f2l(id, section, FR, algs), sets: ["Expert F2L"], setup };
+}
+
 function a(display: string, moves: string): Alg {
   return { display, moves };
 }
@@ -477,6 +481,78 @@ export const F2L_CASES: Case[] = [
   f2lAdvanced("f2l-adv-corner-opposite-6", "Corner In The Opposite Slot", [
     a("(R' F R F') (L U2 L')", "R' F R F' L U2 L'"),
   ]),
+  // --- Expert F2L, J Perm Section 3 (17) ----------------------------------
+  // Same pooling rule as Advanced: only algs that solve the displayed state.
+  // corner-solved-5 and -6 are drawn on the sheet with the pair at the back
+  // right; they are presented one whole-cube y from it so the target is FR.
+  f2lExpert("f2l-exp-corner-solved-1", "Corner Is Solved", [
+    a("R2 U' R2' U R2", "R2 U' R2' U R2"),
+    a("y2 L2' U' L2 U L2'", "y2 L2' U' L2 U L2'"),
+    a("y F' R' F2 R F", "y F' R' F2 R F"),
+  ]),
+  f2lExpert("f2l-exp-corner-solved-2", "Corner Is Solved", [
+    a("f' R' U R f", "f' R' U R f"),
+    a("y R' u' R u R", "y R' u' R u R"),
+    a("y' L' u' L u L", "y' L' u' L u L"),
+    a("y2 f' D' L D f", "y2 f' D' L D f"),
+  ]),
+  f2lExpert("f2l-exp-corner-solved-3", "Corner Is Solved", [
+    a("y L2' U L2 U' L2'", "y L2' U L2 U' L2'"),
+    a("y' R2 U R2' U' R2", "y' R2 U R2' U' R2"),
+    a("F L F2' L' F'", "F L F2' L' F'"),
+  ], "y L2' U L2 U' L2' y'"),
+  f2lExpert("f2l-exp-corner-solved-4", "Corner Is Solved", [
+    a("y f L U' L' f'", "y f L U' L' f'"),
+    a("L u L' u' L'", "L u L' u' L'"),
+    a("y2 R u R' u' R'", "y2 R u R' u' R'"),
+    a("y' f D R' D' f'", "y' f D R' D' f'"),
+  ], "y f L U L' f' y'"),
+  f2lExpert("f2l-exp-corner-solved-5", "Corner Is Solved", [
+    a("y' L2' u' L2 u L2'", "y' L2' u' L2 u L2'"),
+    a("y2 R2 u R2' u' R2", "y2 R2 u R2' u' R2"),
+    a("L2' u L2 u' L2'", "L2' u L2 u' L2'"),
+    a("y R2 u' R2' u R2", "y R2 u' R2' u R2"),
+  ], "y' L2' u' L2 u L2' y"),
+  f2lExpert("f2l-exp-corner-solved-6", "Corner Is Solved", [
+    a("y' (L' u' L) U (L' u L)", "y' L' u' L U L' u L"),
+    a("y (R' u' R) U (R' u R)", "y R' u' R U R' u R"),
+  ], "y' L' u' L U' L' u L y"),
+  f2lExpert("f2l-exp-pair-wrong-1", "Pair In The Wrong Slot", [
+    a("R' F R2 U' R2' F' R", "R' F R2 U' R2' F' R"),
+  ]),
+  f2lExpert("f2l-exp-pair-wrong-2", "Pair In The Wrong Slot", [
+    a("y L F' L2' U L2 F L'", "y L F' L2' U L2 F L'"),
+  ], "y L F' L2 U' L2' F L' y'"),
+  f2lExpert("f2l-exp-pair-wrong-3", "Pair In The Wrong Slot", [
+    a("R (L U2 L') R'", "R L U2 L' R'"),
+    a("y L' (R' U2 R) L", "y L' R' U2 R L"),
+  ]),
+  f2lExpert("f2l-exp-flipped-1", "Flipped Edge & Corner In Adjacent Slot", [
+    a("L F2' L' F U' F", "L F2' L' F U' F"),
+    a("(L F' L' U' F) U' (R U R')", "L F' L' U' F U' R U R'"),
+  ]),
+  f2lExpert("f2l-exp-flipped-2", "Flipped Edge & Corner In Adjacent Slot", [
+    a("y R' F2 R F' U F'", "y R' F2 R F' U F'"),
+    a("y (R' F R U F') U (L' U' L)", "y R' F R U F' U L' U' L"),
+  ], "y F U' F R' F2 R y'"),
+  f2lExpert("f2l-exp-flipped-3", "Flipped Edge & Corner In Adjacent Slot", [
+    a("(R' F R U' F') (R U' R')", "R' F R U' F' R U' R'"),
+  ]),
+  f2lExpert("f2l-exp-flipped-4", "Flipped Edge & Corner In Adjacent Slot", [
+    a("y (L F' L' U F) (L' U L)", "y L F' L' U F L' U L"),
+  ], "y L' U' L F' U' L F L' y'"),
+  f2lExpert("f2l-exp-flipped-5", "Flipped Edge & Corner In Adjacent Slot", [
+    a("(L' U L) (M' U R U' r') (R U' R')", "L' U L M' U R U' r' R U' R'"),
+  ]),
+  f2lExpert("f2l-exp-flipped-6", "Flipped Edge & Corner In Adjacent Slot", [
+    a("y (R U' R') (M' U' L' U l) (L' U L)", "y R U' R' M' U' L' U l L' U L"),
+  ], "y L' U' L l' U' L U M R U R' y'"),
+  f2lExpert("f2l-exp-other-1", "Other Easy Cases", [
+    a("(R' F R U' F') U (R U' R')", "R' F R U' F' U R U' R'"),
+  ]),
+  f2lExpert("f2l-exp-other-2", "Other Easy Cases", [
+    a("y (L F' L' U F) U' (L' U L)", "y L F' L' U F U' L' U L"),
+  ], "y L' U' L U F' U' L F L' y'"),
 ];
 
 export const OLL_CASES: Case[] = [
