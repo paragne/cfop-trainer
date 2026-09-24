@@ -147,7 +147,7 @@ const READ = `(() => { const q = (s) => document.querySelector(s); return {
   count: q('.count')?.textContent, alg: q('.solution')?.textContent, revealed: !q('.solution')?.hidden,
   note: q('.note')?.value, summary: !q('.summary').hidden, home: !q('.home').hidden,
   modes: [...document.querySelectorAll('.modes .toggle')].map((t) => t.textContent), startVisible: !!q('.start button'),
-  cardMode: q('.card')?.dataset.mode, shownButtons: [...document.querySelectorAll('.actions button')].filter((b) => !b.hidden).map((b) => b.firstChild.textContent) }; })()`;
+  cardMode: q('.card')?.dataset.mode, shownButtons: [...document.querySelectorAll('.actions button')].filter((b) => !b.closest('[hidden]')).map((b) => b.firstChild.textContent) }; })()`;
 const STORED = "JSON.parse(localStorage.getItem('cfop-trainer-v1') ?? 'null')";
 const CLICK_TOGGLE = (label) => `[...document.querySelectorAll('.toggle')].find((t) => (t.querySelector('span') ?? t).firstChild.textContent === ${JSON.stringify(label)}).click()`;
 

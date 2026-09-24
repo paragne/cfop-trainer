@@ -13,6 +13,7 @@ import { createGlContext } from "./gl-context.ts";
 import { createCubeView } from "./cube-view.ts";
 import { attachZoom } from "./zoom.ts";
 import { attachStepControls } from "./step-controls.ts";
+import { editingKey, stepForKey } from "../keys.ts";
 import { installDebugHook } from "./debug-render-at.ts";
 import { renderCase } from "../../lib/render.ts";
 
@@ -67,6 +68,14 @@ if (glContext === null) {
   camera.setRadius(Number(radiusInput.value));
   camera.attachDrag(stage);
   attachZoom(canvas, radiusInput, camera);
+
+  document.addEventListener("keydown", (e) => {
+    const step = stepForKey({ key: e.key, typing: editingKey(e.target), modifier: e.ctrlKey || e.metaKey || e.altKey });
+    if (step === null) return;
+    if (step === "forward") stepControls.stepForward();
+    else stepControls.stepBackward();
+    e.preventDefault();
+  });
 
   let paused = false;
 

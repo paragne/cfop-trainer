@@ -9,18 +9,21 @@ import { cardView } from "./screen.ts";
 import type { Screen } from "./screen.ts";
 
 export type PlayView = {
-  // Changes whenever the 3D view must restart or close: another card, another
-  // AUF, another alg chosen in Verify.
+  // Which card and turn of it this is: the 3D view closes when it changes.
   key: string;
   c: Case;
   auf: Auf;
+  // Which of the case's algs `moves` come from. Verify can switch it while the
+  // 3D view is open, which restarts playback without closing it.
+  alg: number;
   moves: readonly Move[];
 };
 
 const viewOf = (c: Case, auf: Auf, alg: number): PlayView => ({
-  key: `${c.id}|${auf}|${alg}`,
+  key: `${c.id}|${auf}`,
   c,
   auf,
+  alg,
   moves: parse(prefixed(auf, c.algs[alg].moves)),
 });
 

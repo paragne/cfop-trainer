@@ -17,6 +17,8 @@ export function attachZoom(canvas: HTMLCanvasElement, radiusInput: HTMLInputElem
     const clamped = Math.min(Number(radiusInput.max), Math.max(Number(radiusInput.min), next));
     camera.setRadius(clamped);
     radiusInput.value = String(clamped);
+    // So whoever listens to the slider hears wheel and pinch too.
+    radiusInput.dispatchEvent(new Event("input"));
   }
 
   canvas.addEventListener(

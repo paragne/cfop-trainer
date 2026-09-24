@@ -64,7 +64,7 @@ describe("what the view carries", () => {
     expect(view.moves).toEqual(parse(prefixed(view.auf, view.c.algs[0].moves)));
   });
 
-  it("follows the alg chosen in Verify, and its key changes with it", () => {
+  it("follows the alg chosen in Verify, keeping the card's key", () => {
     const pair = ALL_CASES.filter((c) => c.id === "oll-24" || c.id === "oll-25");
     const p = progress({ mode: "verify", sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
     let screen = start("verify", { ...ctx(p), cases: pair });
@@ -73,6 +73,7 @@ describe("what the view carries", () => {
     const second = playView(chooseAlt(screen, 1));
     if (first === null || second === null) throw new Error("checked verify has no play view");
     expect(second.moves).toEqual(parse(prefixed(second.auf, second.c.algs[1].moves)));
-    expect(second.key).not.toBe(first.key);
+    expect(second.alg).toBe(1);
+    expect(second.key).toBe(first.key);
   });
 });

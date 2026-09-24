@@ -16,10 +16,31 @@ export function actionForKey({ key, typing, modifier, repeat }: KeyInput): Actio
   return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
-export function bindKeys(onAction: (action: Action) => void): void {
+export type Step = "back" | "forward";
+
+// Arrows also move a caret in a note and a slider's thumb, so they yield to
+// both. They are not an Action: they never grade, reveal or reach the screen.
+export function stepForKey({ key, typing, modifier }: Omit<KeyInput, "repeat">): Step | null {
+  if (typing || modifier) return null;
+  if (key === "ArrowLeft") return "back";
+  return key === "ArrowRight" ? "forward" : null;
+}
+
+// Whether an arrow key belongs to the control that has focus instead.
+export const editingKey = (target: EventTarget | null): boolean =>
+  target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type === "range");
+
+// `onStep` says whether it used the key, so an arrow with no 3D view to step
+// keeps its default.
+export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step) => boolean): void {
   const typing = (e: KeyboardEvent) => e.target instanceof HTMLTextAreaElement;
 
   document.addEventListener("keydown", (e) => {
+    const step = stepForKey({ key: e.key, typing: editingKey(e.target), modifier: e.ctrlKey || e.metaKey || e.altKey });
+    if (step !== null && onStep(step)) {
+      e.preventDefault();
+      return;
+    }
     const action = actionForKey({
       key: e.key,
       typing: typing(e),

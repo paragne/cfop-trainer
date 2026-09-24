@@ -6,20 +6,25 @@ import { renderSolution } from "../lib/solution.ts";
 import { choices, expected, regrip } from "../lib/verify.ts";
 import type { Verify } from "../lib/verify.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
+import { createPlayPanel } from "./play-panel.ts";
+import type { PlayHandlers } from "./play-panel.ts";
 
 type Handlers = {
   onPrimary: () => void;
   onMismatch: () => void;
   onMatch: () => void;
   onChoose: (i: number) => void;
+  play: PlayHandlers;
 };
 
 // Built once, like flashcard: render() only syncs what the phase says.
-export function createVerify({ onPrimary, onMismatch, onMatch, onChoose }: Handlers) {
+export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }: Handlers) {
   const element = el("section", "card verify");
   const count = el("p", "meta");
   const ready = el("p", "hint", "Hold a solved cube yellow up, green front.");
   const figure = el("figure", "case");
+  const stage = createPlayPanel(play);
+  figure.append(stage.element);
   const name = el("p", "name");
   const solution = el("div", "solution");
   const altLabel = el("p", "hint", "Expected if you used:");
@@ -32,7 +37,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose }: Handl
   const mismatch = keyedButton("", "Mismatch", "1", onMismatch);
   const match = keyedButton("", "Match", "2", onMatch);
   const actions = el("nav", "actions");
-  actions.append(primary.node, mismatch.node, match.node);
+  actions.append(stage.steps, primary.node, mismatch.node, match.node);
 
   element.append(count, ready, figure, name, solution, altLabel, altPicker, regripLine, actions);
 
@@ -57,11 +62,11 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose }: Handl
     const showsExpected = v.phase === "checked" || v.phase === "missed";
     figure.hidden = v.phase === "ready";
     if (attempting) {
-      figure.innerHTML = renderCase(turnState(caseState(v.current), v.auf), viewFor(v.current.mask));
+      stage.picture.innerHTML = renderCase(turnState(caseState(v.current), v.auf), viewFor(v.current.mask));
     } else if (showsExpected) {
       // No mask and never normalized: exactly the physical cube as held,
       // including any net rotation an algorithm like oll-42 leaves behind.
-      figure.innerHTML = renderCase(expected(v), "top");
+      stage.picture.innerHTML = renderCase(expected(v), "top");
     }
 
     name.hidden = v.phase === "ready" || !progress.prefs.showNames;
@@ -89,5 +94,5 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose }: Handl
     match.node.hidden = v.phase !== "checked";
   }
 
-  return { element, render };
+  return { element, render, setPlay: stage.show, step: stage.step };
 }

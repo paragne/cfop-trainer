@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionForKey } from "./keys.ts";
+import { actionForKey, stepForKey } from "./keys.ts";
 import type { Action } from "../lib/screen.ts";
 
 const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean }> = {}) =>
@@ -33,5 +33,31 @@ describe("actionForKey", () => {
 
   it.each([" ", "1", "2", "n"])("does nothing for an auto-repeated %j", (key) => {
     expect(press(key, { repeat: true })).toBeNull();
+  });
+});
+
+describe("stepForKey", () => {
+  const arrow = (key: string, over: Partial<{ typing: boolean; modifier: boolean }> = {}) =>
+    stepForKey({ key, typing: false, modifier: false, ...over });
+
+  it("maps the arrows to steps", () => {
+    expect(arrow("ArrowLeft")).toBe("back");
+    expect(arrow("ArrowRight")).toBe("forward");
+  });
+
+  it.each([" ", "1", "2", "n", "ArrowUp", "ArrowDown", "a"])("ignores %j, so no other key steps", (key) => {
+    expect(arrow(key)).toBeNull();
+  });
+
+  it.each(["ArrowLeft", "ArrowRight"])("leaves %s to the caret while typing in a note", (key) => {
+    expect(arrow(key, { typing: true })).toBeNull();
+  });
+
+  it.each(["ArrowLeft", "ArrowRight"])("leaves %s alone with Ctrl, Cmd or Alt held", (key) => {
+    expect(arrow(key, { modifier: true })).toBeNull();
+  });
+
+  it.each(["ArrowLeft", "ArrowRight"])("keeps %s off every action, so it cannot collide with Space, 1, 2 or n", (key) => {
+    expect(press(key)).toBeNull();
   });
 });

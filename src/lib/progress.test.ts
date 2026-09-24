@@ -150,7 +150,7 @@ describe("parseProgress tolerates", () => {
       mode: "learn",
       sets: SETS,
       verifyLength: 10,
-      stepMode: false, speed: 1, radius: 12,
+      stepMode: false, speed: 1, radius: 9,
     });
   });
 
@@ -163,7 +163,7 @@ describe("parseProgress tolerates", () => {
       mode: "drill",
       sets: SETS,
       verifyLength: 10,
-      stepMode: false, speed: 1, radius: 12,
+      stepMode: false, speed: 1, radius: 9,
     });
   });
 

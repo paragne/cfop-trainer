@@ -3,8 +3,9 @@ import { ALL_CASES, CASE_SETS } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
+import { playView } from "./lib/play.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { dueCount, setStats } from "./lib/stats.ts";
@@ -16,6 +17,7 @@ import { bindKeys } from "./ui/keys.ts";
 import { createPrefBar } from "./ui/pref-bar.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
+import { webgl2Available } from "./ui/three-d/webgl-support.ts";
 import { createTopbar } from "./ui/topbar.ts";
 import { createVerify } from "./ui/verify.ts";
 
@@ -25,33 +27,43 @@ const SET_ASIDE = "Saved progress could not be read and was set aside. Starting 
 const loaded = load(ALL_CASES);
 let progress = loaded.progress;
 let screen: Screen = { kind: "home" };
+// The card whose 3D view is open, if any. Not part of Screen: it only ever
+// narrows what playView allows, and a new card or a shut gate ends it.
+let playingKey: string | null = null;
 
 const status = createStatus();
-const topbar = createTopbar({ onHome: () => goHome(), onData: () => dataPanel.toggle() });
+const topbar = createTopbar({
+  onHome: () => goHome(),
+  onData: () => dataPanel.toggle(),
+  onPlay: () => {
+    const view = playView(screen);
+    playingKey = view === null || playingKey !== null ? null : view.key;
+    render();
+  },
+});
+const stopPlaying = () => {
+  playingKey = null;
+  render();
+};
+const play = {
+  onStepMode: (on: boolean) => commit(setPref(progress, "stepMode", on)),
+  onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
+  onRadius: (radius: number) => commit(setNumberPref(progress, "radius", radius)),
+  onBack: stopPlaying,
+  onLost: stopPlaying,
+};
 const home = createHome({
   modes: SHIPPED_MODES,
   sets: CASE_SETS,
-  onMode: (mode) => {
-    persist(setMode(progress, mode));
-    render();
-  },
+  onMode: (mode) => commit(setMode(progress, mode)),
   onSet: (set) => switchSet(set),
-  onRotation: () => {
-    persist(setPref(progress, "randomRotation", !progress.prefs.randomRotation));
-    render();
-  },
-  onVerifyLength: (length) => {
-    persist(setVerifyLength(progress, length));
-    render();
-  },
+  onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),
+  onVerifyLength: (length) => commit(setVerifyLength(progress, length)),
   onStart: () => startMode(progress.prefs.mode),
 });
 const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
-  onAutoReveal: () => {
-    persist(setPref(progress, "showSolutions", !progress.prefs.showSolutions));
-    render();
-  },
+  onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
 });
 const flashcard = createFlashcard({
   onReveal: () => handle("reveal"),
@@ -63,6 +75,7 @@ const flashcard = createFlashcard({
     if (view === null) throw new Error("note edited with no card on screen");
     persist(setNote(progress, view.c.id, text));
   },
+  play,
 });
 const verify = createVerify({
   onPrimary: () => handle("reveal"),
@@ -72,6 +85,7 @@ const verify = createVerify({
     screen = chooseAlt(screen, i);
     render();
   },
+  play,
 });
 const summary = createSummary(() => handle("reveal"));
 const dataPanel = createDataPanel({
@@ -94,6 +108,11 @@ const dataPanel = createDataPanel({
 function persist(next: Progress): void {
   progress = next;
   status.show(save(progress, Date.now()) ? null : NOT_SAVING);
+}
+
+function commit(next: Progress): void {
+  persist(next);
+  render();
 }
 
 const context = () => ({ progress, cases: ALL_CASES, now: Date.now(), random: Math.random });
@@ -142,6 +161,13 @@ function render(): void {
   if (view !== null) flashcard.render(view, progress);
   if (verifying !== null) verify.render(verifying, progress);
   if (result !== null) summary.render(result);
+
+  const playable = playView(screen);
+  if (playable?.key !== playingKey) playingKey = null;
+  const playing = playingKey === null ? null : playable;
+  topbar.setPlay(playable !== null && webgl2Available(), playing !== null);
+  flashcard.setPlay(view === null ? null : playing, progress.prefs);
+  verify.setPlay(verifying === null ? null : playing, progress.prefs);
 }
 
 function handle(action: Action): void {
@@ -161,7 +187,7 @@ document.body.append(
   verify.element,
   summary.element,
 );
-bindKeys(handle);
+bindKeys(handle, (step) => flashcard.step(step) || verify.step(step));
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);
 if (loaded.problem === "unavailable") status.show(NOT_SAVING);
 render();

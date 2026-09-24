@@ -5,6 +5,8 @@ import { renderCase, viewFor } from "../lib/render.ts";
 import type { CardView } from "../lib/screen.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { el, keyedButton } from "./dom.ts";
+import { createPlayPanel } from "./play-panel.ts";
+import type { PlayHandlers } from "./play-panel.ts";
 
 type Handlers = {
   onReveal: () => void;
@@ -12,15 +14,18 @@ type Handlers = {
   onKnow: () => void;
   onNext: () => void;
   onNote: (text: string) => void;
+  play: PlayHandlers;
 };
 
 // Built once and never rebuilt. render() only syncs what state says, so the
 // textarea keeps its caret and focus.
-export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }: Handlers) {
+export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, play }: Handlers) {
   const element = el("section", "card");
   const section = el("span", "section");
   const count = el("span", "count");
   const figure = el("figure", "case");
+  const stage = createPlayPanel(play);
+  figure.append(stage.element);
   const name = el("p", "name");
   const solution = el("div", "solution");
   const note = el("textarea", "note");
@@ -39,7 +44,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }
   ];
   const next = keyedButton("", "Next", "2", onNext).node;
   const actions = el("nav", "actions");
-  actions.append(reveal.node, ...grades, next);
+  actions.append(stage.steps, reveal.node, ...grades, next);
 
   const meta = el("p", "meta");
   meta.append(section, count);
@@ -53,7 +58,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }
     // come straight back, turned differently.
     const key = `${c.id}|${auf}`;
     if (key !== shown) {
-      figure.innerHTML = renderCase(turnState(caseState(c), auf), viewFor(c.mask));
+      stage.picture.innerHTML = renderCase(turnState(caseState(c), auf), viewFor(c.mask));
       solution.innerHTML = renderSolution(c, auf);
       section.textContent = `${c.group} · ${c.section}`;
       name.textContent = [c.name, ...c.aliases].filter((s) => s !== null).join(" · ");
@@ -74,5 +79,5 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote }
     next.hidden = mode === "learn";
   }
 
-  return { element, render };
+  return { element, render, setPlay: stage.show, step: stage.step };
 }

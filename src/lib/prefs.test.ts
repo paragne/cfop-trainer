@@ -3,7 +3,7 @@ import { defaultPrefs, readPrefs, RADIUS_RANGE, SPEED_RANGE } from "./prefs.ts";
 
 describe("readPrefs for the 3D view", () => {
   it("takes the defaults when a stored blob predates them", () => {
-    expect(readPrefs({})).toMatchObject({ stepMode: false, speed: 1, radius: 12 });
+    expect(readPrefs({})).toMatchObject({ stepMode: false, speed: 1, radius: 9 });
     expect(readPrefs({})).toEqual(defaultPrefs());
   });
 

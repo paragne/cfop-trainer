@@ -38,7 +38,7 @@ export function defaultPrefs(): Prefs {
     verifyLength: 10,
     stepMode: false,
     speed: 1,
-    radius: 12,
+    radius: 9,
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],

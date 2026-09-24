@@ -1,8 +1,9 @@
 /**
  * Where the camera looks. Two independent pieces: which side the eye is on
- * (fixed per case, F2L mirrors it across x for FL so the L face is on
- * screen instead of R — the same way render.ts's iso-fl camera mirrors the
- * 2D projection), and the corrective rotation, which is NOT fixed at case
+ * (fixed per case: F2L is isometric, mirrored across x for FL so the L face
+ * is on screen instead of R, the same way render.ts's iso-fl camera mirrors
+ * the 2D projection; OLL and PLL look down on the top layer, like the 2D top
+ * view), and the corrective rotation, which is NOT fixed at case
  * load — it's a pure function of whatever cubies are currently at rest on
  * screen, recomputed every time the cube settles (main.ts does this from
  * the render loop, only when inFlight is null and the cubies reference has
@@ -40,9 +41,19 @@ import type { Mask } from "../../data/algorithms.ts";
 
 const ORIGIN: Vec = [0, 0, 0];
 
+// About 27 degrees off vertical, toward F: near enough to the flat top view
+// the 2D picture uses for OLL and PLL to compare at a glance, tilted enough
+// that the side stickers a move exposes stay visible.
+const TOP_DOWN: Vec = [0, 3, 1.5];
+
+export function eyeFor(mask: Mask | null): Vec {
+  if (mask === null) return [1, 1, 1];
+  if (mask.kind !== "f2l") return TOP_DOWN;
+  return mask.slot === "FL" ? [-1, 1, 1] : [1, 1, 1];
+}
+
 export function applyEyeForCase(camera: Camera, mask: Mask | null): void {
-  const eye: Vec = mask !== null && mask.kind === "f2l" && mask.slot === "FL" ? [-1, 1, 1] : [1, 1, 1];
-  camera.setEyeDirection(eye);
+  camera.setEyeDirection(eyeFor(mask));
   camera.setTarget(ORIGIN);
 }
 
