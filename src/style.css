@@ -167,7 +167,10 @@ body {
 }
 .speed-pop input { flex: 1; min-width: 0; min-height: 2rem; accent-color: var(--fg); }
 
+.caption { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 2rem; }
+.caption .step { margin-left: auto; }
 .name { margin: 0; font-size: 1.15rem; font-weight: 600; }
+.note-text { margin: 0; color: var(--dim); font-size: 0.95rem; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; }
 
 .solution {
   padding: 0.5rem 0.75rem;
@@ -181,16 +184,15 @@ body {
 
 .note {
   width: 100%;
-  min-height: 3.5rem;
+  min-height: 2.5rem;
   padding: 0.5rem;
   border: 1px solid var(--line);
   border-radius: 2px;
   background: var(--panel);
   color: var(--fg);
   font: inherit;
-  resize: vertical;
+  resize: none;
 }
-.note::placeholder { color: var(--dim); }
 
 /* Thumb range on a phone; the bar stays put while the note grows. */
 .actions {

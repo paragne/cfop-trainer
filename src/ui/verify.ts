@@ -54,6 +54,14 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
     );
   }
 
+  let missed = false;
+  let threeD = false;
+
+  // The 3D view writes the solution out itself, so this copy would only repeat it.
+  const showSolution = () => {
+    solution.hidden = !missed || threeD;
+  };
+
   function render(v: Verify, progress: Progress): void {
     count.textContent = `Verify · ${v.step} / ${v.length}`;
     ready.hidden = v.phase !== "ready";
@@ -72,7 +80,8 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
     name.hidden = v.phase === "ready" || !progress.prefs.showNames;
     name.textContent = [v.current.name, ...v.current.aliases].filter((s) => s !== null).join(" · ");
 
-    solution.hidden = v.phase !== "missed";
+    missed = v.phase === "missed";
+    showSolution();
     if (v.phase === "missed") solution.innerHTML = renderSolution(v.current, v.auf);
 
     if (v.phase === "checked") renderAlts(v);
@@ -94,5 +103,13 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
     match.node.hidden = v.phase !== "checked";
   }
 
-  return { element, render, setPlay: stage.show, step: stage.step };
+  return {
+    element,
+    render,
+    setPlay(...args: Parameters<typeof stage.show>): void {
+      threeD = stage.show(...args);
+      showSolution();
+    },
+    step: stage.step,
+  };
 }

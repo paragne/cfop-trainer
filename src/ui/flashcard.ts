@@ -5,6 +5,7 @@ import { renderCase, viewFor } from "../lib/render.ts";
 import type { CardView } from "../lib/screen.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { el, keyedButton } from "./dom.ts";
+import { createNotes } from "./notes.ts";
 import { createPlayPanel } from "./play-panel.ts";
 import type { PlayHandlers } from "./play-panel.ts";
 
@@ -28,13 +29,9 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   figure.append(stage.element);
   const name = el("p", "name");
   const solution = el("div", "solution");
-  const note = el("textarea", "note");
-  note.setAttribute("aria-label", "Notes for this case");
-  note.placeholder = "Notes";
-  note.addEventListener("input", () => onNote(note.value));
-  note.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") note.blur();
-  });
+  const notes = createNotes(onNote);
+  const caption = el("div", "caption");
+  caption.append(name, notes.button);
 
   const reveal = keyedButton("primary", "Reveal", "space", onReveal);
   // Drill's Next shares key 2 with Know it: the same finger, and nothing is graded.
@@ -48,11 +45,19 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
 
   const meta = el("p", "meta");
   meta.append(section, count);
-  element.append(meta, figure, name, solution, note, actions);
+  element.append(meta, figure, caption, solution, ...notes.body, actions);
 
   let shown: string | null = null;
+  let revealed = false;
+  let threeD = false;
 
-  function render({ c, revealed, count: position, mode, auf }: CardView, progress: Progress): void {
+  // The 3D view writes the solution out itself, so this copy would only repeat it.
+  const showSolution = () => {
+    solution.hidden = !revealed || threeD;
+  };
+
+  function render(view: CardView, progress: Progress): void {
+    const { c, count: position, mode, auf } = view;
     // Only these two writes use innerHTML, and both take markup generated in
     // lib from our own case data. The AUF is part of the key: a failed card can
     // come straight back, turned differently.
@@ -62,22 +67,29 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
       solution.innerHTML = renderSolution(c, auf);
       section.textContent = `${c.group} · ${c.section}`;
       name.textContent = [c.name, ...c.aliases].filter((s) => s !== null).join(" · ");
+      notes.stop();
       shown = key;
     }
 
-    // Equal while typing, so the caret is not disturbed; different after an
-    // import replaced the note underneath.
-    const text = progress.notes[c.id] ?? "";
-    if (note.value !== text) note.value = text;
+    notes.show(progress.notes[c.id] ?? "");
 
     name.hidden = !progress.prefs.showNames || name.textContent === "";
-    solution.hidden = !revealed;
-    reveal.text.textContent = revealed ? "Hide" : "Reveal";
+    revealed = view.revealed;
+    showSolution();
+    reveal.text.textContent = view.revealed ? "Hide" : "Reveal";
     count.textContent = position;
     element.dataset.mode = mode;
     for (const grade of grades) grade.hidden = mode === "drill";
     next.hidden = mode === "learn";
   }
 
-  return { element, render, setPlay: stage.show, step: stage.step };
+  return {
+    element,
+    render,
+    setPlay(...args: Parameters<typeof stage.show>): void {
+      threeD = stage.show(...args);
+      showSolution();
+    },
+    step: stage.step,
+  };
 }

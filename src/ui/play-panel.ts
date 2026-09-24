@@ -178,9 +178,11 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     // Where the 2D picture goes.
     picture,
     // Null closes the 3D view and gives its GPU context back.
-    show(next: CaseView | null, play: PlayView | null, prefs: Prefs): void {
+    // Says whether the 3D view is showing.
+    show(next: CaseView | null, play: PlayView | null, prefs: Prefs): boolean {
       if (next === null) close();
       else open(next, play, prefs);
+      return session !== null;
     },
     // Whether the key was used, so an arrow with nothing to step keeps its default.
     step(direction: Step): boolean {

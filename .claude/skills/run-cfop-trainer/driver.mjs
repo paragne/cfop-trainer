@@ -172,7 +172,7 @@ async function smoke() {
   await b.key(" ");
   check("space again hides it", !(await s()).revealed);
 
-  await b.eval("document.querySelector('.note').focus()");
+  await b.eval("document.querySelector('.caption button').click()");
   await b.type("n12 ");
   for (const k of ["n", "1", "2", " "]) await b.key(k);
   now = await s();
