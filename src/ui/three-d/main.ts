@@ -1,34 +1,20 @@
 /**
- * Page wiring for the unlinked 3D prototype: mounts the WebGL scene and
- * camera, builds the preset buttons and controls. No mode integration — this
- * reads cases from ALL_CASES to animate their solutions, nothing else.
- *
- * Render-on-demand: nothing here runs a continuous per-frame loop. A redraw
- * is only ever scheduled by a camera change, a resize, or the player ticking
- * an in-flight move; at rest, no rAF callback fires at all.
+ * Page wiring for the unlinked 3D dev page: mounts the WebGL view, builds the
+ * preset buttons and the free-cam, pause and step controls. The app itself
+ * reaches the same view through src/ui/play-panel.ts.
  */
 import { ALL_CASES } from "../../data/algorithms.ts";
 import type { Case } from "../../data/algorithms.ts";
 import { parse } from "../../lib/notation.ts";
 import { colorsAtCubies, cubiesFromColors, homeCubies } from "../../lib/physical-cube.ts";
-import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 import { setupCube } from "../../lib/case-state.ts";
 import { homeCubiesWithCore, withCore } from "./core-cubie.ts";
-import { lookAt, perspective } from "../../lib/mat4.ts";
-import type { Mat4 } from "../../lib/mat4.ts";
 import { createGlContext } from "./gl-context.ts";
-import { createGlScene } from "./gl-scene.ts";
-import { createPlayer, speedToDurationMs } from "./player.ts";
-import type { InFlight, Player } from "./player.ts";
-import { createCamera } from "./camera.ts";
+import { createCubeView } from "./cube-view.ts";
 import { attachZoom } from "./zoom.ts";
 import { attachStepControls } from "./step-controls.ts";
 import { installDebugHook } from "./debug-render-at.ts";
-import { applyCorrectiveForCubies, applyEyeForCase } from "./case-camera.ts";
 import { renderCase } from "../../lib/render.ts";
-
-const FOV_Y_RADIANS = (35 * Math.PI) / 180;
-const NEAR_FAR_MARGIN = 3; // cube's bounding sphere is ~2.6 units; a bit more keeps both planes tight but safe
 
 const PRESET_IDS = ["f2l-slot-3", "f2l-slot-4", "pll-h", "oll-24"] as const;
 
@@ -63,71 +49,24 @@ if (glContext === null) {
   stage.innerHTML = renderCase(state, "top");
   info.textContent = "WebGL2 is unavailable in this browser; showing a static picture.";
 } else {
-  const { gl, resize, onContextLost, onContextRestored } = glContext;
-  const initialCubies = homeCubiesWithCore();
-  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
-
-  let scheduled = false;
-  // The camera correction is a pure function of the cubies at rest,
-  // recomputed only when they change (see case-camera.ts).
-  let lastCorrected: readonly PhysicalCubie[] | null = null;
-  // Set before a fresh case's snapTo so its first correction lands
-  // instantly instead of tweening from the previous case's view.
-  let snapNextCorrection = true;
-  function requestRedraw(): void {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      const { cubies, inFlight } = player.currentFrame();
-      if (inFlight === null && cubies !== lastCorrected) {
-        lastCorrected = cubies;
-        applyCorrectiveForCubies(camera, cubies, snapNextCorrection);
-        snapNextCorrection = false;
-      }
-      renderNow(cubies, inFlight);
-    });
-  }
-
-  const camera = createCamera(requestRedraw);
-  const player: Player = createPlayer(() => speedToDurationMs(Number(speedInput.value)), requestRedraw);
+  const { onContextLost, onContextRestored } = glContext;
+  const view = createCubeView(canvas, glContext, () => Number(speedInput.value));
+  const { camera, player } = view;
   const stepControls = attachStepControls(
     { stepModeInput, prevButton: stepPrevButton, nextButton: stepNextButton, algContainer },
     player,
   );
 
-  function viewProjection(): { view: Mat4; projection: Mat4 } {
-    const aspect = canvas.width / Math.max(1, canvas.height);
-    const radius = camera.getRadius();
-    const near = Math.max(0.1, radius - NEAR_FAR_MARGIN);
-    const far = radius + NEAR_FAR_MARGIN;
-    return { view: lookAt(camera.getEye(), camera.getTarget(), camera.getUp()), projection: perspective(FOV_Y_RADIANS, aspect, near, far) };
-  }
-
-  function renderNow(cubies: readonly PhysicalCubie[], inFlight: InFlight | null): void {
-    resize();
-    const { view, projection } = viewProjection();
-    glScene.render(cubies, inFlight, view, projection, camera.getEye(), camera.getUp());
-  }
-
   onContextLost(() => {
     info.textContent = "WebGL context lost.";
   });
   onContextRestored(() => {
-    // The lost context took its program, buffers and VAO with it.
-    const cubies = homeCubiesWithCore();
-    glScene = createGlScene(gl, cubies, cubies.length - 1);
     info.textContent = "";
-    requestRedraw();
   });
 
-  new ResizeObserver(requestRedraw).observe(canvas);
-
-  player.snapTo(homeCubiesWithCore());
   camera.setRadius(Number(radiusInput.value));
   camera.attachDrag(stage);
   attachZoom(canvas, radiusInput, camera);
-  requestRedraw();
 
   let paused = false;
 
@@ -144,14 +83,9 @@ if (glContext === null) {
     resetPlayback();
     syncCameraMode();
     const solutionMoves = parse(c.algs[0].moves);
-    applyEyeForCase(camera, c.mask);
     // From case-state.ts's setupCube(), not a physical replay of the inverse
-    // solution (see cubiesFromColors), and the mask is baked from these same
-    // cubies: this case's setup defines which piece is "the target corner".
-    const cubies = withCore(cubiesFromColors(setupCube(c)));
-    glScene.setMask(c.mask, cubies);
-    snapNextCorrection = true;
-    player.snapTo(cubies);
+    // solution (see cubiesFromColors).
+    view.showCase(c.mask, withCore(cubiesFromColors(setupCube(c))));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
     stepControls.loadCase(solutionMoves);
     if (!stepControls.isStepMode()) await player.play(solutionMoves);
@@ -160,11 +94,7 @@ if (glContext === null) {
   function loadSolved(): void {
     resetPlayback();
     syncCameraMode();
-    applyEyeForCase(camera, null);
-    const cubies = homeCubiesWithCore();
-    glScene.setMask(null, cubies);
-    snapNextCorrection = true;
-    player.snapTo(cubies);
+    view.showCase(null, homeCubiesWithCore());
     info.textContent = "Solved";
     stepControls.loadCase([]);
   }
@@ -194,5 +124,5 @@ if (glContext === null) {
   });
 
   loadSolved();
-  installDebugHook(camera, (mask, home) => glScene.setMask(mask, home), (cubies) => player.snapTo(cubies), renderNow);
+  installDebugHook(camera, view.setMask, (cubies) => player.snapTo(cubies), view.renderNow);
 }

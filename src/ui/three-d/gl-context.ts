@@ -13,6 +13,9 @@ export type GlContext = {
   resize(): boolean;
   onContextLost(callback: () => void): void;
   onContextRestored(callback: () => void): void;
+  // Gives the GPU context back now rather than whenever the canvas is
+  // collected, so a page that opens and closes views never accumulates them.
+  release(): void;
 };
 
 export function createGlContext(canvas: HTMLCanvasElement): GlContext | null {
@@ -46,6 +49,9 @@ export function createGlContext(canvas: HTMLCanvasElement): GlContext | null {
     },
     onContextRestored(callback) {
       canvas.addEventListener("webglcontextrestored", () => callback());
+    },
+    release() {
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     },
   };
 }
