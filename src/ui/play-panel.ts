@@ -30,6 +30,9 @@ type Session = {
   loaded: string;
 };
 
+// How long the start position stays up before Play begins from mid-algorithm.
+const START_HOLD_MS = 500;
+
 // style.css's --bg: the 3D view sits in the page's own black.
 const VOID = toRgb("#0b0b0c");
 
@@ -68,13 +71,9 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
 
   const buttons = el("div", "step-buttons");
   buttons.append(
-    iconButton("Step back", "<", () => session?.stepper.stepBackward()),
-    iconButton("Step forward", ">", () => session?.stepper.stepForward()),
-    iconButton("Play", "▶", () => {
-      if (session === null) return;
-      load(session);
-      session.stepper.playAll();
-    }),
+    iconButton("Step back", "<", () => step("back")),
+    iconButton("Step forward", ">", () => step("forward")),
+    iconButton("Play", "▶", play),
   );
   const transport = el("div", "transport");
   transport.append(strip.element, buttons);
@@ -85,6 +84,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   element.append(picture, player);
 
   let session: Session | null = null;
+  let hold: ReturnType<typeof setTimeout> | undefined;
   let speedValue = 1;
   let zoomValue = 1;
   let shown: CaseView | null = null;
@@ -104,8 +104,8 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     view.setFit(true);
     attachZoom(canvas, (farther) => onZoom(Math.min(ZOOM_RANGE.max, Math.max(ZOOM_RANGE.min, zoomValue / farther))));
     const stepper: StepMode = createStepMode(view.player, {
-      onSettled: () => strip.settle(stepper.boundary()),
-      onStep: strip.travel,
+      onSettled: () => strip.setPosition(stepper.boundary()),
+      onProgress: strip.setPosition,
       durationMs: () => speedToDurationMs(speedValue),
     });
     return { gl, view, stepper, loaded: "" };
@@ -121,7 +121,28 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     stepper.load(moves);
   }
 
+  // Playing from the end or halfway through would be disorienting, so the
+  // cube first returns to the start and sits there for a moment.
+  function play(): void {
+    clearTimeout(hold);
+    if (session === null) return;
+    if (session.stepper.boundary() === 0) {
+      session.stepper.playAll();
+      return;
+    }
+    load(session);
+    const held = session;
+    hold = setTimeout(() => held.stepper.playAll(), START_HOLD_MS);
+  }
+
+  function step(direction: Step): void {
+    clearTimeout(hold);
+    if (direction === "forward") session?.stepper.stepForward();
+    else session?.stepper.stepBackward();
+  }
+
   function close(): void {
+    clearTimeout(hold);
     picture.hidden = false;
     player.hidden = true;
     controls.hidden = true;
@@ -149,9 +170,10 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     const id = `${next.key}|${play === null ? "-" : play.alg}`;
     if (session.loaded !== id) {
       session.loaded = id;
+      clearTimeout(hold);
       load(session);
     }
-    strip.settle(session.stepper.boundary());
+    strip.setPosition(session.stepper.boundary());
     speedInput.value = String(prefs.speed);
   }
 
@@ -167,8 +189,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     // Whether the key was used, so an arrow with nothing to step keeps its default.
     step(direction: Step): boolean {
       if (session === null || controls.hidden) return false;
-      if (direction === "forward") session.stepper.stepForward();
-      else session.stepper.stepBackward();
+      step(direction);
       return true;
     },
   };

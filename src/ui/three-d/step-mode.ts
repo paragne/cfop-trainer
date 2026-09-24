@@ -22,9 +22,9 @@ export type StepEvents = {
   // Fires once per committed boundary change (on load and after each
   // completed step), so a display only settles when a move actually finishes.
   onSettled: () => void;
-  // Fires as a step begins, with how long it will take, so a display can
-  // travel from one boundary to the next in step with the cube.
-  onStep?: (from: number, to: number, durationMs: number) => void;
+  // Where the cube is between boundaries, on every frame of a step: a
+  // fraction while a move turns, so a display can travel with it.
+  onProgress?: (boundary: number) => void;
   // One move's duration at the current speed.
   durationMs: () => number;
 };
@@ -42,7 +42,7 @@ export type StepMode = {
 
 type Direction = "forward" | "backward";
 
-export function createStepMode(player: Player, { onSettled, onStep, durationMs }: StepEvents): StepMode {
+export function createStepMode(player: Player, { onSettled, onProgress, durationMs }: StepEvents): StepMode {
   let moves: readonly Move[] = [];
   let index = 0;
   let animating = false;
@@ -59,8 +59,10 @@ export function createStepMode(player: Player, { onSettled, onStep, durationMs }
     else sequence = forward ? [moves[index]] : invert([moves[index - 1]]);
     const each = wraps ? FAST_MOVE_MS : durationMs();
     animating = true;
-    onStep?.(index, target, each * sequence.length);
-    void player.play(sequence, each).then(() => {
+    // Wrapping runs the other way through the algorithm.
+    const heading = wraps === forward ? -1 : 1;
+    const from = index;
+    void player.play(sequence, each, (k, fraction) => onProgress?.(from + heading * (k + fraction))).then(() => {
       index = target;
       animating = false;
       onSettled();

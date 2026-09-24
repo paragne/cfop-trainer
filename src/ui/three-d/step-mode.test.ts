@@ -11,13 +11,15 @@ const SLOW = 400;
 function fakePlayer() {
   const played: { moves: string; ms: number | undefined }[] = [];
   const finishers: (() => void)[] = [];
+  const reporters: ((index: number, fraction: number) => void)[] = [];
   const player: Player = {
     snapTo: () => {},
     pause: () => {},
     resume: () => {},
     currentFrame: () => ({ cubies: [], inFlight: null }),
-    play(moves: readonly Move[], ms?: number) {
+    play(moves: readonly Move[], ms?: number, onProgress?: (index: number, fraction: number) => void) {
       played.push({ moves: stringify(moves), ms });
+      if (onProgress !== undefined) reporters.push(onProgress);
       return new Promise<void>((resolve) => finishers.push(resolve));
     },
   };
@@ -26,20 +28,22 @@ function fakePlayer() {
     await Promise.resolve();
     await Promise.resolve();
   };
-  return { player, played, finish };
+  // Reports that move `index` of the latest play is `fraction` of the way turned.
+  const turn = (index: number, fraction: number) => reporters[reporters.length - 1]?.(index, fraction);
+  return { player, played, finish, turn };
 }
 
 function setup(alg = "R U R'") {
   const fake = fakePlayer();
-  const steps: [number, number, number][] = [];
+  const positions: number[] = [];
   let settled = 0;
   const mode = createStepMode(fake.player, {
     onSettled: () => settled++,
-    onStep: (from, to, ms) => steps.push([from, to, ms]),
+    onProgress: (boundary) => positions.push(boundary),
     durationMs: () => SLOW,
   });
   mode.load(parse(alg));
-  return { ...fake, mode, steps, settled: () => settled };
+  return { ...fake, mode, positions, settled: () => settled };
 }
 
 describe("stepping inside the algorithm", () => {
@@ -59,13 +63,15 @@ describe("stepping inside the algorithm", () => {
     expect(mode.boundary()).toBe(1);
   });
 
-  it("reports each step's boundaries and duration as it begins", async () => {
-    const { mode, steps, finish } = setup();
+  it("reports the marker's place between boundaries while a move turns, forward and back", async () => {
+    const { mode, positions, turn, finish } = setup();
     mode.stepForward();
-    expect(steps).toEqual([[0, 1, SLOW]]);
+    turn(0, 0.25);
+    turn(0, 1);
     await finish();
     mode.stepBackward();
-    expect(steps).toEqual([[0, 1, SLOW], [1, 0, SLOW]]);
+    turn(0, 0.5);
+    expect(positions).toEqual([0.25, 1, 0.5]);
   });
 
   it("keeps only the latest request made while a move is animating", async () => {
@@ -81,7 +87,7 @@ describe("stepping inside the algorithm", () => {
 
 describe("going full circle", () => {
   it("replays the whole algorithm backward, fast, when stepping forward from the end", async () => {
-    const { mode, played, steps, finish } = setup();
+    const { mode, played, positions, turn, finish } = setup();
     for (let i = 0; i < 3; i++) {
       mode.stepForward();
       await finish();
@@ -89,16 +95,24 @@ describe("going full circle", () => {
     expect(mode.boundary()).toBe(3);
     mode.stepForward();
     expect(played[3]).toEqual({ moves: "R U' R'", ms: FAST_MOVE_MS });
-    expect(steps[3]).toEqual([3, 0, FAST_MOVE_MS * 3]);
+    // The marker passes over each move in turn, last to first.
+    positions.length = 0;
+    turn(0, 0.5);
+    turn(1, 0);
+    turn(2, 1);
+    expect(positions).toEqual([2.5, 2, 0]);
     await finish();
     expect(mode.boundary()).toBe(0);
   });
 
   it("replays the whole algorithm forward, fast, when stepping back from the start", async () => {
-    const { mode, played, steps, finish } = setup();
+    const { mode, played, positions, turn, finish } = setup();
     mode.stepBackward();
     expect(played[0]).toEqual({ moves: "R U R'", ms: FAST_MOVE_MS });
-    expect(steps[0]).toEqual([0, 3, FAST_MOVE_MS * 3]);
+    turn(0, 0.5);
+    turn(1, 0);
+    turn(2, 1);
+    expect(positions).toEqual([0.5, 1, 3]);
     await finish();
     expect(mode.boundary()).toBe(3);
   });

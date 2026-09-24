@@ -33,7 +33,9 @@ export type PlayerFrame = { readonly cubies: readonly PhysicalCubie[]; readonly 
 export type Player = {
   snapTo(next: readonly PhysicalCubie[]): void;
   // `durationMs` overrides the speed setting for every move of this call.
-  play(moves: readonly Move[], durationMs?: number): Promise<void>;
+  // `onProgress` reports which move of `moves` is turning and how far, 0 to 1,
+  // on every frame of it.
+  play(moves: readonly Move[], durationMs?: number, onProgress?: (index: number, fraction: number) => void): Promise<void>;
   pause(): void;
   resume(): void;
   currentFrame(): PlayerFrame;
@@ -44,6 +46,8 @@ type CurrentMove = {
   readonly angle: number;
   readonly duration: number;
   readonly movingCubieIndices: ReadonlySet<number>;
+  readonly index: number;
+  readonly onProgress: ((index: number, fraction: number) => void) | undefined;
   readonly resolve: () => void;
 };
 
@@ -77,6 +81,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     const progress = Math.min(1, elapsed / currentMove.duration);
     inFlight = { axis: currentMove.axis, angleDeg: currentMove.angle * progress, movingCubieIndices: currentMove.movingCubieIndices };
     onFrame();
+    currentMove.onProgress?.(currentMove.index, progress);
     if (progress >= 1) {
       const { resolve } = currentMove;
       currentMove = null;
@@ -87,8 +92,12 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     rafId = requestAnimationFrame(tick);
   }
 
-  async function play(moves: readonly Move[], durationMs?: number): Promise<void> {
-    for (const move of moves) {
+  async function play(
+    moves: readonly Move[],
+    durationMs?: number,
+    onProgress?: (index: number, fraction: number) => void,
+  ): Promise<void> {
+    for (const [index, move] of moves.entries()) {
       const { axis, depths } = MOVE_AXES[move.name];
       const movingCubieIndices: ReadonlySet<number> = new Set(
         cubies.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])),
@@ -96,7 +105,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
       await new Promise<void>((resolve) => {
         elapsed = 0;
         lastTimestamp = null;
-        currentMove = { axis, angle: animationAngleDegrees(move), duration: durationMs ?? getDurationMs(), movingCubieIndices, resolve };
+        currentMove = { axis, angle: animationAngleDegrees(move), duration: durationMs ?? getDurationMs(), movingCubieIndices, index, onProgress, resolve };
         rafId = requestAnimationFrame(tick);
       });
       cubies = applyMoveToCubies(cubies, move);
