@@ -39,7 +39,10 @@ body {
 .topbar-left { justify-self: start; min-width: 0; }
 .tools { justify-self: end; display: flex; }
 .icon { display: grid; place-items: center; width: 2.75rem; padding: 0; }
-.icon[aria-expanded="true"], .icon[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+/* The same chip as Names and Auto-reveal on the other side of the logo. */
+.topbar .tools .icon { min-height: 2rem; width: 2.5rem; border-color: var(--line); background: var(--panel); }
+.tools { gap: 0.25rem; }
+.topbar .tools .icon[aria-expanded="true"], .topbar .tools .icon[aria-pressed="true"], .icon[aria-expanded="true"], .icon[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
 
 .prefs { display: flex; gap: 0.25rem; }
 /* In the top bar, so smaller than the set toggles, and still buttons. */
@@ -110,23 +113,24 @@ body {
   min-height: 0;
   margin: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
-.case svg {
+.picture svg {
   display: block;
   width: 100%;
   height: auto;
   max-height: 52vh;
 }
 
-/* The 3D view takes the picture's place, square and as large as the 2D one. */
-.view, .picture { width: 100%; }
-.picture { display: flex; justify-content: center; }
-.player { display: flex; flex-direction: column; gap: 0.5rem; }
-.frame { position: relative; }
-.center-camera { position: absolute; right: 0.5rem; bottom: 0.5rem; background: rgba(21, 21, 23, 0.8); }
-.stage { width: 100%; aspect-ratio: 1; max-height: 60vh; touch-action: none; }
+/* The picture, or the 3D view in its place, takes whatever height is left. */
+.view { flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.picture { flex: 1; display: flex; align-items: center; justify-content: center; }
+.player { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.frame { position: relative; flex: 1; min-height: min(100vw, 24rem); }
+/* Sits on the corner like a map's locate button: faint until hovered. */
+.center-camera { position: absolute; z-index: 1; right: 0.25rem; bottom: 0.25rem; border-color: transparent; background: none; opacity: 0.4; }
+.center-camera:hover, .center-camera:focus-visible { border-color: transparent; opacity: 1; }
+.stage { position: absolute; inset: 0; touch-action: none; }
 .stage canvas { display: block; width: 100%; height: 100%; }
 .transport { display: flex; align-items: flex-start; gap: 0.5rem; }
 .alg-strip { position: relative; flex: 1; min-width: 0; font: 1.15rem/1.6 var(--mono); }
@@ -271,7 +275,7 @@ kbd {
 
 @media (min-width: 48rem) {
   .card, .summary, .home { padding: 1.5rem; gap: 1rem; }
-  .case svg { max-height: 60vh; }
+  .picture svg { max-height: 60vh; }
   .actions { position: static; grid-template-columns: 1fr 1fr 1fr; }
   .actions .primary { grid-column: auto; }
   [data-mode="drill"] .actions { grid-template-columns: 1fr 1fr; }

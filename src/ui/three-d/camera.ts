@@ -36,6 +36,7 @@ export type Camera = {
   setMode(mode: CameraMode): void;
   // Tweens from wherever a free orbit left the view back to the locked pose.
   recenter(): void;
+  getMode(): CameraMode;
   // Rotates from whichever eye direction setEyeDirection last set (default
   // [1,1,1]) — composable with it, so an FL case's mirrored eye and a
   // case's corrective rotation both apply together. Snaps instantly the
@@ -99,6 +100,9 @@ export function createCamera(onChange: () => void): Camera {
       }
       mode = next;
       onChange();
+    },
+    getMode() {
+      return mode;
     },
     recenter() {
       if (mode !== "free") return;

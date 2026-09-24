@@ -5,7 +5,9 @@
  * fires at all.
  */
 import type { Mask } from "../../data/algorithms.ts";
-import { fittedProjection } from "../../lib/fit.ts";
+import { blendFit, fitMatrix, lockedFit, sphereFit } from "../../lib/fit.ts";
+import type { Fit } from "../../lib/fit.ts";
+import { multiply } from "../../lib/mat4.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
@@ -21,6 +23,8 @@ import type { InFlight, Player } from "./player.ts";
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
 // Breathing room left around the cube when it is fitted to its canvas.
 const FIT_MARGIN = 0.03;
+// How much of the way to a new fit each frame goes.
+const FIT_EASE = 0.3;
 const NEAR_FAR_MARGIN = 3; // cube's bounding sphere is ~2.6 units; a bit more keeps both planes tight but safe
 
 export type CubeView = {
@@ -51,6 +55,9 @@ export function createCubeView(
   let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background);
   let fit = false;
   let zoom = 1;
+  // What is applied now, chasing what the view calls for, so a change of
+  // fit (entering an orbit, a zoom) eases in instead of jumping.
+  let applied: Fit | null = null;
   let mask: Mask | null = null;
   let home: readonly PhysicalCubie[] = initialCubies;
 
@@ -84,7 +91,19 @@ export function createCubeView(
     const far = radius + NEAR_FAR_MARGIN;
     const view: Mat4 = lookAt(camera.getEye(), camera.getTarget(), camera.getUp());
     const projection = perspective(FOV_Y_RADIANS, aspect, near, far);
-    glScene.render(cubies, inFlight, view, fit ? fittedProjection(projection, view, FIT_MARGIN, zoom) : projection, camera.getEye(), camera.getUp());
+    const from = applied;
+    let shown = projection;
+    if (fit) {
+      // An orbit keeps one size; the locked view fits the case tightly.
+      const wanted =
+        camera.getMode() === "free"
+          ? sphereFit(radius, FOV_Y_RADIANS, aspect, FIT_MARGIN, zoom)
+          : lockedFit(multiply(projection, view), FIT_MARGIN, zoom);
+      applied = from === null ? wanted : blendFit(from, wanted, FIT_EASE);
+      if (Math.abs(applied.scale - wanted.scale) > 1e-3 || Math.abs(applied.dx - wanted.dx) > 1e-3 || Math.abs(applied.dy - wanted.dy) > 1e-3) requestRedraw();
+      shown = multiply(fitMatrix(applied), projection);
+    }
+    glScene.render(cubies, inFlight, view, shown, camera.getEye(), camera.getUp());
   }
 
   onContextRestored(() => {

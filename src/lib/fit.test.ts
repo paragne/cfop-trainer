@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Vec } from "./cube.ts";
-import { CORNERS, fittedProjection, SWEPT } from "./fit.ts";
-import { lookAt, perspective, transformPoint } from "./mat4.ts";
+import { blendFit, CORNERS, fitMatrix, fittedProjection, sphereFit, SWEPT } from "./fit.ts";
+import { lookAt, multiply, perspective, transformPoint } from "./mat4.ts";
 
 const FOV = (35 * Math.PI) / 180;
 const RADIUS = 12;
@@ -42,5 +42,34 @@ describe("fittedProjection", () => {
     const { minX, maxX, minY, maxY } = bounds(rest);
     expect(minX + maxX).toBeCloseTo(0, 9);
     expect(minY + maxY).toBeCloseTo(0, 9);
+  });
+});
+
+describe("sphereFit", () => {
+  // The same size from every side is the point: an orbit must not pulse.
+  const reachFrom = (direction: Vec, aspect: number) => {
+    const length = Math.hypot(...direction);
+    const eye: Vec = [direction[0] / length * RADIUS, direction[1] / length * RADIUS, direction[2] / length * RADIUS];
+    const view = lookAt(eye, [0, 0, 0], [0, 1, 0]);
+    const projection = perspective(FOV, aspect, RADIUS - 3, RADIUS + 3);
+    const shown = multiply(fitMatrix(sphereFit(RADIUS, FOV, aspect, 0.03, 1)), projection);
+    const points = [...CORNERS, ...SWEPT].map((p) => transformPoint(shown, transformPoint(view, p)));
+    return Math.max(...points.flatMap((p) => [Math.abs(p[0]), Math.abs(p[1])]));
+  };
+
+  it.each([0.5, 1, 1.8])("keeps everything a turn sweeps through inside the canvas from any side, at aspect %s", (aspect) => {
+    for (const eye of [...EYES, [0.05, 1, 0.05], [1, 0, 0], [0.3, -1, 0.7]] as Vec[]) {
+      expect(reachFrom(eye, aspect)).toBeLessThanOrEqual(0.97 + 1e-9);
+    }
+  });
+});
+
+describe("blendFit", () => {
+  it("is each end at 0 and 1, and between them in the middle", () => {
+    const a = { scale: 1, dx: 0, dy: 2 };
+    const b = { scale: 3, dx: 4, dy: 0 };
+    expect(blendFit(a, b, 0)).toEqual(a);
+    expect(blendFit(a, b, 1)).toEqual(b);
+    expect(blendFit(a, b, 0.5)).toEqual({ scale: 2, dx: 2, dy: 1 });
   });
 });
