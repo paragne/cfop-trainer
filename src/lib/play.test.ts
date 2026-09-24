@@ -1,0 +1,78 @@
+import { describe, expect, it } from "vitest";
+import { ALL_CASES } from "../data/algorithms.ts";
+import { prefixed } from "./auf.ts";
+import { parse } from "./notation.ts";
+import { playView } from "./play.ts";
+import { defaultProgress } from "./progress.ts";
+import type { Progress } from "./progress.ts";
+import { chooseAlt, press, start, verifyView } from "./screen.ts";
+import type { Action, Context, Screen } from "./screen.ts";
+
+const NOW = 1_800_000_000_000;
+
+const progress = (over: Partial<Progress["prefs"]> = {}): Progress => {
+  const base = defaultProgress();
+  return { ...base, prefs: { ...base.prefs, ...over } };
+};
+
+const ctx = (p: Progress): Context => ({ progress: p, cases: ALL_CASES, now: NOW, random: () => 0.5 });
+
+const after = (screen: Screen, p: Progress, ...actions: Action[]): Screen =>
+  actions.reduce((s, action) => press(s, action, ctx(p)).screen, screen);
+
+describe("the gate", () => {
+  it("is closed on home", () => {
+    expect(playView({ kind: "home" })).toBeNull();
+  });
+
+  it.each(["learn", "drill"] as const)("opens in %s only once the solution is revealed", (mode) => {
+    const p = progress({ mode });
+    const screen = start(mode, ctx(p));
+    expect(playView(screen)).toBeNull();
+    const revealed = after(screen, p, "reveal");
+    expect(playView(revealed)).not.toBeNull();
+    expect(playView(after(revealed, p, "reveal"))).toBeNull();
+  });
+
+  it("stays closed in Verify through ready and attempt, opens on checked and missed, closes when done", () => {
+    const p = progress({ mode: "verify", verifyLength: 5, sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
+    let screen = start("verify", ctx(p));
+    expect(playView(screen)).toBeNull();
+    screen = after(screen, p, "reveal");
+    expect(verifyView(screen)?.phase).toBe("attempt");
+    expect(playView(screen)).toBeNull();
+    screen = after(screen, p, "reveal");
+    expect(verifyView(screen)?.phase).toBe("checked");
+    expect(playView(screen)).not.toBeNull();
+    screen = after(screen, p, "dontKnow");
+    expect(verifyView(screen)?.phase).toBe("missed");
+    expect(playView(screen)).not.toBeNull();
+    screen = after(screen, p, "reveal"); // Reset: step 2, attempt
+    for (let step = 2; step <= 5; step++) screen = after(screen, p, "reveal", "know");
+    expect(verifyView(screen)).toBeNull();
+    expect(playView(screen)).toBeNull();
+  });
+});
+
+describe("what the view carries", () => {
+  it("prefixes the random AUF to the solution, merged the way the shown alg is", () => {
+    const p = progress({ randomRotation: true, sets: { ...defaultProgress().prefs.sets, learn: ["Full OLL"] } });
+    const screen = after(start("learn", ctx(p)), p, "reveal");
+    const view = playView(screen);
+    if (view === null) throw new Error("revealed card has no play view");
+    expect(view.auf).toBe("U'");
+    expect(view.moves).toEqual(parse(prefixed(view.auf, view.c.algs[0].moves)));
+  });
+
+  it("follows the alg chosen in Verify, and its key changes with it", () => {
+    const pair = ALL_CASES.filter((c) => c.id === "oll-24" || c.id === "oll-25");
+    const p = progress({ mode: "verify", sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
+    let screen = start("verify", { ...ctx(p), cases: pair });
+    screen = after(screen, p, "reveal", "reveal");
+    const first = playView(screen);
+    const second = playView(chooseAlt(screen, 1));
+    if (first === null || second === null) throw new Error("checked verify has no play view");
+    expect(second.moves).toEqual(parse(prefixed(second.auf, second.c.algs[1].moves)));
+    expect(second.key).not.toBe(first.key);
+  });
+});
