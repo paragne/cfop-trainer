@@ -27,10 +27,13 @@ type Basis = { right: Vec; up: Vec; back: Vec };
 
 export type Camera = {
   setMode(mode: CameraMode): void;
+  // Rotates from whichever eye direction setEyeDirection last set (default
+  // [1,1,1]) — composable with it, so an FL case's mirrored eye and a
+  // case's corrective rotation both apply together.
   setCorrective(moves: readonly Move[]): void;
-  // Sets the locked basis directly from an eye direction (e.g. mirrored
-  // across x for an FL case, so the L face is on screen instead of R),
-  // bypassing setCorrective's fixed [1,1,1]-eye rotation composition.
+  // Sets the base eye direction the locked basis (and setCorrective's next
+  // rotation) starts from — e.g. mirrored across x for an FL case, so the L
+  // face is on screen instead of R.
   setEyeDirection(eye: Vec): void;
   // Where the camera looks, world space (default the origin). Independent
   // of the eye: changing it reframes the view without moving the eye.
@@ -69,6 +72,10 @@ export function createCamera(onChange: () => void): Camera {
   let mode: CameraMode = "locked";
   let radius = DEFAULT_RADIUS;
   let target: Vec = [0, 0, 0];
+  // The un-rotated reference setCorrective's next call rotates from —
+  // normally DEFAULT_BASIS, but setEyeDirection can replace it (FL's
+  // mirrored eye) so the two compose regardless of call order.
+  let baseBasis = DEFAULT_BASIS;
   let lockedBasis = DEFAULT_BASIS;
   let freeBasis = DEFAULT_BASIS;
   // Degrees pitched from the default, level view — tracked separately from
@@ -93,11 +100,12 @@ export function createCamera(onChange: () => void): Camera {
       onChange();
     },
     setCorrective(moves) {
-      lockedBasis = rotateBasis(DEFAULT_BASIS, moves);
+      lockedBasis = rotateBasis(baseBasis, moves);
       onChange();
     },
     setEyeDirection(eye) {
-      lockedBasis = screenAxes(eye);
+      baseBasis = screenAxes(eye);
+      lockedBasis = baseBasis;
       onChange();
     },
     setTarget(point) {

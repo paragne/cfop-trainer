@@ -444,6 +444,33 @@ async function threeDCheck() {
   check("FL mask: the pair's F side is colored", flF1.name === "F" && flF2.name === "F", JSON.stringify([flF1, flF2]));
   check("FL mask: the pair's L side is colored, not R (the mirror worked)", flL1.name === "L" && flL2.name === "L", JSON.stringify([flL1, flL2]));
 
+  // f2l-slot-3 (d) and f2l-slot-4 (mid-sequence y') twist regression: both
+  // use a move that displaces the cross/pair by more than any single rigid
+  // rotation reproduces (see case-camera.ts and orientation.test.ts), so a
+  // camera correction computed once at load time — right for the setup —
+  // goes wrong again once the algorithm's own later moves partially undo
+  // the twist. Checks both the true start (setup only) and the true end
+  // (setup plus the whole algorithm, folded into renderAt's setup argument
+  // and frozen with a "U" placeholder at fraction 0 — the same technique
+  // "start" already uses, and deliberately not freezing the real last move
+  // at fraction 1 instead: that leaves it as a shader-side visual overlay
+  // rather than a baked position, which isn't what the real app reaches
+  // once player.play() actually settles, and read wrong at the exact
+  // sample points here) read the same clean F/R picture a non-twisted case
+  // would.
+  for (const [label, setup] of [
+    ["f2l-slot-3 start", "R' U R d' R U R' U R U R'"],
+    ["f2l-slot-3 end", "R' U R d' R U R' U R U R' R U' R' U' R U' R' d R' U' R"],
+    ["f2l-slot-4 start", "R' U R y U2 R U R' U R U' R'"],
+    ["f2l-slot-4 end", "R' U R y U2 R U R' U R U' R' R U R' U' R U' R' U2 y' R' U' R"],
+  ]) {
+    await b.eval(`window.__threeD.renderAt("${setup}", "U", 0, "f2l", "FR")`);
+    const top = await b.eval("window.__gl3d.sample(0, -0.175)");
+    const f = await b.eval("window.__gl3d.sample(-0.075, 0.125)");
+    const r = await b.eval("window.__gl3d.sample(0.1, 0.125)");
+    check(`${label}: last layer gray, pair's F and R sides colored`, top.name === "gray" && f.name === "F" && r.name === "R", JSON.stringify({ top, f, r }));
+  }
+
   b.close();
   console.log(failed === 0 ? "\nALL PASS" : `\n${failed} FAILED`);
   process.exitCode = failed === 0 ? 0 : 1;

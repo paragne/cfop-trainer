@@ -1,36 +1,50 @@
 /**
- * Where the camera looks for a given case. OLL/PLL keeps the existing
- * per-case corrective rotation (matches case-state.ts's normalize(), so
- * yellow stays on top and the front/right faces stay put across cases —
- * verified against every non-F2L case in the data file). F2L gets none of
- * that: the target slot's screen position is fixed and case-independent
- * (FR is always FR), so there's nothing to correct for. Its eye direction
- * mirrors across x for FL, the same way render.ts's iso-fl camera mirrors
- * the 2D projection — otherwise the eye stays on the R side and the L face
- * the FL pair actually needs is never in view, only foreshortened at best.
+ * Where the camera looks. Two independent pieces: which side the eye is on
+ * (fixed per case, F2L mirrors it across x for FL so the L face is on
+ * screen instead of R — the same way render.ts's iso-fl camera mirrors the
+ * 2D projection), and the corrective rotation, which is NOT fixed at case
+ * load — it's a pure function of whatever cubies are currently at rest on
+ * screen, recomputed every time the cube settles (main.ts does this from
+ * the render loop, only when inFlight is null and the cubies reference has
+ * actually changed, so it stays render-on-demand rather than a continuous
+ * per-frame recompute).
  *
- * The look-at point always stays the cube's own center, for every case:
- * an earlier version retargeted it at the slot instead, which threw off
- * the near/far framing enough to look like the camera was centered on one
- * edge rather than the cube. Locking the eye to the slot's side (FR vs FL)
- * already makes the pair prominent, the same way the 2D iso view does,
- * without needing to move what the camera is actually pointed at.
+ * That statelessness is what makes this correct through an animation and
+ * not just at load: three F2L cases (f2l-slot-3/4/5 — already documented
+ * as exceptions in orientation.test.ts) use a partial-depth move (d) or a
+ * mid-sequence whole-cube rotation (y') whose effect on the cross and pair
+ * a single rigid rotation reproduces at setup time but not once the
+ * algorithm's own later moves partially undo it. Recomputing at every rest
+ * point means the camera always matches whatever's genuinely on screen —
+ * for the common case (no twist anywhere in the sequence) homeRotation
+ * returns an empty correction throughout and this is a no-op, same as a
+ * plain default camera.
+ *
+ * The correction itself is homeRotation's — inverted. homeRotation finds
+ * the rotation that, applied to a cube's *data*, brings U/F home; camera.ts
+ * applies whatever it's given to the *eye* instead, and rotating the eye by
+ * R shows the same picture as rotating the object by R⁻¹, so the camera
+ * needs homeRotation's result inverted to land on the same picture
+ * normalize() would draw. (For OLL/PLL this was never visible before now:
+ * homeRotation is empty for every non-F2L case but oll-42, so inverting an
+ * empty correction changes nothing there.)
  */
-import { applyMoves, SOLVED } from "../../lib/cube.ts";
-import type { Vec } from "../../lib/cube.ts";
 import { homeRotation } from "../../lib/orientation.ts";
-import type { Move } from "../../lib/notation.ts";
+import { invert } from "../../lib/notation.ts";
+import { colorsAtCubies } from "../../lib/physical-cube.ts";
+import type { PhysicalCubie } from "../../lib/physical-cube.ts";
+import type { Vec } from "../../lib/cube.ts";
 import type { Camera } from "./camera.ts";
 import type { Mask } from "../../data/algorithms.ts";
 
 const ORIGIN: Vec = [0, 0, 0];
 
-export function applyCameraForCase(camera: Camera, mask: Mask | null, setupMoves: readonly Move[]): void {
-  if (mask !== null && mask.kind === "f2l") {
-    const eye: Vec = mask.slot === "FR" ? [1, 1, 1] : [-1, 1, 1];
-    camera.setEyeDirection(eye);
-  } else {
-    camera.setCorrective(homeRotation(applyMoves(SOLVED, setupMoves)));
-  }
+export function applyEyeForCase(camera: Camera, mask: Mask | null): void {
+  const eye: Vec = mask !== null && mask.kind === "f2l" && mask.slot === "FL" ? [-1, 1, 1] : [1, 1, 1];
+  camera.setEyeDirection(eye);
   camera.setTarget(ORIGIN);
+}
+
+export function applyCorrectiveForCubies(camera: Camera, cubies: readonly PhysicalCubie[]): void {
+  camera.setCorrective(invert(homeRotation(colorsAtCubies(cubies))));
 }

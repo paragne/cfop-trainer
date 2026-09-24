@@ -22,8 +22,8 @@ import type { InFlight, Player } from "./player.ts";
 import { createCamera } from "./camera.ts";
 import { attachZoom } from "./zoom.ts";
 import { attachStepControls } from "./step-controls.ts";
-import { renderAt } from "./debug-render-at.ts";
-import { applyCameraForCase } from "./case-camera.ts";
+import { installDebugHook } from "./debug-render-at.ts";
+import { applyCorrectiveForCubies, applyEyeForCase } from "./case-camera.ts";
 import { renderCase } from "../../lib/render.ts";
 
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
@@ -67,12 +67,22 @@ if (glContext === null) {
   let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
 
   let scheduled = false;
+  // The camera's corrective rotation is a pure function of whatever cubies
+  // are currently at rest, recomputed only when they've actually changed
+  // (a new snapTo or a move settling) — see case-camera.ts for why a single
+  // correction computed once at load doesn't stay right through the whole
+  // animation for every case.
+  let lastCorrected: readonly PhysicalCubie[] | null = null;
   function requestRedraw(): void {
     if (scheduled) return;
     scheduled = true;
     requestAnimationFrame(() => {
       scheduled = false;
       const { cubies, inFlight } = player.currentFrame();
+      if (inFlight === null && cubies !== lastCorrected) {
+        lastCorrected = cubies;
+        applyCorrectiveForCubies(camera, cubies);
+      }
       renderNow(cubies, inFlight);
     });
   }
@@ -133,7 +143,7 @@ if (glContext === null) {
     syncCameraMode();
     const solutionMoves = parse(c.algs[0].moves);
     const setupMoves = invert(solutionMoves);
-    applyCameraForCase(camera, c.mask, setupMoves);
+    applyEyeForCase(camera, c.mask);
     glScene.setMask(c.mask);
     player.snapTo(applyAlgToCubies(homeCubiesWithCore(), setupMoves));
     info.textContent = `${c.id} — ${c.algs[0].display}`;
@@ -144,7 +154,7 @@ if (glContext === null) {
   function loadSolved(): void {
     resetPlayback();
     syncCameraMode();
-    applyCameraForCase(camera, null, []);
+    applyEyeForCase(camera, null);
     glScene.setMask(null);
     player.snapTo(homeCubiesWithCore());
     info.textContent = "Solved";
@@ -176,11 +186,5 @@ if (glContext === null) {
   });
 
   loadSolved();
-
-  if (new URLSearchParams(location.search).has("debug")) {
-    window.__threeD = {
-      renderAt: (setupMovesText, moveText, fraction, maskKind, maskSlot) =>
-        renderAt(camera, (mask) => glScene.setMask(mask), renderNow, setupMovesText, moveText, fraction, maskKind, maskSlot),
-    };
-  }
+  installDebugHook(camera, (mask) => glScene.setMask(mask), (cubies) => player.snapTo(cubies), renderNow);
 }

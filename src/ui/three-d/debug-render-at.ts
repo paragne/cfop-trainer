@@ -11,7 +11,7 @@ import { applyAlgToCubies } from "../../lib/physical-cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 import { homeCubiesWithCore } from "./core-cubie.ts";
 import { animationAngleDegrees } from "../../lib/rotate-by-angle.ts";
-import { applyCameraForCase } from "./case-camera.ts";
+import { applyCorrectiveForCubies, applyEyeForCase } from "./case-camera.ts";
 import type { Camera } from "./camera.ts";
 import type { InFlight } from "./player.ts";
 import type { Mask } from "../../data/algorithms.ts";
@@ -59,6 +59,15 @@ function maskFor(kind: Mask["kind"] | undefined, slot: "FR" | "FL" | undefined):
 export function renderAt(
   camera: Camera,
   setMask: (mask: Mask | null) => void,
+  // Keeps the player's own state in sync with whatever renderAt just drew:
+  // main.ts's continuous render loop reads player.currentFrame() on every
+  // rAF, including ones queued by earlier, unrelated onChange() calls (a
+  // free-cam drag, an earlier renderAt's own camera change) that can still
+  // be pending when this runs. Without this, such a frame can fire right
+  // after renderAt draws and repaint over it with the player's last real
+  // (and here, unrelated) state — a real, timing-dependent race that showed
+  // up as flaky wrong-face reads in driver.mjs's F2L checks.
+  snapTo: (cubies: readonly PhysicalCubie[]) => void,
   renderNow: (cubies: readonly PhysicalCubie[], inFlight: InFlight | null) => void,
   setupMovesText: string,
   moveText: string,
@@ -73,11 +82,27 @@ export function renderAt(
   if (move === undefined) throw new Error("renderAt: moveText parsed to no moves");
   const mask = maskFor(maskKind, maskSlot);
   camera.setMode("locked");
-  applyCameraForCase(camera, mask, setupMoves);
   setMask(mask);
   const before = applyAlgToCubies(homeCubiesWithCore(), setupMoves);
+  applyEyeForCase(camera, mask);
+  applyCorrectiveForCubies(camera, before);
+  snapTo(before);
   const { axis, depths } = MOVE_AXES[move.name];
   const movingCubieIndices = new Set(before.flatMap((cubie, i) => (depths.includes(dot(axis, cubie.position)) ? [i] : [])));
   const inFlight: InFlight = { axis, angleDeg: animationAngleDegrees(move) * fraction, movingCubieIndices };
   renderNow(before, inFlight);
+}
+
+// Registers window.__threeD when ?debug is present; inert otherwise.
+export function installDebugHook(
+  camera: Camera,
+  setMask: (mask: Mask | null) => void,
+  snapTo: (cubies: readonly PhysicalCubie[]) => void,
+  renderNow: (cubies: readonly PhysicalCubie[], inFlight: InFlight | null) => void,
+): void {
+  if (!new URLSearchParams(location.search).has("debug")) return;
+  window.__threeD = {
+    renderAt: (setupMovesText, moveText, fraction, maskKind, maskSlot) =>
+      renderAt(camera, setMask, snapTo, renderNow, setupMovesText, moveText, fraction, maskKind, maskSlot),
+  };
 }
