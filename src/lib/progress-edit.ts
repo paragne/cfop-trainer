@@ -1,5 +1,5 @@
 import type { CaseSet } from "../data/algorithms.ts";
-import type { Mode, VerifyLength } from "./prefs.ts";
+import type { Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
 
 // An empty note is deleted rather than stored, matching what parsing does with
@@ -13,7 +13,7 @@ export function setNote(progress: Progress, id: string, text: string): Progress 
 
 export function setPref(
   progress: Progress,
-  key: "showNames" | "showSolutions" | "randomRotation" | "threeD",
+  key: "showNames" | "showSolutions" | "randomRotation" | "shuffle" | "threeD",
   value: boolean,
 ): Progress {
   return { ...progress, prefs: { ...progress.prefs, [key]: value } };
@@ -25,10 +25,6 @@ export function setNumberPref(progress: Progress, key: "speed" | "zoom", value: 
 
 export function setMode(progress: Progress, mode: Mode): Progress {
   return { ...progress, prefs: { ...progress.prefs, mode } };
-}
-
-export function setVerifyLength(progress: Progress, verifyLength: VerifyLength): Progress {
-  return { ...progress, prefs: { ...progress.prefs, verifyLength } };
 }
 
 // Returns the same object when the last set would be switched off, so the

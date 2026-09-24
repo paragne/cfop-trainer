@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Case } from "../data/algorithms.ts";
 import { buildQueue } from "./queue.ts";
+import { orderer } from "./shuffle.ts";
 import type { Card } from "./srs.ts";
 
 const NOW = 1_800_000_000_000;
@@ -45,12 +46,12 @@ function seeded(seed: number): () => number {
 describe("length", () => {
   it("treats never-seen cases as due and stops at the number selected", () => {
     const all = cases("a", "b", "c", "d", "e");
-    expect(buildQueue(all, {}, NOW, 20, seeded(1))).toHaveLength(5);
+    expect(buildQueue(all, {}, NOW, 20, orderer(true, seeded(1)))).toHaveLength(5);
   });
 
   it("caps at the requested length when more are due", () => {
     const all = cases(..."abcdefghijklmnopqrstuvwxyz0123".split(""));
-    expect(buildQueue(all, {}, NOW, 20, seeded(1))).toHaveLength(20);
+    expect(buildQueue(all, {}, NOW, 20, orderer(true, seeded(1)))).toHaveLength(20);
   });
 
   it("fills only the shortfall", () => {
@@ -61,7 +62,7 @@ describe("length", () => {
       e: card(4, 2, NOW + 1),
       f: card(4, 2, NOW + 1),
     };
-    expect(buildQueue(all, cards, NOW, 4, seeded(1))).toHaveLength(4);
+    expect(buildQueue(all, cards, NOW, 4, orderer(true, seeded(1)))).toHaveLength(4);
   });
 });
 
@@ -70,7 +71,7 @@ describe("due versus fill", () => {
     // If the boundary were exclusive, neither card would be due and the
     // lower-ratio card b would be filled in instead of a.
     const cards = { a: card(1, 1, NOW), b: card(1, 0, NOW + 1) };
-    expect(ids(buildQueue(cases("a", "b"), cards, NOW, 1, seeded(1)))).toEqual(["a"]);
+    expect(ids(buildQueue(cases("a", "b"), cards, NOW, 1, orderer(true, seeded(1))))).toEqual(["a"]);
   });
 
   it("puts due cards first, then fills by ascending known/seen", () => {
@@ -79,13 +80,13 @@ describe("due versus fill", () => {
       y: card(2, 1, NOW + 1),
       z: card(10, 9, NOW + 1),
     };
-    const queue = buildQueue(cases("d", "x", "y", "z"), cards, NOW, 3, seeded(1));
+    const queue = buildQueue(cases("d", "x", "y", "z"), cards, NOW, 3, orderer(true, seeded(1)));
     expect(ids(queue)).toEqual(["d", "x", "y"]);
   });
 
   it("does not treat a card due one ms from now as due", () => {
     const cards = { b: card(2, 1, NOW + 1), c: card(5, 1, NOW + 1) };
-    const queue = buildQueue(cases("a", "b", "c"), cards, NOW, 3, seeded(1));
+    const queue = buildQueue(cases("a", "b", "c"), cards, NOW, 3, orderer(true, seeded(1)));
     expect(ids(queue)).toEqual(["a", "c", "b"]);
   });
 
@@ -93,7 +94,7 @@ describe("due versus fill", () => {
     const all = cases("a", "b", "c", "d", "e", "f", "g");
     const cards = { d: card(2, 1, NOW + 1), e: card(3, 3, NOW + 1) };
     for (let seed = 0; seed < 50; seed++) {
-      const queue = ids(buildQueue(all, cards, NOW, 5, seeded(seed)));
+      const queue = ids(buildQueue(all, cards, NOW, 5, orderer(true, seeded(seed))));
       expect(new Set(queue).size).toBe(queue.length);
     }
   });
@@ -101,15 +102,15 @@ describe("due versus fill", () => {
   it("leaves its inputs alone", () => {
     const all = Object.freeze(cases("a", "b", "c", "d"));
     const cards = Object.freeze({ c: Object.freeze(card(1, 0, NOW + 1)) });
-    expect(() => buildQueue(all, cards, NOW, 4, seeded(1))).not.toThrow();
+    expect(() => buildQueue(all, cards, NOW, 4, orderer(true, seeded(1)))).not.toThrow();
   });
 });
 
 describe("shuffle", () => {
   it("is a function of the injected random and nothing else", () => {
     const all = cases("a", "b", "c", "d", "e", "f", "g", "h");
-    const first = ids(buildQueue(all, {}, NOW, 8, seeded(42)));
-    const second = ids(buildQueue(all, {}, NOW, 8, seeded(42)));
+    const first = ids(buildQueue(all, {}, NOW, 8, orderer(true, seeded(42))));
+    const second = ids(buildQueue(all, {}, NOW, 8, orderer(true, seeded(42))));
     expect(second).toEqual(first);
   });
 
@@ -117,7 +118,7 @@ describe("shuffle", () => {
     const counts = new Map<string, number>();
     const random = seeded(7);
     for (let i = 0; i < 6000; i++) {
-      const key = ids(buildQueue(cases("a", "b", "c"), {}, NOW, 3, random)).join("");
+      const key = ids(buildQueue(cases("a", "b", "c"), {}, NOW, 3, orderer(true, random))).join("");
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     expect(counts.size).toBe(6);
@@ -125,5 +126,20 @@ describe("shuffle", () => {
       expect(n).toBeGreaterThan(900);
       expect(n).toBeLessThan(1100);
     }
+  });
+});
+
+describe("unshuffled", () => {
+  const keep = orderer(false, () => {
+    throw new Error("random was called");
+  });
+
+  it("keeps due cases in the order given", () => {
+    expect(ids(buildQueue(cases("d", "b", "c", "a"), {}, NOW, 3, keep))).toEqual(["d", "b", "c"]);
+  });
+
+  it("fills with the weakest cards first, ties in the order given", () => {
+    const cards = { a: card(4, 3, NOW + 1000), b: card(4, 1, NOW + 1000), c: card(4, 1, NOW + 1000) };
+    expect(ids(buildQueue(cases("a", "b", "c"), cards, NOW, 3, keep))).toEqual(["b", "c", "a"]);
   });
 });

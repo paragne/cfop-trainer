@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { draw } from "./bag.ts";
+import { orderer } from "./shuffle.ts";
 import { mk } from "./session.fixture.ts";
 
 const pool = ["a", "b", "c"].map((id) => mk(id));
@@ -22,7 +23,7 @@ describe("draw", () => {
   });
 
   it("starts a new pass from the whole pool when the bag is empty", () => {
-    const next = draw(pool, [], pool[0], seeded(1));
+    const next = draw(pool, [], pool[0], orderer(true, seeded(1)));
     expect([next.current, ...next.bag].map((c) => c.id).toSorted()).toEqual(["a", "b", "c"]);
   });
 
@@ -31,8 +32,17 @@ describe("draw", () => {
     "never opens a new pass on the case just shown (seed %i)",
     (seed) => {
       for (const previous of pool) {
-        expect(draw(pool, [], previous, seeded(seed)).current.id).not.toBe(previous.id);
+        expect(draw(pool, [], previous, orderer(true, seeded(seed))).current.id).not.toBe(previous.id);
       }
     },
   );
+
+  it("cycles the pool in order, unshuffled, and never repeats across the wrap", () => {
+    const keep = orderer(false, () => {
+      throw new Error("random was called");
+    });
+    const last = draw(pool, [], pool[2], keep);
+    expect(last.current.id).toBe("a");
+    expect(last.bag.map((c) => c.id)).toEqual(["b", "c"]);
+  });
 });

@@ -45,7 +45,6 @@ describe("alternate algs", () => {
     chosen: 0,
     phase: "checked",
     step: 1,
-    length: 5,
     matches: 0,
   });
 
@@ -78,7 +77,7 @@ describe("alternate algs", () => {
 
 describe("Match, Mismatch and Reset", () => {
   const pool = [byId("oll-27"), byId("oll-26")];
-  const p = withVerify(["Full OLL"], { verifyLength: 5 });
+  const p = withVerify(["Full OLL"]);
 
   it("Mismatch does not advance the step or the tally", () => {
     const v = check(begin(startVerify(pool, p, seeded(1))));
@@ -106,23 +105,23 @@ describe("Match, Mismatch and Reset", () => {
     expect(after.phase).toBe("attempt");
   });
 
-  it("reaches done exactly at the configured length, with a tally of every match", () => {
+  it("never ends: after 60 matches it is on step 61 and ready for the next attempt", () => {
     let v = begin(startVerify(pool, p, seeded(9)));
-    for (let i = 0; i < p.prefs.verifyLength; i++) v = judge(check(v), true, p, seeded(9));
-    expect(v.phase).toBe("done");
-    expect(v.step).toBe(p.prefs.verifyLength);
-    expect(v.matches).toBe(p.prefs.verifyLength);
+    for (let i = 0; i < 60; i++) v = judge(check(v), true, p, seeded(9));
+    expect(v.phase).toBe("attempt");
+    expect(v.step).toBe(61);
+    expect(v.matches).toBe(60);
   });
 });
 
 describe("no immediate repeat", () => {
-  it("never shows the same case twice in a row across a 20-step session", () => {
+  it("never shows the same case twice in a row across 20 steps", () => {
     const pool = [byId("oll-27"), byId("oll-26")];
-    const p = withVerify(["Full OLL"], { verifyLength: 20 });
+    const p = withVerify(["Full OLL"]);
     const random = seeded(11);
     let v = begin(startVerify(pool, p, random));
     const seen = [v.current.id];
-    for (let i = 0; i < p.prefs.verifyLength - 1; i++) {
+    for (let i = 0; i < 19; i++) {
       v = judge(check(v), true, p, random);
       seen.push(v.current.id);
     }

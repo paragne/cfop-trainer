@@ -49,7 +49,7 @@ describe("the frozen v1 blob", () => {
           showSolutions: true,
           randomRotation: false,
           mode: "learn",
-          verifyLength: 10,
+          shuffle: true,
           threeD: false,
           speed: 1,
           zoom: 1,

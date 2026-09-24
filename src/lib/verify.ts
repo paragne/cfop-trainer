@@ -6,10 +6,10 @@ import { applyMoves, normalize, SOLVED } from "./cube.ts";
 import type { Cube } from "./cube.ts";
 import { parse } from "./notation.ts";
 import type { Progress } from "./progress.ts";
-import { inSets } from "./selection.ts";
-import { shuffle } from "./shuffle.ts";
+import { inReadingOrder } from "./selection.ts";
+import { orderer } from "./shuffle.ts";
 
-export type Phase = "ready" | "attempt" | "checked" | "missed" | "done";
+export type Phase = "ready" | "attempt" | "checked" | "missed";
 
 export type Verify = {
   pool: readonly Case[];
@@ -23,7 +23,6 @@ export type Verify = {
   chosen: number;
   phase: Phase;
   step: number;
-  length: number;
   matches: number;
 };
 
@@ -32,10 +31,10 @@ export function startVerify(
   progress: Progress,
   random: () => number,
 ): Verify {
-  const pool = inSets(cases, progress.prefs.sets.verify);
+  const pool = inReadingOrder(cases, progress.prefs.sets.verify);
   // Every set holds several cases, so this is a programmer error, as in Drill.
   if (pool.length < 2) throw new Error("verify needs at least two cases");
-  const [current, ...bag] = shuffle(pool, random);
+  const [current, ...bag] = orderer(progress.prefs.shuffle, random)(pool);
   return {
     pool,
     bag,
@@ -45,7 +44,6 @@ export function startVerify(
     chosen: 0,
     phase: "ready",
     step: 1,
-    length: progress.prefs.verifyLength,
     matches: 0,
   };
 }
@@ -105,8 +103,7 @@ export function regrip(cube: Cube): readonly string[] {
 }
 
 function advance(v: Verify, cube: Cube, progress: Progress, random: () => number): Verify {
-  if (v.step >= v.length) return { ...v, cube, phase: "done" };
-  const { current, bag } = draw(v.pool, v.bag, v.current, random);
+  const { current, bag } = draw(v.pool, v.bag, v.current, orderer(progress.prefs.shuffle, random));
   return {
     ...v,
     current,

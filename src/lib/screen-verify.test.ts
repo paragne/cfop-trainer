@@ -4,7 +4,7 @@ import { SOLVED } from "./cube.ts";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
 import { chooseAlt, press, resultText, start, verifyView } from "./screen.ts";
-import type { Action, Context, Screen } from "./screen.ts";
+import type { Context, Screen } from "./screen.ts";
 import { mk, NOW } from "./session.fixture.ts";
 
 const pool = ["a", "b"].map((id) => mk(id, ["Full OLL"] as CaseSet[]));
@@ -78,7 +78,7 @@ describe("press on a verify screen", () => {
   });
 
   it("never writes a card or a note for progress, across a full session", () => {
-    const p = progress({ verifyLength: 5 });
+    const p = progress();
     let state = { screen: start("verify", ctx(p)), progress: p };
     for (let step = 0; step < 5; step++) {
       state = press(state.screen, "reveal", ctx(state.progress));
@@ -90,27 +90,17 @@ describe("press on a verify screen", () => {
   });
 });
 
-describe("finishing a session", () => {
-  const finished = (): Screen => {
-    const p = progress({ verifyLength: 5 });
+describe("a long session", () => {
+  it("never finishes: 30 matches later the verify view is still up, with no summary", () => {
+    const p = progress();
     let screen = start("verify", ctx(p));
-    for (let step = 0; step < 5; step++) {
+    for (let step = 0; step < 30; step++) {
       screen = press(screen, "reveal", ctx(p)).screen;
       screen = press(screen, "reveal", ctx(p)).screen;
       screen = press(screen, "know", ctx(p)).screen;
     }
-    return screen;
-  };
-
-  it("shows a tally and no verify view", () => {
-    const screen = finished();
-    expect(verifyView(screen)).toBeNull();
-    expect(resultText(screen)).toBe("5 of 5 matched.");
-  });
-
-  it.each<Action>(["dontKnow", "know"])("ignores %s once done", (action) => {
-    const screen = finished();
-    expect(press(screen, action, ctx()).screen).toBe(screen);
+    expect(verifyView(screen)).toMatchObject({ step: 31, matches: 30 });
+    expect(resultText(screen)).toBeNull();
   });
 });
 

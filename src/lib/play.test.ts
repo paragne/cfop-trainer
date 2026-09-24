@@ -34,8 +34,8 @@ describe("the gate", () => {
     expect(playView(after(revealed, p, "reveal"))).toBeNull();
   });
 
-  it("stays closed in Verify through ready and attempt, opens on checked and missed, closes when done", () => {
-    const p = progress({ mode: "verify", verifyLength: 5, sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
+  it("stays closed in Verify through ready and attempt, opens on checked and missed", () => {
+    const p = progress({ mode: "verify", sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
     let screen = start("verify", ctx(p));
     expect(playView(screen)).toBeNull();
     screen = after(screen, p, "reveal");
@@ -48,8 +48,8 @@ describe("the gate", () => {
     expect(verifyView(screen)?.phase).toBe("missed");
     expect(playView(screen)).not.toBeNull();
     screen = after(screen, p, "reveal"); // Reset: step 2, attempt
-    for (let step = 2; step <= 5; step++) screen = after(screen, p, "reveal", "know");
-    expect(verifyView(screen)).toBeNull();
+    for (let step = 2; step <= 30; step++) screen = after(screen, p, "reveal", "know");
+    expect(verifyView(screen)?.phase).toBe("attempt");
     expect(playView(screen)).toBeNull();
   });
 });

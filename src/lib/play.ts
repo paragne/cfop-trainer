@@ -31,7 +31,7 @@ const caseOf = (c: Case, auf: Auf): CaseView => ({ key: `${c.id}|${auf}`, c, auf
 export function caseView(screen: Screen): CaseView | null {
   if (screen.kind === "verify") {
     const { phase, current, auf } = screen.verify;
-    return phase === "ready" || phase === "done" ? null : caseOf(current, auf);
+    return phase === "ready" ? null : caseOf(current, auf);
   }
   const card = cardView(screen);
   return card === null ? null : caseOf(card.c, card.auf);

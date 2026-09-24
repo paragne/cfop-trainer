@@ -11,9 +11,9 @@ export type Prefs = {
   showNames: boolean;
   showSolutions: boolean;
   randomRotation: boolean;
+  shuffle: boolean;
   mode: Mode;
   sets: Record<Mode, CaseSet[]>;
-  verifyLength: VerifyLength;
   threeD: boolean;
   speed: number;
   zoom: number;
@@ -24,9 +24,6 @@ export const SPEEDS = [0.2, 0.5, 1, 2, 4, 10] as const;
 // A multiplier on the size that fits the canvas, so 1 is always "fills it".
 export const ZOOM_RANGE = { min: 0.5, max: 3 } as const;
 
-export const VERIFY_LENGTHS = [5, 10, 20] as const;
-export type VerifyLength = (typeof VERIFY_LENGTHS)[number];
-
 // The full sets are opt-in: they add about a hundred cases to a session queue
 // of twenty. Verify never offers an F2L set.
 export function defaultPrefs(): Prefs {
@@ -34,8 +31,8 @@ export function defaultPrefs(): Prefs {
     showNames: true,
     showSolutions: false,
     randomRotation: false,
+    shuffle: true,
     mode: "learn",
-    verifyLength: 10,
     threeD: false,
     speed: 1,
     zoom: 1,
@@ -77,13 +74,6 @@ function readMode(value: unknown, fallback: Mode): Mode {
   );
 }
 
-// A missing pref takes its default, which is what lets a new pref ship
-// without bumping the version.
-function readVerifyLength(value: unknown, fallback: VerifyLength): VerifyLength {
-  if (value === undefined) return fallback;
-  return VERIFY_LENGTHS.find((n) => n === value) ?? reject(`prefs.verifyLength must be one of ${VERIFY_LENGTHS.join(", ")}`);
-}
-
 // A speed saved by an earlier build's slider snaps to the nearest choice
 // instead of discarding the whole blob.
 function readSpeed(value: unknown, fallback: number): number {
@@ -105,7 +95,7 @@ function readInRange(
 
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions" | "randomRotation" | "threeD"): boolean => {
+  const flag = (key: "showNames" | "showSolutions" | "randomRotation" | "shuffle" | "threeD"): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -114,9 +104,9 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     showNames: flag("showNames"),
     showSolutions: flag("showSolutions"),
     randomRotation: flag("randomRotation"),
+    shuffle: flag("shuffle"),
     mode: readMode(raw.mode, defaults.mode),
     sets: raw.sets === undefined ? defaults.sets : readSets(raw.sets, defaults.sets),
-    verifyLength: readVerifyLength(raw.verifyLength, defaults.verifyLength),
     threeD: flag("threeD"),
     speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),

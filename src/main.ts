@@ -5,7 +5,7 @@ import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { caseView, playView } from "./lib/play.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
@@ -45,7 +45,6 @@ const home = createHome({
   onMode: (mode) => commit(setMode(progress, mode)),
   onSet: (set) => switchSet(set),
   onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),
-  onVerifyLength: (length) => commit(setVerifyLength(progress, length)),
   onStart: () => startMode(progress.prefs.mode),
 });
 const prefBar = createPrefBar({
@@ -136,7 +135,6 @@ function render(): void {
       mode: progress.prefs.mode,
       selected: progress.prefs.sets[progress.prefs.mode],
       rotation: progress.prefs.randomRotation,
-      verifyLength: progress.prefs.verifyLength,
       learnDue: dueCount(ALL_CASES, progress.cards, progress.prefs.sets.learn, now),
       stats: setStats(ALL_CASES, progress.cards, now),
     });

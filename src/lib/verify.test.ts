@@ -40,11 +40,6 @@ describe("startVerify", () => {
     expect(v.pool.every((c) => c.group !== "F2L")).toBe(true);
     expect(v.pool.every((c) => c.sets.includes("Full OLL"))).toBe(true);
   });
-
-  it("takes its session length from the pref", () => {
-    const v = startVerify(ALL_CASES, withVerify(["Full OLL"], { verifyLength: 5 }), Math.random);
-    expect(v.length).toBe(5);
-  });
 });
 
 describe("expected", () => {
@@ -105,7 +100,6 @@ describe("oll-42 leaves a displaced grip", () => {
     chosen: 0,
     phase: "checked",
     step: 1,
-    length: 5,
     matches: 0,
     ...over,
   });

@@ -53,7 +53,7 @@ describe("serialize and parseProgress", () => {
         randomRotation: true,
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
-        verifyLength: 5,
+        shuffle: false,
         threeD: true, speed: 2, zoom: 2,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
@@ -72,7 +72,7 @@ describe("serialize and parseProgress", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
     expect(Object.keys(progress().prefs)).toEqual([
-      "showNames", "showSolutions", "randomRotation", "mode", "verifyLength", "threeD", "speed", "zoom", "sets",
+      "showNames", "showSolutions", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "sets",
     ]);
   });
 });
@@ -97,7 +97,7 @@ describe("parseProgress rejects", () => {
     ["a mode that is not a string", bad({ prefs: { mode: 1 } }), "prefs.mode"],
     ["an F2L set for verify", bad({ prefs: { sets: { verify: ["F2L"] } } }), "prefs.sets.verify"],
     ["an F2L set for verify among others", bad({ prefs: { sets: { verify: ["Full OLL", "F2L"] } } }), "prefs.sets.verify"],
-    ["a verifyLength that is not 5, 10 or 20", bad({ prefs: { verifyLength: 15 } }), "prefs.verifyLength"],
+    ["a shuffle that is not a boolean", bad({ prefs: { shuffle: "on" } }), "prefs.shuffle"],
     ["sets that is not an object", bad({ prefs: { sets: ["F2L"] } }), "prefs.sets"],
     ["an empty learn list", bad({ prefs: { sets: { learn: [] } } }), "prefs.sets.learn"],
     ["an empty verify list", bad({ prefs: { sets: { verify: [] } } }), "prefs.sets.verify"],
@@ -149,7 +149,7 @@ describe("parseProgress tolerates", () => {
       randomRotation: false,
       mode: "learn",
       sets: SETS,
-      verifyLength: 10,
+      shuffle: true,
       threeD: false, speed: 1, zoom: 1,
     });
   });
@@ -162,7 +162,7 @@ describe("parseProgress tolerates", () => {
       randomRotation: false,
       mode: "drill",
       sets: SETS,
-      verifyLength: 10,
+      shuffle: true,
       threeD: false, speed: 1, zoom: 1,
     });
   });

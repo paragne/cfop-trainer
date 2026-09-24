@@ -6,3 +6,9 @@ export function shuffle<T>(items: readonly T[], random: () => number): T[] {
   }
   return out;
 }
+
+// How a session arranges its cases: shuffled, or left in the order given.
+export type Orderer = <T>(items: readonly T[]) => T[];
+
+export const orderer = (shuffled: boolean, random: () => number): Orderer =>
+  shuffled ? (items) => shuffle(items, random) : (items) => [...items];

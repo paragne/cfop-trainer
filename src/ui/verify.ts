@@ -63,7 +63,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
   };
 
   function render(v: Verify, progress: Progress): void {
-    count.textContent = `Verify · ${v.step} / ${v.length}`;
+    count.textContent = `Verify · step ${v.step} · ${v.matches} matched`;
     ready.hidden = v.phase !== "ready";
 
     const attempting = v.phase === "attempt";
@@ -96,8 +96,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
       regripLine.textContent = `Your grip has turned. Rotate ${rotation.join(" then ")} to hold it green front, yellow up, then compare.`;
     }
 
-    primary.text.textContent =
-      v.phase === "attempt" ? "Check" : v.phase === "missed" ? (v.step === v.length ? "Finish" : "Reset") : "Begin";
+    primary.text.textContent = v.phase === "attempt" ? "Check" : v.phase === "missed" ? "Reset" : "Begin";
     primary.node.hidden = v.phase === "checked";
     mismatch.node.hidden = v.phase !== "checked";
     match.node.hidden = v.phase !== "checked";

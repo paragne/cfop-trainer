@@ -68,9 +68,6 @@ export function press(
     return { screen, progress: setPref(progress, "showNames", !progress.prefs.showNames) };
   }
   if (screen.kind === "verify") {
-    if (screen.verify.phase === "done") {
-      return action === "reveal" ? { screen: start("verify", ctx), progress } : unchanged;
-    }
     const verify = pressVerify(screen.verify, action, ctx);
     return verify === screen.verify ? unchanged : { screen: { kind: "verify", verify }, progress };
   }
@@ -105,21 +102,16 @@ export function cardView(screen: Screen): CardView | null {
   return { c, revealed, count: `${done} / ${total}`, mode: "learn", auf: screen.auf };
 }
 
-// Non-null only on a finished session's summary.
+// Non-null only on a finished session's summary. Drill and Verify never end.
 export function resultText(screen: Screen): string | null {
-  if (screen.kind === "verify") {
-    const v = screen.verify;
-    return v.phase === "done" ? `${v.matches} of ${v.length} matched.` : null;
-  }
   if (screen.kind !== "learn" || current(screen.session) !== null) return null;
   const { firstTry, total } = screen.session;
   return `${firstTry} of ${total} known on the first try.`;
 }
 
-// Verify has no card to show and drives its own screen instead of
-// flashcard's; null once the session is done, when resultText takes over.
+// Verify has no card to show and drives its own screen instead of flashcard's.
 export function verifyView(screen: Screen): Verify | null {
-  return screen.kind === "verify" && screen.verify.phase !== "done" ? screen.verify : null;
+  return screen.kind === "verify" ? screen.verify : null;
 }
 
 // Picks which of a case's algs was executed, when they disagree on where the
@@ -131,7 +123,7 @@ export function chooseAlt(screen: Screen, i: number): Screen {
 }
 
 // Verify reuses the flashcard action names: reveal is the primary action
-// (Begin, Check, or Reset/Finish), dontKnow is Mismatch and know is Match.
+// (Begin, Check, or Reset), dontKnow is Mismatch and know is Match.
 function pressVerify(v: Verify, action: Action, { progress, random }: Context): Verify {
   if (v.phase === "ready") return action === "reveal" ? begin(v) : v;
   if (v.phase === "attempt") return action === "reveal" ? check(v) : v;
@@ -140,6 +132,6 @@ function pressVerify(v: Verify, action: Action, { progress, random }: Context): 
     if (action === "dontKnow") return judge(v, false, progress, random);
     return v;
   }
-  // "missed": Reset, or Finish on the last step.
+  // "missed": Reset.
   return action === "reveal" ? reset(v, progress, random) : v;
 }

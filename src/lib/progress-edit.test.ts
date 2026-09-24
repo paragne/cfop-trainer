@@ -3,7 +3,7 @@ import { ALL_CASES } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import { defaultProgress, parseProgress, serialize } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./progress-edit.ts";
 
 const [A, B] = ALL_CASES.map((c) => c.id);
 
@@ -79,14 +79,14 @@ describe("setPref for the random AUF", () => {
   });
 });
 
-describe("setVerifyLength", () => {
-  it("changes only the length, and survives a save and reload", () => {
+describe("setPref shuffle", () => {
+  it("changes only the shuffle, and survives a save and reload", () => {
     const before = progress({ [A]: "keep" });
-    const after = setVerifyLength(before, 5);
-    expect(after.prefs).toEqual({ ...before.prefs, verifyLength: 5 });
+    const after = setPref(before, "shuffle", false);
+    expect(after.prefs).toEqual({ ...before.prefs, shuffle: false });
     expect(after.notes).toBe(before.notes);
     const loaded = parseProgress(serialize(after, 1), ALL_CASES);
-    expect(loaded.ok && loaded.progress.prefs.verifyLength).toBe(5);
+    expect(loaded.ok && loaded.progress.prefs.shuffle).toBe(false);
   });
 });
 

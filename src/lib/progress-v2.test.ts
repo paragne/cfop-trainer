@@ -29,7 +29,7 @@ describe("a frozen version 2 blob", () => {
           showSolutions: true,
           randomRotation: true,
           mode: "drill",
-          verifyLength: 20,
+          shuffle: true,
           threeD: true,
           // The blob predates the fixed speed choices; 1.5 sits halfway between
           // 1x and 2x and snaps to the slower.
