@@ -5,6 +5,7 @@
  * fires at all.
  */
 import type { Mask } from "../../data/algorithms.ts";
+import { fittedProjection } from "../../lib/fit.ts";
 import { lookAt, perspective } from "../../lib/mat4.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
@@ -18,6 +19,8 @@ import { createPlayer, speedToDurationMs } from "./player.ts";
 import type { InFlight, Player } from "./player.ts";
 
 const FOV_Y_RADIANS = (35 * Math.PI) / 180;
+// Breathing room left around the cube when it is fitted to its canvas.
+const FIT_MARGIN = 0.03;
 const NEAR_FAR_MARGIN = 3; // cube's bounding sphere is ~2.6 units; a bit more keeps both planes tight but safe
 
 export type CubeView = {
@@ -30,13 +33,24 @@ export type CubeView = {
   showCase(mask: Mask | null, cubies: readonly PhysicalCubie[]): void;
   setMask(mask: Mask | null, home: readonly PhysicalCubie[]): void;
   renderNow(cubies: readonly PhysicalCubie[], inFlight: InFlight | null): void;
+  // Centers the cube in its canvas and scales it to fill it, times `zoom`.
+  // Off, the camera's radius alone sets the size and the cube is not centered.
+  setFit(on: boolean): void;
+  setZoom(zoom: number): void;
   dispose(): void;
 };
 
-export function createCubeView(canvas: HTMLCanvasElement, glContext: GlContext, speed: () => number): CubeView {
+export function createCubeView(
+  canvas: HTMLCanvasElement,
+  glContext: GlContext,
+  speed: () => number,
+  background: readonly [number, number, number],
+): CubeView {
   const { gl, resize, onContextRestored } = glContext;
   const initialCubies = homeCubiesWithCore();
-  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
+  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background);
+  let fit = false;
+  let zoom = 1;
   let mask: Mask | null = null;
   let home: readonly PhysicalCubie[] = initialCubies;
 
@@ -69,12 +83,13 @@ export function createCubeView(canvas: HTMLCanvasElement, glContext: GlContext, 
     const near = Math.max(0.1, radius - NEAR_FAR_MARGIN);
     const far = radius + NEAR_FAR_MARGIN;
     const view: Mat4 = lookAt(camera.getEye(), camera.getTarget(), camera.getUp());
-    glScene.render(cubies, inFlight, view, perspective(FOV_Y_RADIANS, aspect, near, far), camera.getEye(), camera.getUp());
+    const projection = perspective(FOV_Y_RADIANS, aspect, near, far);
+    glScene.render(cubies, inFlight, view, fit ? fittedProjection(projection, view, FIT_MARGIN, zoom) : projection, camera.getEye(), camera.getUp());
   }
 
   onContextRestored(() => {
     // The lost context took its program, buffers and VAO with it.
-    glScene = createGlScene(gl, initialCubies, initialCubies.length - 1);
+    glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background);
     glScene.setMask(mask, home);
     requestRedraw();
   });
@@ -99,6 +114,14 @@ export function createCubeView(canvas: HTMLCanvasElement, glContext: GlContext, 
       player.snapTo(cubies);
     },
     setMask,
+    setFit(on) {
+      fit = on;
+      requestRedraw();
+    },
+    setZoom(next) {
+      zoom = next;
+      requestRedraw();
+    },
     renderNow,
     dispose() {
       player.pause();

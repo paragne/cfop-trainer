@@ -3,7 +3,7 @@ import { ALL_CASES, CASE_SETS } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
-import { playView } from "./lib/play.ts";
+import { caseView, playView } from "./lib/play.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setMode, setNote, setNumberPref, setPref, setVerifyLength, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, resultText, start, verifyView } from "./lib/screen.ts";
@@ -27,30 +27,16 @@ const SET_ASIDE = "Saved progress could not be read and was set aside. Starting 
 const loaded = load(ALL_CASES);
 let progress = loaded.progress;
 let screen: Screen = { kind: "home" };
-// The card whose 3D view is open, if any. Not part of Screen: it only ever
-// narrows what playView allows, and a new card or a shut gate ends it.
-let playingKey: string | null = null;
 
 const status = createStatus();
 const topbar = createTopbar({
   onHome: () => goHome(),
   onData: () => dataPanel.toggle(),
-  onPlay: () => {
-    const view = playView(screen);
-    playingKey = view === null || playingKey !== null ? null : view.key;
-    render();
-  },
+  onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
 });
-const stopPlaying = () => {
-  playingKey = null;
-  render();
-};
 const play = {
-  onStepMode: (on: boolean) => commit(setPref(progress, "stepMode", on)),
   onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
-  onRadius: (radius: number) => commit(setNumberPref(progress, "radius", radius)),
-  onBack: stopPlaying,
-  onLost: stopPlaying,
+  onZoom: (zoom: number) => commit(setNumberPref(progress, "zoom", zoom)),
 };
 const home = createHome({
   modes: SHIPPED_MODES,
@@ -162,12 +148,12 @@ function render(): void {
   if (verifying !== null) verify.render(verifying, progress);
   if (result !== null) summary.render(result);
 
-  const playable = playView(screen);
-  if (playable?.key !== playingKey) playingKey = null;
-  const playing = playingKey === null ? null : playable;
-  topbar.setPlay(playable !== null && webgl2Available(), playing !== null);
-  flashcard.setPlay(view === null ? null : playing, progress.prefs);
-  verify.setPlay(verifying === null ? null : playing, progress.prefs);
+  const available = webgl2Available();
+  const shown = progress.prefs.threeD && available ? caseView(screen) : null;
+  const playing = shown === null ? null : playView(screen);
+  topbar.setThreeD(available && (view !== null || verifying !== null), progress.prefs.threeD);
+  flashcard.setPlay(view === null ? null : shown, playing, progress.prefs);
+  verify.setPlay(verifying === null ? null : shown, playing, progress.prefs);
 }
 
 function handle(action: Action): void {

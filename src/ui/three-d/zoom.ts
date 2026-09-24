@@ -1,31 +1,22 @@
 /**
- * Radius (zoom) control: mouse wheel and two-finger touch pinch, independent
- * of camera.ts's orbit mode (radius is not part of the free/locked basis).
- * The wheel listener is non-passive and canvas-only, so the page never
- * scrolls while zooming the cube but scrolls normally everywhere else.
+ * Zoom by mouse wheel and two-finger touch pinch, independent of camera.ts's
+ * orbit mode. Reports a factor by which the distance to the cube changed
+ * (above 1 is farther), leaving what to do with it to the page. The wheel
+ * listener is non-passive and canvas-only, so the page never scrolls while
+ * zooming the cube but scrolls normally everywhere else.
  */
-import type { Camera } from "./camera.ts";
-
 type Point = { x: number; y: number };
 
-const WHEEL_STEP = 0.5;
+const WHEEL_FACTOR = 1.06;
 
 const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
 
-export function attachZoom(canvas: HTMLCanvasElement, radiusInput: HTMLInputElement, camera: Camera): void {
-  function setRadius(next: number): void {
-    const clamped = Math.min(Number(radiusInput.max), Math.max(Number(radiusInput.min), next));
-    camera.setRadius(clamped);
-    radiusInput.value = String(clamped);
-    // So whoever listens to the slider hears wheel and pinch too.
-    radiusInput.dispatchEvent(new Event("input"));
-  }
-
+export function attachZoom(canvas: HTMLCanvasElement, onFactor: (farther: number) => void): void {
   canvas.addEventListener(
     "wheel",
     (e) => {
       e.preventDefault();
-      setRadius(camera.getRadius() + Math.sign(e.deltaY) * WHEEL_STEP);
+      onFactor(e.deltaY > 0 ? WHEEL_FACTOR : 1 / WHEEL_FACTOR);
     },
     { passive: false },
   );
@@ -48,7 +39,7 @@ export function attachZoom(canvas: HTMLCanvasElement, radiusInput: HTMLInputElem
     const points = [...touches.values()];
     if (points.length !== 2) return;
     const next = distance(points[0], points[1]);
-    setRadius(camera.getRadius() * (pinchDistance / next));
+    onFactor(pinchDistance / next);
     pinchDistance = next;
   });
 

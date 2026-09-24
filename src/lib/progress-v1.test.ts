@@ -50,9 +50,9 @@ describe("the frozen v1 blob", () => {
           randomRotation: false,
           mode: "learn",
           verifyLength: 10,
-          stepMode: false,
+          threeD: false,
           speed: 1,
-          radius: 9,
+          zoom: 1,
           sets: {
             learn: ["F2L", "2-Look PLL"],
             drill: ["F2L", "2-Look OLL", "2-Look PLL"],

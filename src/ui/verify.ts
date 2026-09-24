@@ -37,7 +37,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
   const mismatch = keyedButton("", "Mismatch", "1", onMismatch);
   const match = keyedButton("", "Match", "2", onMatch);
   const actions = el("nav", "actions");
-  actions.append(stage.steps, primary.node, mismatch.node, match.node);
+  actions.append(primary.node, mismatch.node, match.node);
 
   element.append(count, ready, figure, name, solution, altLabel, altPicker, regripLine, actions);
 

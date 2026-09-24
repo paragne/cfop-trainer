@@ -1,26 +1,25 @@
+import { toRgb } from "../lib/palette.ts";
 import { cubiesFromColors } from "../lib/physical-cube.ts";
 import { playStart } from "../lib/play.ts";
-import type { PlayView } from "../lib/play.ts";
-import { RADIUS_RANGE, SPEED_RANGE } from "../lib/prefs.ts";
+import type { CaseView, PlayView } from "../lib/play.ts";
+import { SPEED_RANGE, ZOOM_RANGE } from "../lib/prefs.ts";
 import type { Prefs } from "../lib/prefs.ts";
-import { el, keyedButton, toggleButton } from "./dom.ts";
+import { createAlgStrip } from "./alg-strip.ts";
+import { el } from "./dom.ts";
 import type { Step } from "./keys.ts";
-import { renderAlg } from "./three-d/alg-display.ts";
 import { withCore } from "./three-d/core-cubie.ts";
 import { createCubeView } from "./three-d/cube-view.ts";
 import type { CubeView } from "./three-d/cube-view.ts";
 import { createGlContext } from "./three-d/gl-context.ts";
 import type { GlContext } from "./three-d/gl-context.ts";
+import { speedToDurationMs } from "./three-d/player.ts";
 import { createStepMode } from "./three-d/step-mode.ts";
 import type { StepMode } from "./three-d/step-mode.ts";
 import { attachZoom } from "./three-d/zoom.ts";
 
 export type PlayHandlers = {
-  onStepMode: (on: boolean) => void;
   onSpeed: (speed: number) => void;
-  onRadius: (radius: number) => void;
-  onBack: () => void;
-  onLost: () => void;
+  onZoom: (zoom: number) => void;
 };
 
 type Session = {
@@ -29,60 +28,69 @@ type Session = {
   stepper: StepMode;
   // What is loaded, so a render that changes nothing does not restart playback.
   loaded: string;
-  play: PlayView;
-  stepping: boolean;
 };
 
-function slider(label: string, range: { min: number; max: number; step: number }, onInput: (n: number) => void) {
-  const input = el("input", "");
-  input.type = "range";
-  input.min = String(range.min);
-  input.max = String(range.max);
-  input.step = String(range.step);
-  input.setAttribute("aria-label", label);
-  input.addEventListener("input", () => onInput(Number(input.value)));
-  const node = el("label", "slider", label);
-  node.append(input);
-  return { node, input };
+// style.css's --bg: the 3D view sits in the page's own black.
+const VOID = toRgb("#0b0b0c");
+
+function iconButton(label: string, glyph: string, onClick: () => void): HTMLButtonElement {
+  const node = el("button", "step", glyph);
+  node.type = "button";
+  node.title = label;
+  node.setAttribute("aria-label", label);
+  node.addEventListener("click", onClick);
+  return node;
 }
 
-// A card's picture: the 2D one, or the 3D view of it while it plays. The GPU
-// context lives only while a card is being played: created on open, given back
-// on close.
-export function createPlayPanel({ onStepMode, onSpeed, onRadius, onBack, onLost }: PlayHandlers) {
+// A card's picture: the 2D one, or the case in 3D. The GPU context lives only
+// while a card is in 3D: created when it first shows, given back on close.
+// The solution's controls appear with the solution, and never before.
+export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const element = el("div", "view");
   const picture = el("div", "picture");
   const player = el("div", "player");
   player.hidden = true;
   const stage = el("div", "stage");
-  const alg = el("p", "alg-steps");
-  const replay = toggleButton("Replay", () => {
-    if (session !== null) load(session);
-  });
-  const stepToggle = toggleButton("Step", () => onStepMode(stepToggle.getAttribute("aria-pressed") !== "true"));
-  const speed = slider("Speed", SPEED_RANGE, (n) => {
-    speedValue = n;
-    onSpeed(n);
-  });
-  const radius = slider("Radius", RADIUS_RANGE, (n) => {
-    session?.view.camera.setRadius(n);
-    onRadius(n);
-  });
-  const controls = el("div", "player-controls");
-  controls.append(replay, stepToggle, toggleButton("2D", onBack), speed.node, radius.node);
-  player.append(stage, alg, controls);
-  element.append(picture, player);
+  const strip = createAlgStrip();
 
-  const prev = keyedButton("", "Prev", "←", () => session?.stepper.stepBackward());
-  const next = keyedButton("", "Next", "→", () => session?.stepper.stepForward());
-  const steps = el("div", "steps");
-  steps.hidden = true;
-  steps.append(prev.node, next.node);
+  const speedInput = el("input", "");
+  speedInput.type = "range";
+  speedInput.min = String(SPEED_RANGE.min);
+  speedInput.max = String(SPEED_RANGE.max);
+  speedInput.step = String(SPEED_RANGE.step);
+  speedInput.setAttribute("aria-label", "Speed");
+  speedInput.addEventListener("input", () => {
+    speedValue = Number(speedInput.value);
+    onSpeed(speedValue);
+  });
+  const speed = el("label", "slider", "Speed");
+  speed.append(speedInput);
+
+  const buttons = el("div", "step-buttons");
+  buttons.append(
+    iconButton("Step back", "<", () => session?.stepper.stepBackward()),
+    iconButton("Step forward", ">", () => session?.stepper.stepForward()),
+    iconButton("Play", "▶", () => {
+      if (session === null) return;
+      load(session);
+      session.stepper.playAll();
+    }),
+  );
+  const transport = el("div", "transport");
+  transport.append(strip.element, buttons);
+  const controls = el("div", "controls");
+  controls.hidden = true;
+  controls.append(transport, speed);
+  player.append(stage, controls);
+  element.append(picture, player);
 
   let session: Session | null = null;
   let speedValue = 1;
+  let zoomValue = 1;
+  let shown: CaseView | null = null;
+  let solution: PlayView | null = null;
 
-  function start(play: PlayView, stepping: boolean): Session | null {
+  function start(): Session | null {
     const canvas = document.createElement("canvas");
     canvas.setAttribute("role", "img");
     canvas.setAttribute("aria-label", "Cube in 3D");
@@ -92,71 +100,73 @@ export function createPlayPanel({ onStepMode, onSpeed, onRadius, onBack, onLost 
       canvas.remove();
       return null;
     }
-    const view = createCubeView(canvas, gl, () => speedValue);
-    attachZoom(canvas, radius.input, view.camera);
-    gl.onContextLost(() => {
-      if (session?.gl === gl) onLost();
+    const view = createCubeView(canvas, gl, () => speedValue, VOID);
+    view.setFit(true);
+    attachZoom(canvas, (farther) => onZoom(Math.min(ZOOM_RANGE.max, Math.max(ZOOM_RANGE.min, zoomValue / farther))));
+    const stepper: StepMode = createStepMode(view.player, {
+      onSettled: () => strip.settle(stepper.boundary()),
+      onStep: strip.travel,
+      durationMs: () => speedToDurationMs(speedValue),
     });
-    const stepper: StepMode = createStepMode(view.player, () => renderAlg(alg, stepper.moves(), stepper.currentIndex()));
-    return { gl, view, stepper, loaded: "", play, stepping };
+    return { gl, view, stepper, loaded: "" };
   }
 
-  function load({ view, stepper, play, stepping }: Session): void {
-    view.showCase(play.c.mask, withCore(cubiesFromColors(playStart(play.c, play.auf))));
-    stepper.load(play.moves);
-    if (!stepping) void view.player.play(play.moves);
+  // Back to the start of the case, so a half-played solution never outlives
+  // the controls that were showing it.
+  function load({ view, stepper }: Session): void {
+    if (shown === null) return;
+    view.showCase(shown.c.mask, withCore(cubiesFromColors(playStart(shown.c, shown.auf))));
+    const moves = solution?.moves ?? [];
+    strip.load(moves);
+    stepper.load(moves);
   }
 
   function close(): void {
     picture.hidden = false;
     player.hidden = true;
-    steps.hidden = true;
+    controls.hidden = true;
     if (session === null) return;
     session.view.dispose();
     session.gl.release();
     stage.replaceChildren();
-    alg.replaceChildren();
     session = null;
   }
 
-  function open(play: PlayView, prefs: Prefs): void {
-    picture.hidden = true;
+  function open(next: CaseView, play: PlayView | null, prefs: Prefs): void {
     player.hidden = false;
-    speedValue = prefs.speed;
-    session ??= start(play, prefs.stepMode);
+    session ??= start();
     if (session === null) {
-      queueMicrotask(onLost);
+      close();
       return;
     }
-    session.play = play;
-    session.stepping = prefs.stepMode;
-    const id = `${play.key}|${play.alg}|${prefs.stepMode}`;
+    picture.hidden = true;
+    speedValue = prefs.speed;
+    zoomValue = prefs.zoom;
+    shown = next;
+    solution = play;
+    session.view.setZoom(prefs.zoom);
+    controls.hidden = play === null;
+    const id = `${next.key}|${play === null ? "-" : play.alg}`;
     if (session.loaded !== id) {
       session.loaded = id;
       load(session);
     }
-    steps.hidden = !prefs.stepMode;
-    alg.hidden = !prefs.stepMode;
-    stepToggle.setAttribute("aria-pressed", String(prefs.stepMode));
-    speed.input.value = String(prefs.speed);
-    radius.input.value = String(prefs.radius);
-    session.view.camera.setRadius(prefs.radius);
+    strip.settle(session.stepper.boundary());
+    speedInput.value = String(prefs.speed);
   }
 
   return {
     element,
     // Where the 2D picture goes.
     picture,
-    // The step buttons, which the card puts in its thumb-reach action bar.
-    steps,
     // Null closes the 3D view and gives its GPU context back.
-    show(play: PlayView | null, prefs: Prefs): void {
-      if (play === null) close();
-      else open(play, prefs);
+    show(next: CaseView | null, play: PlayView | null, prefs: Prefs): void {
+      if (next === null) close();
+      else open(next, play, prefs);
     },
     // Whether the key was used, so an arrow with nothing to step keeps its default.
     step(direction: Step): boolean {
-      if (session === null || !session.stepping) return false;
+      if (session === null || controls.hidden) return false;
       if (direction === "forward") session.stepper.stepForward();
       else session.stepper.stepBackward();
       return true;

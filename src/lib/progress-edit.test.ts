@@ -93,11 +93,11 @@ describe("setVerifyLength", () => {
 describe("the 3D view prefs", () => {
   it("changes only the pref set, and survives a save and reload", () => {
     const before = progress({ [A]: "keep" });
-    const after = setNumberPref(setNumberPref(setPref(before, "stepMode", true), "speed", 3), "radius", 20);
-    expect(after.prefs).toEqual({ ...before.prefs, stepMode: true, speed: 3, radius: 20 });
+    const after = setNumberPref(setNumberPref(setPref(before, "threeD", true), "speed", 3), "zoom", 2.5);
+    expect(after.prefs).toEqual({ ...before.prefs, threeD: true, speed: 3, zoom: 2.5 });
     expect(after.notes).toBe(before.notes);
     const loaded = parseProgress(serialize(after, 1), ALL_CASES);
-    expect(loaded.ok && loaded.progress.prefs).toMatchObject({ stepMode: true, speed: 3, radius: 20 });
+    expect(loaded.ok && loaded.progress.prefs).toMatchObject({ threeD: true, speed: 3, zoom: 2.5 });
   });
 
   it("still writes version 2, so a blob from before them loads without a migration", () => {

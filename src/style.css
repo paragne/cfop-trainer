@@ -126,15 +126,33 @@ body {
 .view, .picture { width: 100%; }
 .picture { display: flex; justify-content: center; }
 .player { display: flex; flex-direction: column; gap: 0.5rem; }
-.stage { width: min(100%, 52vh); aspect-ratio: 1; margin: 0 auto; touch-action: pan-y; }
+.stage { width: 100%; aspect-ratio: 1; max-height: 60vh; touch-action: pan-y; }
 .stage canvas { display: block; width: 100%; height: 100%; }
-.alg-steps { margin: 0; font: 1.15rem/1.6 var(--mono); }
-.alg-move { margin-right: 0.4em; padding: 0 0.2em; color: var(--dim); }
-.alg-move.current { background: var(--fg); color: var(--bg); }
-.player-controls { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-.player-controls .toggle { flex: 1 1 auto; }
-.slider { display: flex; flex: 1 1 40%; align-items: center; gap: 0.5rem; color: var(--dim); font-size: 0.875rem; }
-.slider input { flex: 1; min-width: 0; min-height: 2.25rem; accent-color: var(--fg); }
+.transport { display: flex; align-items: flex-start; gap: 0.5rem; }
+.alg-strip { position: relative; flex: 1; min-width: 0; font: 1.15rem/1.6 var(--mono); }
+/* Slides between moves in step with the cube, so it is a state change. */
+.alg-marker {
+  position: absolute;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--fg);
+  transition-property: left, top;
+  transition-timing-function: linear;
+}
+.alg-marker::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -2.5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg);
+}
+.step-buttons { display: flex; flex: none; gap: 0.25rem; }
+.step { width: 2rem; min-height: 2rem; padding: 0; font: 0.875rem var(--mono); }
+.slider { display: flex; align-items: center; gap: 0.5rem; color: var(--dim); font-size: 0.875rem; }
+.slider input { flex: 1; min-width: 0; min-height: 2rem; accent-color: var(--fg); }
 
 .name { margin: 0; font-size: 1.15rem; font-weight: 600; }
 
@@ -171,9 +189,7 @@ body {
   padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
   background: var(--bg);
 }
-.actions .primary, .steps { grid-column: 1 / -1; }
-/* Step mode's buttons sit in the same bar, so they stay in thumb reach. */
-.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.actions .primary { grid-column: 1 / -1; }
 /* Verify shows the primary alone through ready, attempt and missed, so it
    stays full width even in the three-column desktop layout. */
 .verify .actions .primary { grid-column: 1 / -1; }

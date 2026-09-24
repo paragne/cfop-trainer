@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_CASES } from "../data/algorithms.ts";
 import { prefixed } from "./auf.ts";
 import { parse } from "./notation.ts";
-import { playView } from "./play.ts";
+import { caseView, playView } from "./play.ts";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
 import { chooseAlt, press, start, verifyView } from "./screen.ts";
@@ -51,6 +51,30 @@ describe("the gate", () => {
     for (let step = 2; step <= 5; step++) screen = after(screen, p, "reveal", "know");
     expect(verifyView(screen)).toBeNull();
     expect(playView(screen)).toBeNull();
+  });
+});
+
+describe("the case picture", () => {
+  it("is null on home", () => {
+    expect(caseView({ kind: "home" })).toBeNull();
+  });
+
+  it.each(["learn", "drill"] as const)("shows in %s before the solution is revealed, with no moves to leak", (mode) => {
+    const p = progress({ mode });
+    const screen = start(mode, ctx(p));
+    expect(playView(screen)).toBeNull();
+    expect(caseView(screen)).not.toBeNull();
+    expect(Object.keys(caseView(screen) ?? {})).toEqual(["key", "c", "auf"]);
+  });
+
+  it("shows in Verify from the attempt on, not while ready", () => {
+    const p = progress({ mode: "verify", sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });
+    let screen = start("verify", ctx(p));
+    expect(caseView(screen)).toBeNull();
+    screen = after(screen, p, "reveal");
+    expect(caseView(screen)).not.toBeNull();
+    screen = after(screen, p, "reveal");
+    expect(caseView(screen)?.key).toBe(playView(screen)?.key);
   });
 });
 

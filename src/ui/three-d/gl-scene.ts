@@ -112,7 +112,15 @@ function cameraRelativeLightDir(eye: Vec, up: Vec): Vec {
   return normalize(add(add(scale(up, 0.6), scale(right, -0.7)), scale(back, 0.5)));
 }
 
-export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly PhysicalCubie[], coreIndex: number): GlScene {
+// `background` is the clear color. The dev page's pixel checks read it back to
+// tell a gap in the cube from a face, so they need it distinct from every
+// face color, which the app's black does not have to be.
+export function createGlScene(
+  gl: WebGL2RenderingContext,
+  homeCubies: readonly PhysicalCubie[],
+  coreIndex: number,
+  background: readonly [number, number, number],
+): GlScene {
   const program = link(gl);
   const vao = gl.createVertexArray();
   if (vao === null) throw new Error("createVertexArray failed");
@@ -135,10 +143,7 @@ export function createGlScene(gl: WebGL2RenderingContext, homeCubies: readonly P
   gl.frontFace(gl.CCW);
 
   function render(cubies: readonly PhysicalCubie[], inFlight: InFlight | null, view: Mat4, projection: Mat4, eye: Vec, up: Vec): void {
-    // Not pure white: D's own face color is pure white, and a background
-    // leak inside the silhouette needs to be distinguishable from D by color
-    // alone for the pixel-check scripts that read this back.
-    gl.clearColor(0.85, 0.85, 0.85, 1);
+    gl.clearColor(background[0], background[1], background[2], 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
     gl.bindVertexArray(vao);

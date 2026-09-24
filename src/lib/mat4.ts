@@ -104,9 +104,9 @@ export function lookAt(eye: Vec, center: Vec, up: Vec): Mat4 {
   ];
 }
 
-// For tests and CPU-side geometry checks, not the render path (the GPU
-// applies matrices to vertices itself). Divides by w, so this also resolves
-// a perspective projection, not just an affine transform.
+// Applies a matrix on the CPU, for tests and for fitting the cube to its
+// canvas (the GPU applies matrices to vertices itself). Divides by w, so this
+// also resolves a perspective projection, not just an affine transform.
 export function transformPoint(m: Mat4, v: Vec): Vec {
   const x = m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12];
   const y = m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13];

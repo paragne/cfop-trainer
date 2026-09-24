@@ -14,15 +14,16 @@ export type Prefs = {
   mode: Mode;
   sets: Record<Mode, CaseSet[]>;
   verifyLength: VerifyLength;
-  stepMode: boolean;
+  threeD: boolean;
   speed: number;
-  radius: number;
+  zoom: number;
 };
 
-// The 3D view's sliders share these with the validation below, so a stored
-// value can never sit outside what the slider can show.
+// The 3D view's speed slider shares this with the validation below, so a
+// stored value can never sit outside what the slider can show.
 export const SPEED_RANGE = { min: 0.25, max: 4, step: 0.25 } as const;
-export const RADIUS_RANGE = { min: 6, max: 30, step: 0.5 } as const;
+// A multiplier on the size that fits the canvas, so 1 is always "fills it".
+export const ZOOM_RANGE = { min: 0.5, max: 3 } as const;
 
 export const VERIFY_LENGTHS = [5, 10, 20] as const;
 export type VerifyLength = (typeof VERIFY_LENGTHS)[number];
@@ -36,9 +37,9 @@ export function defaultPrefs(): Prefs {
     randomRotation: false,
     mode: "learn",
     verifyLength: 10,
-    stepMode: false,
+    threeD: false,
     speed: 1,
-    radius: 9,
+    zoom: 1,
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -97,7 +98,7 @@ function readInRange(
 
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions" | "randomRotation" | "stepMode"): boolean => {
+  const flag = (key: "showNames" | "showSolutions" | "randomRotation" | "threeD"): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -109,8 +110,8 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     mode: readMode(raw.mode, defaults.mode),
     sets: raw.sets === undefined ? defaults.sets : readSets(raw.sets, defaults.sets),
     verifyLength: readVerifyLength(raw.verifyLength, defaults.verifyLength),
-    stepMode: flag("stepMode"),
+    threeD: flag("threeD"),
     speed: readInRange(raw.speed, SPEED_RANGE, defaults.speed, "prefs.speed"),
-    radius: readInRange(raw.radius, RADIUS_RANGE, defaults.radius, "prefs.radius"),
+    zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
   };
 }

@@ -7,6 +7,7 @@ import { createStepMode } from "./step-mode.ts";
 import type { StepMode } from "./step-mode.ts";
 import { renderAlg } from "./alg-display.ts";
 import type { Move } from "../../lib/notation.ts";
+import { speedToDurationMs } from "./player.ts";
 import type { Player } from "./player.ts";
 
 export type StepControls = {
@@ -18,21 +19,25 @@ export type StepControls = {
 
 type Elements = {
   stepModeInput: HTMLInputElement;
+  speedInput: HTMLInputElement;
   prevButton: HTMLButtonElement;
   nextButton: HTMLButtonElement;
   algContainer: HTMLElement;
 };
 
 export function attachStepControls(elements: Elements, player: Player): StepControls {
-  const { stepModeInput, prevButton, nextButton, algContainer } = elements;
+  const { stepModeInput, speedInput, prevButton, nextButton, algContainer } = elements;
 
   // StepMode's own onSettled callback re-renders the display once a
   // requested step actually completes — not when it's merely requested,
   // since a request made while a move is animating just queues.
   function refreshDisplay(): void {
-    renderAlg(algContainer, stepMode.moves(), stepMode.currentIndex());
+    renderAlg(algContainer, stepMode.moves(), stepMode.boundary());
   }
-  const stepMode: StepMode = createStepMode(player, refreshDisplay);
+  const stepMode: StepMode = createStepMode(player, {
+    onSettled: refreshDisplay,
+    durationMs: () => speedToDurationMs(Number(speedInput.value)),
+  });
 
   prevButton.addEventListener("click", stepMode.stepBackward);
   nextButton.addEventListener("click", stepMode.stepForward);

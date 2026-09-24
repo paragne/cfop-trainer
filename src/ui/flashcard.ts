@@ -44,7 +44,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   ];
   const next = keyedButton("", "Next", "2", onNext).node;
   const actions = el("nav", "actions");
-  actions.append(stage.steps, reveal.node, ...grades, next);
+  actions.append(reveal.node, ...grades, next);
 
   const meta = el("p", "meta");
   meta.append(section, count);

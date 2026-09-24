@@ -32,7 +32,8 @@ export type PlayerFrame = { readonly cubies: readonly PhysicalCubie[]; readonly 
 
 export type Player = {
   snapTo(next: readonly PhysicalCubie[]): void;
-  play(moves: readonly Move[]): Promise<void>;
+  // `durationMs` overrides the speed setting for every move of this call.
+  play(moves: readonly Move[], durationMs?: number): Promise<void>;
   pause(): void;
   resume(): void;
   currentFrame(): PlayerFrame;
@@ -86,7 +87,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
     rafId = requestAnimationFrame(tick);
   }
 
-  async function play(moves: readonly Move[]): Promise<void> {
+  async function play(moves: readonly Move[], durationMs?: number): Promise<void> {
     for (const move of moves) {
       const { axis, depths } = MOVE_AXES[move.name];
       const movingCubieIndices: ReadonlySet<number> = new Set(
@@ -95,7 +96,7 @@ export function createPlayer(getDurationMs: () => number, onFrame: () => void): 
       await new Promise<void>((resolve) => {
         elapsed = 0;
         lastTimestamp = null;
-        currentMove = { axis, angle: animationAngleDegrees(move), duration: getDurationMs(), movingCubieIndices, resolve };
+        currentMove = { axis, angle: animationAngleDegrees(move), duration: durationMs ?? getDurationMs(), movingCubieIndices, resolve };
         rafId = requestAnimationFrame(tick);
       });
       cubies = applyMoveToCubies(cubies, move);

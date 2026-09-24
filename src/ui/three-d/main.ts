@@ -44,6 +44,10 @@ const stepPrevButton = required<HTMLButtonElement>("#step-prev");
 const stepNextButton = required<HTMLButtonElement>("#step-next");
 const algContainer = required<HTMLElement>("#alg");
 
+// Light gray, distinct from every face color: the pixel checks read a gap in
+// the cube back as this.
+const BACKGROUND = [0.85, 0.85, 0.85] as const;
+
 const glContext = createGlContext(canvas);
 if (glContext === null) {
   const state = colorsAtCubies(homeCubies());
@@ -51,10 +55,10 @@ if (glContext === null) {
   info.textContent = "WebGL2 is unavailable in this browser; showing a static picture.";
 } else {
   const { onContextLost, onContextRestored } = glContext;
-  const view = createCubeView(canvas, glContext, () => Number(speedInput.value));
+  const view = createCubeView(canvas, glContext, () => Number(speedInput.value), BACKGROUND);
   const { camera, player } = view;
   const stepControls = attachStepControls(
-    { stepModeInput, prevButton: stepPrevButton, nextButton: stepNextButton, algContainer },
+    { stepModeInput, speedInput, prevButton: stepPrevButton, nextButton: stepNextButton, algContainer },
     player,
   );
 
@@ -67,7 +71,11 @@ if (glContext === null) {
 
   camera.setRadius(Number(radiusInput.value));
   camera.attachDrag(stage);
-  attachZoom(canvas, radiusInput, camera);
+  attachZoom(canvas, (farther) => {
+    const radius = Math.min(Number(radiusInput.max), Math.max(Number(radiusInput.min), camera.getRadius() * farther));
+    camera.setRadius(radius);
+    radiusInput.value = String(radius);
+  });
 
   document.addEventListener("keydown", (e) => {
     const step = stepForKey({ key: e.key, typing: editingKey(e.target), modifier: e.ctrlKey || e.metaKey || e.altKey });
