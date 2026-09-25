@@ -5,7 +5,7 @@ import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setHotkeyLabels, setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
@@ -44,7 +44,6 @@ const topbar = createTopbar({
   },
   onNotes: () => (screen.kind === "verify" ? verify.editNote() : flashcard.editNote()),
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
-  onHotkeyLabels: (mode) => commit(setHotkeyLabels(progress, mode)),
 });
 const play = {
   onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
@@ -63,6 +62,8 @@ const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
   onNotes: () => commit(setPref(progress, "showNotes", !progress.prefs.showNotes)),
+  onHotkeys: () => commit(setPref(progress, "showHotkeys", !progress.prefs.showHotkeys)),
+  touchPrimary,
 });
 topbar.left.append(prefBar.element);
 const flashcard = createFlashcard({
@@ -148,7 +149,7 @@ function switchSet(set: CaseSet): void {
 }
 
 const render = (): void =>
-  renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen, touchPrimary);
+  renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());
@@ -167,7 +168,7 @@ document.body.append(
   verify.element,
   summary.element,
 );
-bindKeys(handle, (step) => flashcard.step(step) || verify.step(step));
+bindKeys(handle, (step) => flashcard.step(step) || verify.step(step), () => screen.kind === "drill");
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);
 if (loaded.problem === "unavailable") status.show(NOT_SAVING);
 render();

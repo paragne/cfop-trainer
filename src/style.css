@@ -280,11 +280,13 @@ button.primary {
   font-weight: 600;
 }
 kbd {
+  display: inline-block;
   margin-left: 0.5rem;
   padding: 0 0.3rem;
   border: 1px solid currentColor;
   border-radius: 2px;
   font: 0.75rem var(--mono);
+  white-space: nowrap;
   opacity: 0.6;
 }
 @media (hover: none) { kbd { display: none; } }

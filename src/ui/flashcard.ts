@@ -1,6 +1,5 @@
 import { turnState } from "../lib/auf.ts";
 import { caseState } from "../lib/case-state.ts";
-import type { HotkeyLabels } from "../lib/prefs.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
 import type { CardView } from "../lib/screen.ts";
@@ -32,11 +31,12 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const solution = el("div", "solution");
   const notes = createNotes(onNote);
 
-  const reveal = keyedButton("primary", "Reveal", "space", onReveal);
-  const dontKnow = keyedButton("", "Don't know", "1", onDontKnow);
-  const know = keyedButton("", "Know it", "2", onKnow);
+  const reveal = keyedButton("primary", "Reveal", "space / num0", onReveal);
+  const dontKnow = keyedButton("", "Don't know", "1 / num3", onDontKnow);
+  const know = keyedButton("", "Know it", "2 / num.", onKnow);
   const grades = [dontKnow.node, know.node];
-  const next = keyedButton("", "Next", "enter", onNext);
+  const next = keyedButton("", "Next", "n / num.", onNext);
+  const kbds = [reveal.kbd, dontKnow.kbd, know.kbd, next.kbd];
   const actions = el("nav", "actions");
   actions.append(reveal.node, ...grades, next.node);
 
@@ -78,6 +78,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
 
     name.hidden = !progress.prefs.showNames || name.textContent === "";
     meta.hidden = !progress.prefs.showNames;
+    for (const kbd of kbds) kbd.hidden = !progress.prefs.showHotkeys;
     revealed = view.revealed;
     showSolution();
     reveal.text.textContent = view.revealed ? "Hide" : "Reveal";
@@ -96,11 +97,5 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     },
     step: stage.step,
     editNote: notes.edit,
-    setHotkeyMode(mode: HotkeyLabels): void {
-      reveal.kbd.textContent = mode === "numpad" ? "num0" : "space";
-      dontKnow.kbd.textContent = mode === "numpad" ? "num3" : "1";
-      know.kbd.textContent = mode === "numpad" ? "num." : "2";
-      next.kbd.textContent = mode === "numpad" ? "num." : "enter";
-    },
   };
 }

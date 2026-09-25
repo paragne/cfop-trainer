@@ -4,11 +4,6 @@ import { isRecord, reject } from "./blob.ts";
 
 export type Mode = "learn" | "drill" | "verify";
 
-// Which key labels the card screens show. Mobile is detected, never stored:
-// a touch-primary device always shows no labels, regardless of this pref.
-export type HotkeyLabels = "numpad" | "keyboard";
-const HOTKEY_LABELS: readonly HotkeyLabels[] = ["numpad", "keyboard"];
-
 // Only modes that exist can be remembered as the last one used.
 export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify"];
 
@@ -23,7 +18,10 @@ export type Prefs = {
   threeD: boolean;
   speed: number;
   zoom: number;
-  hotkeyLabels: HotkeyLabels;
+  // Whether the card screens show each button's key hint, as "space / num0".
+  // Mobile is detected, never stored: a touch-primary device shows no
+  // labels regardless of this pref.
+  showHotkeys: boolean;
 };
 
 // The playback speeds the 3D view offers, as multipliers of the base pace.
@@ -44,7 +42,7 @@ export function defaultPrefs(): Prefs {
     threeD: false,
     speed: 1,
     zoom: 1,
-    hotkeyLabels: "keyboard",
+    showHotkeys: true,
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -71,14 +69,6 @@ function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
   const verify = list("verify");
   if (verify.some((set) => SET_GROUP[set] === "F2L")) reject("prefs.sets.verify must not include an F2L set");
   return { learn: list("learn"), drill: list("drill"), verify };
-}
-
-function readHotkeyLabels(value: unknown, fallback: HotkeyLabels): HotkeyLabels {
-  if (value === undefined) return fallback;
-  return (
-    HOTKEY_LABELS.find((mode) => mode === value) ??
-    reject(`prefs.hotkeyLabels must be one of ${HOTKEY_LABELS.join(", ")}`)
-  );
 }
 
 function readMode(value: unknown, fallback: Mode): Mode {
@@ -110,7 +100,7 @@ function readInRange(
 
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions" | "showNotes" | "randomRotation" | "shuffle" | "threeD"): boolean => {
+  const flag = (key: "showNames" | "showSolutions" | "showNotes" | "randomRotation" | "shuffle" | "threeD" | "showHotkeys"): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -126,6 +116,6 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     threeD: flag("threeD"),
     speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
-    hotkeyLabels: readHotkeyLabels(raw.hotkeyLabels, defaults.hotkeyLabels),
+    showHotkeys: flag("showHotkeys"),
   };
 }

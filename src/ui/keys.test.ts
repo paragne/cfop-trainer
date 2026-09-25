@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { actionForKey, stepForKey } from "./keys.ts";
 import type { Action } from "../lib/screen.ts";
 
-const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean; control: boolean; code: string }> = {}) =>
-  actionForKey({ key, typing: false, modifier: false, repeat: false, ...over });
+const press = (
+  key: string,
+  over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean; control: boolean; code: string; nextAvailable: boolean }> = {},
+) => actionForKey({ key, typing: false, modifier: false, repeat: false, ...over });
 
 describe("actionForKey", () => {
   it.each<[string, Action]>([
@@ -12,17 +14,27 @@ describe("actionForKey", () => {
     ["2", "know"],
     ["n", "toggleNames"],
     ["N", "toggleNames"],
-    ["Enter", "next"],
   ])("maps %j to %s", (key, action) => {
     expect(press(key)).toBe(action);
   });
 
-  it.each(["a", "3", "0", "Escape", "Tab", "ArrowLeft", "constructor"])(
+  it.each(["a", "3", "0", "Escape", "Tab", "ArrowLeft", "constructor", "Enter"])(
     "ignores %j",
     (key) => {
       expect(press(key)).toBeNull();
     },
   );
+
+  it("n means next instead of toggling names while Drill's Next button is on screen", () => {
+    expect(press("n", { nextAvailable: true })).toBe("next");
+    expect(press("N", { nextAvailable: true })).toBe("next");
+  });
+
+  it("still does nothing for a nextAvailable n while typing, modified or repeated", () => {
+    expect(press("n", { nextAvailable: true, typing: true })).toBeNull();
+    expect(press("n", { nextAvailable: true, modifier: true })).toBeNull();
+    expect(press("n", { nextAvailable: true, repeat: true })).toBeNull();
+  });
 
   it.each([" ", "1", "2", "n"])("does nothing for %j while typing in a note", (key) => {
     expect(press(key, { typing: true })).toBeNull();

@@ -54,7 +54,7 @@ describe("the frozen v1 blob", () => {
           threeD: false,
           speed: 1,
           zoom: 1,
-          hotkeyLabels: "keyboard",
+          showHotkeys: true,
           sets: {
             learn: ["F2L", "2-Look PLL"],
             drill: ["F2L", "2-Look OLL", "2-Look PLL"],

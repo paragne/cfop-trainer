@@ -31,7 +31,6 @@ export function renderApp(
   { topbar, menu, help, home, prefBar, flashcard, verify, summary }: Parts,
   progress: Progress,
   screen: Screen,
-  touchPrimary: boolean,
 ): void {
   const onHome = screen.kind === "home";
   topbar.setHomeTools(onHome);
@@ -68,9 +67,6 @@ export function renderApp(
   const onCard = view !== null || verifying !== null;
   topbar.setNotesAvailable(onCard);
   topbar.setThreeD(available && onCard, progress.prefs.threeD);
-  topbar.setHotkeyLabels(onCard && !touchPrimary, progress.prefs.hotkeyLabels);
-  flashcard.setHotkeyMode(progress.prefs.hotkeyLabels);
-  verify.setHotkeyMode(progress.prefs.hotkeyLabels);
   flashcard.setPlay(view === null ? null : shown, playing, progress.prefs);
   verify.setPlay(verifying === null ? null : shown, playing, progress.prefs);
 }

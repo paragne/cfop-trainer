@@ -1,6 +1,5 @@
 import { prefixed, turnState } from "../lib/auf.ts";
 import { caseState } from "../lib/case-state.ts";
-import type { HotkeyLabels } from "../lib/prefs.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
 import { renderSolution } from "../lib/solution.ts";
@@ -41,9 +40,10 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   altPicker.setAttribute("aria-label", "Expected if you used");
   const regripLine = el("p", "hint");
 
-  const primary = keyedButton("primary", "Begin", "space", onPrimary);
-  const mismatch = keyedButton("", "Mismatch", "1", onMismatch);
-  const match = keyedButton("", "Match", "2", onMatch);
+  const primary = keyedButton("primary", "Begin", "space / num0", onPrimary);
+  const mismatch = keyedButton("", "Mismatch", "1 / num3", onMismatch);
+  const match = keyedButton("", "Match", "2 / num.", onMatch);
+  const kbds = [primary.kbd, mismatch.kbd, match.kbd];
   // Only shown after a Mismatch: the streak is over, so the user is offered a
   // way out on top of Reset, which keeps the same session going.
   const restart = el("button", "quiet", "Start another session");
@@ -101,6 +101,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
       shownCase = v.current.id;
     }
     notes.show(progress.notes[v.current.id] ?? "", progress.prefs.showNotes);
+    for (const kbd of kbds) kbd.hidden = !progress.prefs.showHotkeys;
 
     missed = v.phase === "missed";
     showSolution();
@@ -136,12 +137,5 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
     },
     step: stage.step,
     editNote: notes.edit,
-    // Begin, Check and Reset are all the same "reveal" action, so the primary
-    // button's numpad label never changes across phases.
-    setHotkeyMode(mode: HotkeyLabels): void {
-      primary.kbd.textContent = mode === "numpad" ? "num0" : "space";
-      mismatch.kbd.textContent = mode === "numpad" ? "num3" : "1";
-      match.kbd.textContent = mode === "numpad" ? "num." : "2";
-    },
   };
 }

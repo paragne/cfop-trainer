@@ -36,7 +36,7 @@ describe("a frozen version 2 blob", () => {
           // 1x and 2x and snaps to the slower.
           speed: 1,
           zoom: 2,
-          hotkeyLabels: "keyboard",
+          showHotkeys: true,
           sets: {
             learn: ["Full OLL", "F2L"],
             drill: ["2-Look PLL", "Full PLL"],

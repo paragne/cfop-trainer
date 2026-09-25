@@ -3,16 +3,25 @@ import type { Action } from "../lib/screen.ts";
 // `control` is a focused button, link or field, where Enter already means
 // something and must keep meaning it. `code` is the physical key
 // (KeyboardEvent.code): the numpad's own 0, decimal and 3 need their own
-// triggers, since Enter's reliance on whatever button last took focus made
-// it land on the wrong button as often as the right one.
-type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean; code?: string };
+// triggers, since a shared key's reliance on whatever button last took focus
+// made it land on the wrong button as often as the right one. `nextAvailable`
+// is true only while Drill's Next button is the one on screen, so "n" can
+// mean Next there without giving up its Names-toggle meaning everywhere else.
+type KeyInput = {
+  key: string;
+  typing: boolean;
+  modifier: boolean;
+  repeat: boolean;
+  control?: boolean;
+  code?: string;
+  nextAvailable?: boolean;
+};
 
 const BINDINGS = new Map<string, Action>([
   [" ", "reveal"],
   ["1", "dontKnow"],
   ["2", "know"],
   ["n", "toggleNames"],
-  ["enter", "next"],
 ]);
 
 // Numpad 0 is reveal/begin/check/reset, numpad . is the correct/confirm
@@ -25,10 +34,12 @@ const NUMPAD_BINDINGS = new Map<string, Action>([
 
 // Typing in a note must not grade, a held modifier is a browser shortcut
 // (Ctrl+1 switches tabs), and auto-repeat must not grade five cards.
-export function actionForKey({ key, typing, modifier, repeat, control = false, code }: KeyInput): Action | null {
+export function actionForKey({ key, typing, modifier, repeat, control = false, code, nextAvailable = false }: KeyInput): Action | null {
   if (typing || modifier || repeat || (control && key === "Enter")) return null;
   const numpad = code === undefined ? undefined : NUMPAD_BINDINGS.get(code);
-  return numpad ?? BINDINGS.get(key.toLowerCase()) ?? null;
+  if (numpad !== undefined) return numpad;
+  if (nextAvailable && key.toLowerCase() === "n") return "next";
+  return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
 export type Step = "back" | "forward" | "start" | "end";
@@ -48,8 +59,9 @@ export const editingKey = (target: EventTarget | null): boolean =>
   target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type === "range");
 
 // `onStep` says whether it used the key, so an arrow with no 3D view to step
-// keeps its default.
-export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step) => boolean): void {
+// keeps its default. `nextAvailable` says whether Drill's Next button is the
+// one currently on screen, checked fresh on every keydown.
+export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step) => boolean, nextAvailable: () => boolean): void {
   const typing = (e: KeyboardEvent) => e.target instanceof HTMLTextAreaElement;
 
   document.addEventListener("keydown", (e) => {
@@ -65,6 +77,7 @@ export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step
       repeat: e.repeat,
       control: e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement || e.target instanceof HTMLInputElement,
       code: e.code,
+      nextAvailable: nextAvailable(),
     });
     if (action === null) return;
     e.preventDefault();
