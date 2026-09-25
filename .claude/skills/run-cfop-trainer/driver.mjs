@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Agent tooling, not product code. Drives cfop-trainer in a headless
+// Agent tooling, not product code. Drives CFOP Driller in a headless
 // Chromium-family browser over the DevTools protocol. No dependencies: it
 // needs Node 22+ for the global WebSocket and fetch.
 //

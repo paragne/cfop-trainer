@@ -1,4 +1,4 @@
-# CFOP Trainer Specification
+# CFOP Driller Specification
 
 ## Purpose
 

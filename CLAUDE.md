@@ -1,4 +1,4 @@
-# CFOP Trainer
+# CFOP Driller
 
 Flashcard trainer for Rubik's Cube CFOP: F2L, 2-look OLL, 2-look PLL, Full OLL, Full PLL.
 Static site. No backend. Deployed to Cloudflare Workers static assets at cfop.paragone.dev.

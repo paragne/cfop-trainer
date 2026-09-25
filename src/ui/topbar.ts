@@ -22,7 +22,7 @@ function iconButton(className: string, label: string, markup: string, onClick: (
 }
 
 export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Handlers) {
-  const home = iconButton("logo", "CFOP Trainer, home", `<img src="${logoMark}" alt="" />`, onHome);
+  const home = iconButton("logo", "CFOP Driller, home", `<img src="${logoMark}" alt="" />`, onHome);
   const menu = iconButton("icon", "Menu", MENU_ICON, onMenu);
   menu.setAttribute("aria-expanded", "false");
   const help = iconButton("icon", "How to use", HELP_ICON, onHelp);

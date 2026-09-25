@@ -1,9 +1,9 @@
 ---
 name: run-cfop-trainer
-description: Run, build, test, screenshot and drive the CFOP Trainer flashcard app (Vite + vanilla DOM). Use when asked to start the app, take a screenshot of its UI, press keys or click in it, or confirm a UI change works in a real browser rather than only in tests.
+description: Run, build, test, screenshot and drive the CFOP Driller flashcard app (Vite + vanilla DOM). Use when asked to start the app, take a screenshot of its UI, press keys or click in it, or confirm a UI change works in a real browser rather than only in tests.
 ---
 
-CFOP Trainer is a static Vite site with no backend. Drive it with
+CFOP Driller is a static Vite site with no backend. Drive it with
 `.claude/skills/run-cfop-trainer/driver.mjs`: it starts the dev server and a
 headless Chromium-family browser, then talks to the page over the DevTools
 protocol with no dependencies. All paths below are relative to the repo root.
