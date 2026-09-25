@@ -26,15 +26,10 @@ export const THREE_D_ICON = icon(
   "M5,7H9A2,2 0 0,1 11,9V15A2,2 0 0,1 9,17H5V15H9V13H6V11H9V9H5V7M13,7H16A3,3 0 0,1 19,10V14A3,3 0 0,1 16,17H13V7M16,15A1,1 0 0,0 17,14V10A1,1 0 0,0 16,9H15V15H16Z",
 );
 
-// Double chevrons, as on a TV remote: skip to either end of the algorithm.
-export const SKIP_BACK_ICON = icon(
-  16,
-  "M18.41,7.41L17,6L11,12L17,18L18.41,16.59L13.83,12L18.41,7.41M12.41,7.41L11,6L5,12L11,18L12.41,16.59L7.83,12L12.41,7.41Z",
-);
-
-export const SKIP_FORWARD_ICON = icon(
-  16,
-  "M5.59,7.41L10.18,12L5.59,16.59L7,18L13,12L7,6L5.59,7.41M11.59,7.41L16.18,12L11.59,16.59L13,18L19,12L13,6L11.59,7.41Z",
+// A single counter-clockwise arrow: return to the case's start state.
+export const START_OVER_ICON = icon(
+  20,
+  "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z",
 );
 
 // Framing corners around a cube: the view goes back to its frame.

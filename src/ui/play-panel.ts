@@ -5,8 +5,7 @@ import type { CaseView, PlayView } from "../lib/play.ts";
 import type { Prefs } from "../lib/prefs.ts";
 import { viewFaces } from "../lib/view-faces.ts";
 import { createAlgStrip } from "./alg-strip.ts";
-import { el, squareButton } from "./dom.ts";
-import { CENTER_ICON } from "./icons.ts";
+import { el } from "./dom.ts";
 import type { Step } from "./keys.ts";
 import { createTransport } from "./transport.ts";
 import { withCore } from "./three-d/core-cubie.ts";
@@ -33,31 +32,29 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const stage = el("div", "stage");
   const strip = createAlgStrip();
 
-  const { element: buttons, speedPop } = createTransport({
+  const { topRow, bottomRow, speedPop } = createTransport({
     onSpeed: (speed) => {
       speedValue = speed;
       onSpeed(speed);
     },
-    onStart: () => step("start"),
+    // Free orbit works whether or not the solution is revealed, so this does too.
+    onCenter: () => {
+      session?.view.camera.recenter();
+      refreshLegend();
+    },
+    onStartOver: () => step("start"),
     onBack: () => step("back"),
     onPlay: play,
     onForward: () => step("forward"),
-    onEnd: () => step("end"),
   });
   const transport = el("div", "transport");
-  transport.append(strip.element, buttons);
+  transport.append(strip.element, bottomRow);
   const controls = el("div", "controls");
   controls.hidden = true;
   controls.append(transport);
-  // Free orbit works whether or not the solution is revealed, so this does too.
-  const center = squareButton("Center camera", CENTER_ICON, () => {
-    session?.view.camera.recenter();
-    refreshLegend();
-  });
-  center.classList.add("center-camera");
   const legend = createLegend();
   const frame = el("div", "frame");
-  frame.append(stage, legend.element, center);
+  frame.append(stage, legend.element, topRow);
   // An orbit ends in the free mode, which has no fixed reading to show.
   stage.addEventListener("pointerup", () => refreshLegend());
   player.append(frame, controls);

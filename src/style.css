@@ -146,9 +146,7 @@ body {
 .picture { flex: 1; display: flex; align-items: center; justify-content: center; }
 .player { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
 .frame { position: relative; flex: 1; min-height: min(100vw, 24rem); }
-/* Sits on the corner like a map's locate button: faint until hovered. */
-.center-camera { position: absolute; z-index: 1; right: 0.25rem; bottom: 0.25rem; width: 2.5rem; min-height: 2.5rem; border-color: transparent; background: none; opacity: 0.4; }
-.center-camera:hover, .center-camera:focus-visible { border-color: transparent; opacity: 1; }
+.aesthetic-placeholder { visibility: hidden; pointer-events: none; }
 .legend { position: absolute; z-index: 1; top: 0.25rem; left: 0.25rem; color: var(--dim); pointer-events: none; }
 .stage { position: absolute; inset: 0; touch-action: none; }
 .stage canvas { display: block; width: 100%; height: 100%; }
@@ -171,7 +169,11 @@ body {
   background: var(--fg);
 }
 .step-buttons { position: relative; display: flex; flex: none; gap: 0.25rem; }
-.step { display: grid; place-items: center; width: 2rem; min-height: 2rem; padding: 0; font: 0.875rem var(--mono); }
+/* Sits on the corner over the cube: aesthetic selector, speed, center
+   camera. Available whether or not the solution is revealed, since free
+   orbit is too. */
+.step-buttons.frame-controls { position: absolute; z-index: 1; right: 0.25rem; bottom: 0.25rem; }
+.step { display: grid; place-items: center; width: 2.75rem; min-height: 2.75rem; padding: 0; font: 0.875rem var(--mono); }
 .step[aria-expanded="true"], .step[aria-pressed="true"] { border-color: var(--fg); }
 .speed-value { font-size: 0.75rem; }
 /* Floats over the picture, so opening it moves nothing. */
@@ -190,7 +192,7 @@ body {
   font-size: 0.875rem;
 }
 .speed-title { white-space: nowrap; }
-.speed-grid { display: grid; grid-template-columns: repeat(3, 2rem); gap: 0.25rem; }
+.speed-grid { display: grid; grid-template-columns: repeat(3, 2.75rem); gap: 0.25rem; }
 .speed-grid .step { font-size: 0.75rem; }
 
 /* The name on the left; the note on the right, never past the 60% line. */
