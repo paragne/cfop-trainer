@@ -35,7 +35,7 @@ export function createIntro({ onBegin, onSkip }: Handlers) {
   const begin = keyedButton("primary", "Begin", "space / num0", onBegin);
   const skip = checkboxLabel("Don't show this again", onSkip);
   const actions = el("nav", "actions confirm-row");
-  actions.append(skip.label, begin.node);
+  actions.append(begin.node, skip.label);
   element.append(title, body, actions);
 
   return {

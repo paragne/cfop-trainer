@@ -66,7 +66,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   home.type = "button";
   home.addEventListener("click", onHome);
   const actions = el("nav", "actions");
-  actions.append(skipIntro.label, primary.node, mismatch.node, match.node, restart, home);
+  actions.append(primary.node, skipIntro.label, mismatch.node, match.node, restart, home);
 
   element.append(headline, count, ready, figure, solution, altLabel, altPicker, regripLine, actions);
 
