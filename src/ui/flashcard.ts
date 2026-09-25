@@ -99,8 +99,8 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     setHotkeyMode(mode: HotkeyLabels): void {
       reveal.kbd.textContent = mode === "numpad" ? "num0" : "space";
       dontKnow.kbd.textContent = mode === "numpad" ? "num3" : "1";
-      know.kbd.textContent = mode === "numpad" ? "num1" : "2";
-      next.kbd.textContent = mode === "numpad" ? "num1" : "enter";
+      know.kbd.textContent = mode === "numpad" ? "num." : "2";
+      next.kbd.textContent = mode === "numpad" ? "num." : "enter";
     },
   };
 }

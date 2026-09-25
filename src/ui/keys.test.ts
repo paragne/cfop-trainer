@@ -40,7 +40,7 @@ describe("actionForKey", () => {
 describe("the numpad", () => {
   it.each<[string, string, Action]>([
     ["0", "Numpad0", "reveal"],
-    ["1", "Numpad1", "know"],
+    [".", "NumpadDecimal", "know"],
     ["3", "Numpad3", "dontKnow"],
   ])("%j on the numpad also triggers %s", (key, code, action) => {
     expect(press(key, { code })).toBe(action);
@@ -51,11 +51,15 @@ describe("the numpad", () => {
     expect(press("3", { code: "Digit3" })).toBeNull();
   });
 
-  it.each(["Numpad0", "Numpad1", "Numpad3"])("does nothing while typing in a note", (code) => {
+  it("leaves the top row's period alone too", () => {
+    expect(press(".", { code: "Period" })).toBeNull();
+  });
+
+  it.each(["Numpad0", "NumpadDecimal", "Numpad3"])("does nothing while typing in a note", (code) => {
     expect(press("0", { code, typing: true })).toBeNull();
   });
 
-  it.each(["Numpad0", "Numpad1", "Numpad3"])("does nothing with Ctrl, Cmd or Alt held", (code) => {
+  it.each(["Numpad0", "NumpadDecimal", "Numpad3"])("does nothing with Ctrl, Cmd or Alt held", (code) => {
     expect(press("0", { code, modifier: true })).toBeNull();
   });
 });

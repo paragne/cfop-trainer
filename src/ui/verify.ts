@@ -141,7 +141,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
     setHotkeyMode(mode: HotkeyLabels): void {
       primary.kbd.textContent = mode === "numpad" ? "num0" : "space";
       mismatch.kbd.textContent = mode === "numpad" ? "num3" : "1";
-      match.kbd.textContent = mode === "numpad" ? "num1" : "2";
+      match.kbd.textContent = mode === "numpad" ? "num." : "2";
     },
   };
 }

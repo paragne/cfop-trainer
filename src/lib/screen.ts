@@ -53,7 +53,7 @@ export function start(mode: Mode, ctx: Context): Screen {
   return { kind: "verify", verify: startVerify(cases, progress, random) };
 }
 
-// In Drill, "next" moves on, and so does "know": numpad 1 is the one
+// In Drill, "next" moves on, and so does "know": numpad . is the one
 // "correct/confirm" key across every mode, and Drill's confirm is Next.
 // "dontKnow" stays unbound there, since nothing is graded.
 export function press(

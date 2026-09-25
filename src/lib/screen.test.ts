@@ -76,7 +76,7 @@ describe("drill", () => {
     expect(next.progress).toBe(context.progress);
   });
 
-  it("know also moves to a different case, since numpad 1 is the one confirm key across every mode", () => {
+  it("know also moves to a different case, since numpad . is the one confirm key across every mode", () => {
     const context = ctx();
     const before = drill();
     const next = press(before, "know", context);

@@ -2,9 +2,9 @@ import type { Action } from "../lib/screen.ts";
 
 // `control` is a focused button, link or field, where Enter already means
 // something and must keep meaning it. `code` is the physical key
-// (KeyboardEvent.code): the numpad's own 0, 1 and 3 need their own triggers,
-// since Enter's reliance on whatever button last took focus made it land on
-// the wrong button as often as the right one.
+// (KeyboardEvent.code): the numpad's own 0, decimal and 3 need their own
+// triggers, since Enter's reliance on whatever button last took focus made
+// it land on the wrong button as often as the right one.
 type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean; code?: string };
 
 const BINDINGS = new Map<string, Action>([
@@ -15,11 +15,11 @@ const BINDINGS = new Map<string, Action>([
   ["enter", "next"],
 ]);
 
-// Numpad 0 is reveal/begin/check/reset, numpad 1 is the correct/confirm
+// Numpad 0 is reveal/begin/check/reset, numpad . is the correct/confirm
 // action (know, match, next), numpad 3 is wrong (don't know, mismatch).
 const NUMPAD_BINDINGS = new Map<string, Action>([
   ["Numpad0", "reveal"],
-  ["Numpad1", "know"],
+  ["NumpadDecimal", "know"],
   ["Numpad3", "dontKnow"],
 ]);
 
