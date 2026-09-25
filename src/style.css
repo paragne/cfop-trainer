@@ -289,15 +289,17 @@ kbd {
 }
 @media (hover: none) { kbd { display: none; } }
 
-/* A card under the top bar, centered over the content column; floats, so
-   opening it moves nothing. Menu and help share the exact same slot. 24rem is
-   60% of the content column's own 40rem width, so it overlays a moderate
-   slice of the page rather than nearly all of it. */
+/* A card under the top bar; floats, so opening it moves nothing. Menu hugs
+   the content column's left edge, help its right, both flush with the same
+   40rem column the card and home screens center (half of that is 20rem, so
+   `50% - 20rem` is exactly that edge), falling back to a small margin from
+   the viewport's own edge once the column no longer has room to spare.
+   24rem is 60% of the column's width, so each overlays a moderate slice of
+   the page rather than nearly all of it. */
 .data {
   position: fixed;
   top: 3.5rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: max(0.75rem, calc(50% - 20rem));
   z-index: 1;
   width: min(24rem, calc(100% - 1.5rem));
   padding: 0.75rem;
@@ -307,6 +309,7 @@ kbd {
   color: var(--dim);
   font-size: 0.875rem;
 }
+.data.help { left: auto; right: max(0.75rem, calc(50% - 20rem)); }
 .data-actions { display: grid; gap: 0.5rem; }
 .data-row { display: grid; grid-template-columns: 8.5rem 1fr; align-items: center; gap: 0.75rem; }
 .data-row p, .import-strip p { margin: 0; }
