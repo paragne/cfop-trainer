@@ -8,6 +8,7 @@ type Handlers = {
   onHelp: () => void;
   onNotes: () => void;
   onThreeD: () => void;
+  onBack: () => void;
 };
 
 function iconButton(className: string, label: string, markup: string, onClick: () => void) {
@@ -21,8 +22,12 @@ function iconButton(className: string, label: string, markup: string, onClick: (
   return node;
 }
 
-export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Handlers) {
+export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD, onBack }: Handlers) {
   const home = iconButton("logo", "CFOP Driller, home", `<img src="${logoMark}" alt="" />`, onHome);
+  const back = el("button", "back", "‹ Back");
+  back.type = "button";
+  back.hidden = true;
+  back.addEventListener("click", onBack);
   const menu = iconButton("icon", "Menu", MENU_ICON, onMenu);
   menu.setAttribute("aria-expanded", "false");
   const help = iconButton("icon", "How to use", HELP_ICON, onHelp);
@@ -36,7 +41,7 @@ export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Hand
   // The left cell holds the menu on the home screen and the card's toggles
   // elsewhere; empty, it would let the logo drift off center.
   const left = el("div", "topbar-left");
-  left.append(menu);
+  left.append(back, menu);
   const tools = el("div", "tools");
   tools.append(notes, threeD, help);
   const element = el("header", "topbar");
@@ -52,6 +57,10 @@ export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Hand
     },
     setHelpOpen(open: boolean): void {
       help.setAttribute("aria-expanded", String(open));
+    },
+    // A gallery card is the only screen with somewhere to go back to.
+    setBack(available: boolean): void {
+      back.hidden = !available;
     },
     // The menu and the how-to belong to the home screen alone.
     setHomeTools(available: boolean): void {

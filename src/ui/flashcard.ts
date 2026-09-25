@@ -94,8 +94,10 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     reveal.text.textContent = view.revealed ? "Hide" : "Reveal";
     count.textContent = position;
     element.dataset.mode = mode;
-    for (const grade of grades) grade.hidden = mode === "drill";
-    next.node.hidden = mode === "learn";
+    // A gallery card only browses: nothing to reveal, grade or advance.
+    actions.hidden = mode === "gallery";
+    for (const grade of grades) grade.hidden = mode !== "learn";
+    next.node.hidden = mode !== "drill";
   }
 
   return {

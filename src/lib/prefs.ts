@@ -2,10 +2,10 @@ import { CASE_SETS, SET_GROUP } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
 import { isRecord, reject } from "./blob.ts";
 
-export type Mode = "learn" | "drill" | "verify";
+export type Mode = "learn" | "drill" | "verify" | "gallery";
 
 // Only modes that exist can be remembered as the last one used.
-export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify"];
+export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify", "gallery"];
 
 export type Prefs = {
   showNames: boolean;
@@ -55,6 +55,8 @@ export function defaultPrefs(): Prefs {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
       verify: ["2-Look OLL", "2-Look PLL"],
+      // Browsing adds nothing to a queue, so no set is held back for size.
+      gallery: [...CASE_SETS],
     },
   };
 }
@@ -76,7 +78,7 @@ function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
     value[mode] === undefined ? defaults[mode] : readSetList(value[mode], `prefs.sets.${mode}`);
   const verify = list("verify");
   if (verify.some((set) => SET_GROUP[set] === "F2L")) reject("prefs.sets.verify must not include an F2L set");
-  return { learn: list("learn"), drill: list("drill"), verify };
+  return { learn: list("learn"), drill: list("drill"), verify, gallery: list("gallery") };
 }
 
 function readMode(value: unknown, fallback: Mode): Mode {

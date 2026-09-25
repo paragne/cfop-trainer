@@ -44,6 +44,7 @@ describe("a frozen version 2 blob", () => {
             learn: ["Full OLL", "F2L"],
             drill: ["2-Look PLL", "Full PLL"],
             verify: ["Full OLL", "2-Look OLL"],
+            gallery: ["F2L", "Advanced F2L", "Expert F2L", "2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"],
           },
         },
         cards: CARDS,

@@ -27,7 +27,7 @@ describe("startSession", () => {
 
   it("ignores the sets chosen for the other modes", () => {
     const base = defaultProgress();
-    const p = all({ prefs: { ...base.prefs, sets: { learn: ["F2L"], drill: ["Full PLL"], verify: ["Full OLL"] } } });
+    const p = all({ prefs: { ...base.prefs, sets: { learn: ["F2L"], drill: ["Full PLL"], verify: ["Full OLL"], gallery: ["2-Look PLL"] } } });
     expect(ids(startSession(cases, p, NOW, () => 0.5)).sort()).toEqual(["f1", "f2", "f3"]);
   });
 

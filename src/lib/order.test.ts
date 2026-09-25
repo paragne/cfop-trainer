@@ -14,7 +14,7 @@ const progress = (shuffle: boolean, sets: CaseSet[]): Progress => {
   const base = defaultProgress();
   return {
     ...base,
-    prefs: { ...base.prefs, shuffle, sets: { learn: sets, drill: sets, verify: sets.filter((s) => !s.includes("F2L")) } },
+    prefs: { ...base.prefs, shuffle, sets: { learn: sets, drill: sets, verify: sets.filter((s) => !s.includes("F2L")), gallery: sets } },
   };
 };
 

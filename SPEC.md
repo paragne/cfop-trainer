@@ -462,6 +462,16 @@ record, however many sets include it.
 - Verify: see Mode 2 above. Endless, no honor code.
 - Each mode remembers its own set selection.
 
+- Gallery: a browsable grid of every case in the chosen sets, in the order the
+  home screen lists them, grouped by section, a case in two sets shown once.
+  Its set selection, `prefs.sets.gallery`, defaults to every set and takes F2L
+  sets; a stored blob without it loads the default, so no version bump.
+  Choosing a case opens the Drill card layout with the solution always shown
+  and no Reveal, grade or Next button; notes, stars and 3D work as there. A
+  large Back control at the top left returns to the grid at the scroll position
+  left. Gallery records no grades, scheduling or timing. Shuffle and Random AUF
+  do not apply and are hidden while it is selected.
+
 ### Layout
 
 No sidebar. The home screen is the navigation.

@@ -37,6 +37,7 @@ const SETS: Progress["prefs"]["sets"] = {
   learn: ["F2L", "2-Look OLL", "2-Look PLL"],
   drill: ["F2L", "2-Look OLL", "2-Look PLL"],
   verify: ["2-Look OLL", "2-Look PLL"],
+  gallery: ["F2L", "Full OLL"],
 };
 
 const without = (obj: Record<string, unknown>, key: string) =>
@@ -154,7 +155,7 @@ describe("parseProgress tolerates", () => {
 
   it("a set list given for one mode, defaulting the others", () => {
     const result = parse(blob({ prefs: { sets: { drill: ["Full PLL"] } } }));
-    expect(result.ok && result.progress.prefs.sets).toEqual({ ...SETS, drill: ["Full PLL"] });
+    expect(result.ok && result.progress.prefs.sets).toEqual({ ...SETS, drill: ["Full PLL"], gallery: ["F2L", "Advanced F2L", "Expert F2L", "2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"] });
   });
 
   it("an empty note, storing no entry", () => {

@@ -62,6 +62,7 @@ describe("the frozen v1 blob", () => {
             learn: ["F2L", "2-Look PLL"],
             drill: ["F2L", "2-Look OLL", "2-Look PLL"],
             verify: ["2-Look OLL", "2-Look PLL"],
+            gallery: ["F2L", "Advanced F2L", "Expert F2L", "2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"],
           },
         },
         cards: CARDS,

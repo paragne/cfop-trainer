@@ -1,4 +1,5 @@
 import { ALL_CASES } from "../data/algorithms.ts";
+import { gallerySections } from "../lib/gallery.ts";
 import { caseView, playView } from "../lib/play.ts";
 import type { Progress } from "../lib/progress.ts";
 import { cardView, introMode, resultText, verifyView } from "../lib/screen.ts";
@@ -6,6 +7,7 @@ import type { Screen } from "../lib/screen.ts";
 import { setStats } from "../lib/stats.ts";
 import { drillPaceRows, verifyPaceRows } from "../lib/timed-stats.ts";
 import type { createFlashcard } from "./flashcard.ts";
+import type { createGallery } from "./gallery.ts";
 import type { createHelp } from "./help.ts";
 import type { createHome } from "./home.ts";
 import type { createIntro } from "./intro.ts";
@@ -26,12 +28,13 @@ type Parts = {
   flashcard: ReturnType<typeof createFlashcard>;
   verify: ReturnType<typeof createVerify>;
   summary: ReturnType<typeof createSummary>;
+  gallery: ReturnType<typeof createGallery>;
 };
 
 // Brings every part of the page in line with the state: which screen shows,
 // and what each part on it says.
 export function renderApp(
-  { topbar, menu, help, home, intro, prefBar, flashcard, verify, summary }: Parts,
+  { topbar, menu, help, home, intro, prefBar, flashcard, verify, summary, gallery }: Parts,
   progress: Progress,
   screen: Screen,
 ): void {
@@ -44,7 +47,11 @@ export function renderApp(
   }
   home.element.hidden = !onHome;
   intro.element.hidden = introFor === null;
-  prefBar.element.hidden = onHome || introFor !== null;
+  const browsing = screen.kind === "gallery" ? screen : null;
+  const onGrid = browsing !== null && browsing.open === null;
+  gallery.render(browsing && gallerySections(ALL_CASES, progress.prefs.sets.gallery), browsing?.open ?? null);
+  topbar.setBack(browsing !== null && !onGrid);
+  prefBar.element.hidden = onHome || onGrid || introFor !== null;
   if (onHome) {
     home.render({
       mode: progress.prefs.mode,

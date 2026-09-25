@@ -36,7 +36,9 @@ body {
 .topbar button:hover { border-color: var(--dim); }
 .logo { padding: 0.25rem 0.5rem; }
 .logo img { display: block; width: auto; height: 2rem; }
-.topbar-left { justify-self: start; min-width: 0; }
+.topbar-left { justify-self: start; display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+/* Large and outlined: it is the way out of a case, so it must not be missed. */
+.topbar .back { padding: 0 1rem; border-color: var(--fg); font-size: 1.125rem; font-weight: 600; white-space: nowrap; }
 .tools { justify-self: end; display: flex; }
 .icon { display: grid; place-items: center; width: 2.75rem; padding: 0; }
 /* The same chip as Names and Auto-reveal on the other side of the logo. */
@@ -50,7 +52,7 @@ body {
 @media (max-width: 36rem) {
   .topbar-left { display: contents; }
   .topbar-left .prefs { grid-column: 1 / -1; grid-row: 2; margin-top: 0.25rem; }
-  .topbar-left > .icon { grid-column: 1; grid-row: 1; }
+  .topbar-left > .icon, .topbar-left > .back { grid-column: 1; grid-row: 1; justify-self: start; }
   .topbar .logo { grid-column: 2; grid-row: 1; }
   .topbar .tools { grid-column: 3; grid-row: 1; }
 }
@@ -93,6 +95,14 @@ body {
 .options { align-self: center; justify-content: center; gap: 0.5rem; }
 .options .icon-toggle { flex: 0 0 auto; width: 2.75rem; }
 .options button.compact { min-height: 2.25rem; padding: 0.25rem 1rem; font-size: 0.875rem; }
+
+.gallery { flex: 1; width: 100%; max-width: 64rem; margin: 0 auto; padding: 0.75rem; }
+.gallery-title { margin: 1rem 0 0.5rem; color: var(--dim); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); gap: 0.25rem; }
+.gallery-cell { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; min-height: 2.75rem; padding: 0.25rem; }
+.gallery-cell svg { display: block; width: 100%; height: auto; }
+.gallery-name { color: var(--dim); font-size: 0.75rem; text-align: center; overflow-wrap: anywhere; }
+.gallery-cell:hover .gallery-name { color: var(--fg); }
 
 .stats { display: grid; gap: 1rem; padding: 0.5rem 0; }
 .stat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; margin-bottom: 0.4rem; }

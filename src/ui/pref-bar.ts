@@ -30,8 +30,8 @@ export function createPrefBar({ onNames, onAutoReveal, onNotes, onHotkeys, touch
       notes.setAttribute("aria-pressed", String(prefs.showNotes));
       hotkeys.setAttribute("aria-pressed", String(prefs.showHotkeys));
       // Verify has no per-card solution reveal, since the algorithm only
-      // appears after a Mismatch.
-      autoReveal.hidden = prefs.mode === "verify";
+      // appears after a Mismatch, and a gallery card always shows it.
+      autoReveal.hidden = prefs.mode === "verify" || prefs.mode === "gallery";
     },
   };
 }

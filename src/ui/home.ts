@@ -31,7 +31,7 @@ export type HomeView = {
   verifyPace: readonly PaceRow[];
 };
 
-const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify" };
+const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify", gallery: "Gallery" };
 
 // The id "F2L" keys stored prefs, so only its label says which F2L set it is.
 const SET_LABEL: Record<CaseSet, string> = {
@@ -140,6 +140,9 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
         if (SET_GROUP[set] === "F2L") button.disabled = mode === "verify";
       }
       start.node.disabled = selected.length === 0;
+      // A gallery has no order to shuffle and no AUF to turn.
+      shuffle.hidden = mode === "gallery";
+      rotation.hidden = mode === "gallery";
       shuffle.setAttribute("aria-pressed", String(shuffled));
       rotation.setAttribute("aria-pressed", String(randomAuf));
       stats.replaceChildren(

@@ -1,6 +1,7 @@
 import "./style.css";
 import { ALL_CASES } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
+import { closeCase, openCase } from "./lib/gallery.ts";
 import { caseView } from "./lib/play.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
@@ -13,6 +14,7 @@ import { offeredSets } from "./lib/selection.ts";
 import { starredAlg } from "./lib/stars.ts";
 import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
+import { createGallery } from "./ui/gallery.ts";
 import { createHelp } from "./ui/help.ts";
 import { createHome } from "./ui/home.ts";
 import { createIntro } from "./ui/intro.ts";
@@ -47,6 +49,7 @@ const topbar = createTopbar({
   },
   onNotes: () => (screen.kind === "verify" ? verify.editNote() : flashcard.editNote()),
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
+  onBack: () => show(closeCase(screen)),
 });
 // Starring the starred alg again clears it, back to the primary.
 function star(algIndex: number): void {
@@ -101,10 +104,7 @@ const verify = createVerify({
   onPrimary: () => handle("reveal"),
   onMismatch: () => handle("dontKnow"),
   onMatch: () => handle("know"),
-  onChoose: (i) => {
-    screen = chooseAlt(screen, i);
-    render();
-  },
+  onChoose: (i) => show(chooseAlt(screen, i)),
   onNote: (text) => {
     const v = verifyView(screen);
     if (v === null) throw new Error("note edited with no case on screen");
@@ -117,6 +117,7 @@ const verify = createVerify({
   play,
 });
 const summary = createSummary(() => handle("reveal"), goHome);
+const gallery = createGallery((c) => show(openCase(screen, c)));
 const menu = createMenu({
   cases: ALL_CASES,
   cardCount: () => Object.keys(progress.cards).length,
@@ -156,14 +157,17 @@ function commit(next: Progress): void {
 
 const context = () => ({ progress, cases: ALL_CASES, now: Date.now(), random: Math.random });
 
-function goHome(): void {
-  screen = { kind: "home" };
+function show(next: Screen): void {
+  screen = next;
   render();
 }
 
+function goHome(): void {
+  show({ kind: "home" });
+}
+
 function startMode(mode: Mode): void {
-  screen = start(mode, context());
-  render();
+  show(start(mode, context()));
 }
 
 function switchSet(set: CaseSet): void {
@@ -171,7 +175,7 @@ function switchSet(set: CaseSet): void {
 }
 
 const render = (): void =>
-  renderApp({ topbar, menu, help, home, intro, prefBar, flashcard, verify, summary }, progress, screen);
+  renderApp({ topbar, menu, help, home, intro, prefBar, flashcard, verify, summary, gallery }, progress, screen);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());
@@ -180,17 +184,8 @@ function handle(action: Action): void {
   render();
 }
 
-document.body.append(
-  topbar.element,
-  menu.element,
-  help.element,
-  status.element,
-  home.element,
-  intro.element,
-  flashcard.element,
-  verify.element,
-  summary.element,
-);
+document.body.append(topbar.element, menu.element, help.element, status.element, home.element);
+document.body.append(gallery.element, intro.element, flashcard.element, verify.element, summary.element);
 bindKeys(handle, (step) => flashcard.step(step) || verify.step(step), () => screen.kind === "drill");
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);
 if (loaded.problem === "unavailable") status.show(NOT_SAVING);
