@@ -2,8 +2,9 @@ import type { Action } from "../lib/screen.ts";
 
 // `control` is a focused button, link or field, where Enter already means
 // something and must keep meaning it. `code` is the physical key
-// (KeyboardEvent.code), used only to tell the numpad's 0 apart from the top
-// row's, since both report the same `key`.
+// (KeyboardEvent.code): the numpad's own 0, 1 and 3 need their own triggers,
+// since Enter's reliance on whatever button last took focus made it land on
+// the wrong button as often as the right one.
 type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean; code?: string };
 
 const BINDINGS = new Map<string, Action>([
@@ -14,14 +15,20 @@ const BINDINGS = new Map<string, Action>([
   ["enter", "next"],
 ]);
 
+// Numpad 0 is reveal/begin/check/reset, numpad 1 is the correct/confirm
+// action (know, match, next), numpad 3 is wrong (don't know, mismatch).
+const NUMPAD_BINDINGS = new Map<string, Action>([
+  ["Numpad0", "reveal"],
+  ["Numpad1", "know"],
+  ["Numpad3", "dontKnow"],
+]);
+
 // Typing in a note must not grade, a held modifier is a browser shortcut
 // (Ctrl+1 switches tabs), and auto-repeat must not grade five cards.
 export function actionForKey({ key, typing, modifier, repeat, control = false, code }: KeyInput): Action | null {
   if (typing || modifier || repeat || (control && key === "Enter")) return null;
-  // Numpad 1 already lands on "1" through `key`; only Numpad 0 needs its own
-  // trigger, since plain "0" is otherwise unbound.
-  if (code === "Numpad0") return "reveal";
-  return BINDINGS.get(key.toLowerCase()) ?? null;
+  const numpad = code === undefined ? undefined : NUMPAD_BINDINGS.get(code);
+  return numpad ?? BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
 export type Step = "back" | "forward" | "start" | "end";

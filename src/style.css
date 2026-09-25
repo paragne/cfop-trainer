@@ -290,14 +290,16 @@ kbd {
 @media (hover: none) { kbd { display: none; } }
 
 /* A card under the top bar, centered over the content column; floats, so
-   opening it moves nothing. Menu and help share the exact same slot. */
+   opening it moves nothing. Menu and help share the exact same slot. 24rem is
+   60% of the content column's own 40rem width, so it overlays a moderate
+   slice of the page rather than nearly all of it. */
 .data {
   position: fixed;
   top: 3.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
-  width: min(40rem, calc(100% - 1.5rem));
+  width: min(24rem, calc(100% - 1.5rem));
   padding: 0.75rem;
   border: 1px solid var(--line);
   border-radius: 2px;

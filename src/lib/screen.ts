@@ -53,8 +53,9 @@ export function start(mode: Mode, ctx: Context): Screen {
   return { kind: "verify", verify: startVerify(cases, progress, random) };
 }
 
-// In Drill, "next" moves on and the grades are not bound; elsewhere "next" is
-// not bound.
+// In Drill, "next" moves on, and so does "know": numpad 1 is the one
+// "correct/confirm" key across every mode, and Drill's confirm is Next.
+// "dontKnow" stays unbound there, since nothing is graded.
 export function press(
   screen: Screen,
   action: Action,
@@ -77,7 +78,7 @@ export function press(
     if (action === "reveal") {
       return { screen: { ...screen, drill: toggleReveal(screen.drill) }, progress };
     }
-    if (action !== "next") return unchanged;
+    if (action !== "next" && action !== "know") return unchanged;
     const drill = nextCase(screen.drill, progress, random);
     return { screen: { kind: "drill", drill, auf: aufFor(drill.current, ctx) }, progress };
   }

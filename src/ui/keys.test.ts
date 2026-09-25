@@ -37,21 +37,26 @@ describe("actionForKey", () => {
   });
 });
 
-describe("Numpad 0", () => {
-  it("also triggers reveal, alongside Space", () => {
-    expect(press("0", { code: "Numpad0" })).toBe("reveal");
+describe("the numpad", () => {
+  it.each<[string, string, Action]>([
+    ["0", "Numpad0", "reveal"],
+    ["1", "Numpad1", "know"],
+    ["3", "Numpad3", "dontKnow"],
+  ])("%j on the numpad also triggers %s", (key, code, action) => {
+    expect(press(key, { code })).toBe(action);
   });
 
-  it("leaves the top-row 0 alone, since it is not the numpad", () => {
+  it("leaves the top row's digits alone, since they are not the numpad", () => {
     expect(press("0", { code: "Digit0" })).toBeNull();
+    expect(press("3", { code: "Digit3" })).toBeNull();
   });
 
-  it("does nothing while typing in a note", () => {
-    expect(press("0", { code: "Numpad0", typing: true })).toBeNull();
+  it.each(["Numpad0", "Numpad1", "Numpad3"])("does nothing while typing in a note", (code) => {
+    expect(press("0", { code, typing: true })).toBeNull();
   });
 
-  it("does nothing with Ctrl, Cmd or Alt held", () => {
-    expect(press("0", { code: "Numpad0", modifier: true })).toBeNull();
+  it.each(["Numpad0", "Numpad1", "Numpad3"])("does nothing with Ctrl, Cmd or Alt held", (code) => {
+    expect(press("0", { code, modifier: true })).toBeNull();
   });
 });
 

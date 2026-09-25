@@ -73,21 +73,13 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   let missed = false;
   let threeD = false;
   let shownCase: string | null = null;
-  let phase: Verify["phase"] = "ready";
-  let hotkeyMode: HotkeyLabels = "keyboard";
 
   // The 3D view writes the solution out itself, so this copy would only repeat it.
   const showSolution = () => {
     solution.hidden = !missed || threeD;
   };
 
-  // Only Check, during the attempt, has a numpad label other than Space: the
-  // primary button is also Begin and Reset, neither of which the table lists.
-  const primaryKey = () => (hotkeyMode === "numpad" && phase === "attempt" ? "enter" : "space");
-
   function render(v: Verify, progress: Progress): void {
-    phase = v.phase;
-    primary.kbd.textContent = primaryKey();
     count.textContent = `Verify · step ${v.step} · ${v.matches} matched`;
     ready.hidden = v.phase !== "ready";
 
@@ -144,11 +136,12 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
     },
     step: stage.step,
     editNote: notes.edit,
+    // Begin, Check and Reset are all the same "reveal" action, so the primary
+    // button's numpad label never changes across phases.
     setHotkeyMode(mode: HotkeyLabels): void {
-      hotkeyMode = mode;
-      primary.kbd.textContent = primaryKey();
-      mismatch.kbd.textContent = mode === "numpad" ? "num1" : "1";
-      match.kbd.textContent = mode === "numpad" ? "enter" : "2";
+      primary.kbd.textContent = mode === "numpad" ? "num0" : "space";
+      mismatch.kbd.textContent = mode === "numpad" ? "num3" : "1";
+      match.kbd.textContent = mode === "numpad" ? "num1" : "2";
     },
   };
 }

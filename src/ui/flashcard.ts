@@ -36,9 +36,9 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const dontKnow = keyedButton("", "Don't know", "1", onDontKnow);
   const know = keyedButton("", "Know it", "2", onKnow);
   const grades = [dontKnow.node, know.node];
-  const next = keyedButton("", "Next", "enter", onNext).node;
+  const next = keyedButton("", "Next", "enter", onNext);
   const actions = el("nav", "actions");
-  actions.append(reveal.node, ...grades, next);
+  actions.append(reveal.node, ...grades, next.node);
 
   // The title line: the section, then the card's place in the session.
   const title = el("span", "title");
@@ -84,7 +84,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     count.textContent = position;
     element.dataset.mode = mode;
     for (const grade of grades) grade.hidden = mode === "drill";
-    next.hidden = mode === "learn";
+    next.node.hidden = mode === "learn";
   }
 
   return {
@@ -96,11 +96,11 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     },
     step: stage.step,
     editNote: notes.edit,
-    // Next stays Enter in both modes, so its kbd hint never changes.
     setHotkeyMode(mode: HotkeyLabels): void {
       reveal.kbd.textContent = mode === "numpad" ? "num0" : "space";
-      dontKnow.kbd.textContent = mode === "numpad" ? "num1" : "1";
-      know.kbd.textContent = mode === "numpad" ? "enter" : "2";
+      dontKnow.kbd.textContent = mode === "numpad" ? "num3" : "1";
+      know.kbd.textContent = mode === "numpad" ? "num1" : "2";
+      next.kbd.textContent = mode === "numpad" ? "num1" : "enter";
     },
   };
 }

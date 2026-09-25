@@ -76,9 +76,12 @@ describe("drill", () => {
     expect(next.progress).toBe(context.progress);
   });
 
-  it("does nothing on know, which is no longer Next", () => {
+  it("know also moves to a different case, since numpad 1 is the one confirm key across every mode", () => {
+    const context = ctx();
     const before = drill();
-    expect(press(before, "know", ctx()).screen).toBe(before);
+    const next = press(before, "know", context);
+    expect(cardView(next.screen)?.c.id).not.toBe(cardView(before)?.c.id);
+    expect(next.progress).toBe(context.progress);
   });
 
   it("does nothing on dontKnow", () => {
