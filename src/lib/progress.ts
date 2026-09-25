@@ -14,6 +14,9 @@ export type Progress = {
   notes: Record<string, string>;
   drillStats: Record<string, TimedStat>;
   verifyStats: Record<string, VerifyStat>;
+  // Case id -> index into that case's algs the user starred. Added after v2's
+  // first release, so a missing key reads as no stars at all.
+  stars: Record<string, number>;
 };
 
 export type ParseResult =
@@ -23,7 +26,7 @@ export type ParseResult =
 const VERSION = 2;
 
 export function defaultProgress(): Progress {
-  return { prefs: defaultPrefs(), cards: {}, notes: {}, drillStats: {}, verifyStats: {} };
+  return { prefs: defaultPrefs(), cards: {}, notes: {}, drillStats: {}, verifyStats: {}, stars: {} };
 }
 
 export function serialize(progress: Progress, now: number): string {
@@ -36,6 +39,7 @@ export function serialize(progress: Progress, now: number): string {
       notes: progress.notes,
       drillStats: progress.drillStats,
       verifyStats: progress.verifyStats,
+      stars: progress.stars,
     },
     null,
     2,
@@ -139,7 +143,14 @@ function read(text: string, cases: readonly Case[]) {
     if (known.has(id)) verifyStats[id] = readVerifyStat(id, value);
     else dropped++;
   }
-  return { progress: { prefs, cards, notes, drillStats, verifyStats }, updatedAt, dropped, migrated };
+  // Not bounded by the case's alg count: a stale index is read as the primary
+  // (see starredAlg), not rejected.
+  const stars: Record<string, number> = {};
+  for (const [id, value] of Object.entries(optionalSection(raw, "stars"))) {
+    if (!known.has(id)) dropped++;
+    else stars[id] = count(value, `star ${id}`, 0);
+  }
+  return { progress: { prefs, cards, notes, drillStats, verifyStats, stars }, updatedAt, dropped, migrated };
 }
 
 export function parseProgress(text: string, cases: readonly Case[]): ParseResult {
@@ -175,5 +186,7 @@ export function mergeProgress(local: Progress, imported: Progress): Progress {
   }
   const drillStats = mergeTimedStats(local.drillStats, imported.drillStats);
   const verifyStats = mergeTimedStats(local.verifyStats, imported.verifyStats);
-  return { prefs: local.prefs, cards, notes, drillStats, verifyStats };
+  // A star is a choice, not a history, so the local one stands.
+  const stars = { ...imported.stars, ...local.stars };
+  return { prefs: local.prefs, cards, notes, drillStats, verifyStats, stars };
 }

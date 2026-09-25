@@ -52,8 +52,8 @@ export function renderApp(
       shuffle: progress.prefs.shuffle,
       rotation: progress.prefs.randomRotation,
       stats: setStats(ALL_CASES, progress.cards, Date.now()),
-      drillPace: drillPaceRows(ALL_CASES, progress.drillStats),
-      verifyPace: verifyPaceRows(ALL_CASES, progress.verifyStats),
+      drillPace: drillPaceRows(ALL_CASES, progress.drillStats, progress.stars),
+      verifyPace: verifyPaceRows(ALL_CASES, progress.verifyStats, progress.stars),
     });
   } else if (introFor !== null) {
     const skipped = introFor === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;
@@ -73,10 +73,10 @@ export function renderApp(
 
   const available = webgl2Available();
   const shown = progress.prefs.threeD && available ? caseView(screen) : null;
-  const playing = shown === null ? null : playView(screen);
+  const playing = shown === null ? null : playView(screen, progress.stars);
   const onCard = view !== null || verifying !== null;
   topbar.setNotesAvailable(onCard);
   topbar.setThreeD(available && onCard, progress.prefs.threeD);
-  flashcard.setPlay(view === null ? null : shown, playing, progress.prefs);
-  verify.setPlay(verifying === null ? null : shown, playing, progress.prefs);
+  flashcard.setPlay(view === null ? null : shown, playing, progress.prefs, progress.stars);
+  verify.setPlay(verifying === null ? null : shown, playing, progress.prefs, progress.stars);
 }

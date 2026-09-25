@@ -3,9 +3,10 @@ import { caseState } from "../lib/case-state.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
 import { renderSolution } from "../lib/solution.ts";
+import { starredAlg } from "../lib/stars.ts";
 import { choices, expected, regrip } from "../lib/verify.ts";
 import type { Verify } from "../lib/verify.ts";
-import { checkboxLabel, el, keyedButton, toggleButton } from "./dom.ts";
+import { checkboxLabel, el, keyedButton, onStarClick, toggleButton } from "./dom.ts";
 import { createNotes } from "./notes.ts";
 import { createPlayPanel } from "./play-panel.ts";
 import type { PlayHandlers } from "./play-panel.ts";
@@ -16,6 +17,7 @@ type Handlers = {
   onMatch: () => void;
   onChoose: (i: number) => void;
   onNote: (text: string) => void;
+  onStar: (algIndex: number) => void;
   onRestart: () => void;
   onHome: () => void;
   onSkipIntro: (skip: boolean) => void;
@@ -33,7 +35,7 @@ const READY_COPY: readonly string[] = [
 ];
 
 // Built once, like flashcard: render() only syncs what the phase says.
-export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onRestart, onHome, onSkipIntro, play }: Handlers) {
+export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onStar, onRestart, onHome, onSkipIntro, play }: Handlers) {
   const element = el("section", "card verify");
   const count = el("p", "meta");
   const ready = el("div", "intro-body");
@@ -46,6 +48,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   const headline = el("div", "headline");
   headline.append(name, notes.element);
   const solution = el("div", "solution");
+  onStarClick(solution, onStar);
   const altLabel = el("p", "hint", "Expected if you used:");
   const altPicker = el("div", "set-toggles");
   altPicker.setAttribute("role", "group");
@@ -120,7 +123,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
 
     missed = v.phase === "missed";
     showSolution();
-    if (v.phase === "missed") solution.innerHTML = renderSolution(v.current, v.auf);
+    if (v.phase === "missed") solution.innerHTML = renderSolution(v.current, v.auf, starredAlg(v.current, progress.stars));
 
     if (v.phase === "checked") renderAlts(v);
     else {

@@ -50,6 +50,7 @@ describe("a frozen version 2 blob", () => {
         notes: NOTES,
         drillStats: {},
         verifyStats: {},
+        stars: {},
       },
       updatedAt: NOW,
       dropped: 0,

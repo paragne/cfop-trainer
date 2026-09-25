@@ -72,7 +72,7 @@ describe("serialize and parseProgress", () => {
 
   it("writes exactly the persisted keys, so UI state cannot leak in unnoticed", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
-    expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes", "drillStats", "verifyStats"]);
+    expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes", "drillStats", "verifyStats", "stars"]);
     expect(Object.keys(progress().prefs)).toEqual([
       "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "showHotkeys",
       "skipLearnIntro", "skipDrillIntro", "skipVerifyIntro", "sets",

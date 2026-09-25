@@ -1,19 +1,21 @@
 import { caseMask } from "../lib/case-state.ts";
-import { colorsAtCubies, cubiesFromColors } from "../lib/physical-cube.ts";
-import { playStart } from "../lib/play.ts";
+import { cubiesFromColors } from "../lib/physical-cube.ts";
+import { algMoves, playStart } from "../lib/play.ts";
 import type { CaseView, PlayView } from "../lib/play.ts";
 import type { Prefs } from "../lib/prefs.ts";
-import { viewFaces } from "../lib/view-faces.ts";
+import type { Progress } from "../lib/progress.ts";
+import { starredAlg } from "../lib/stars.ts";
 import { createAlgStrip } from "./alg-strip.ts";
 import { el } from "./dom.ts";
 import type { Step } from "./keys.ts";
 import { createTransport } from "./transport.ts";
 import { withCore } from "./three-d/core-cubie.ts";
 import { createLegend } from "./three-d/legend.ts";
-import { startPanelSession } from "./three-d/panel-session.ts";
+import { legendFaces, startPanelSession } from "./three-d/panel-session.ts";
 import type { PanelSession } from "./three-d/panel-session.ts";
 
 export type PlayHandlers = {
+  onStar: (algIndex: number) => void;
   onSpeed: (speed: number) => void;
   onZoom: (zoom: number) => void;
 };
@@ -24,7 +26,7 @@ const START_HOLD_MS = 500;
 // A card's picture: the 2D one, or the case in 3D. The GPU context lives only
 // while a card is in 3D: created when it first shows, given back on close.
 // The solution's controls appear with the solution, and never before.
-export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
+export function createPlayPanel({ onStar, onSpeed, onZoom }: PlayHandlers) {
   const element = el("div", "view");
   const picture = el("div", "picture");
   const player = el("div", "player");
@@ -32,7 +34,9 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   const stage = el("div", "stage");
   const strip = createAlgStrip();
 
-  const { topRow, bottomRow, speedPop } = createTransport({
+  const { topRow, bottomRow, speedPop, algPicker } = createTransport({
+    onChooseAlg: chooseAlg,
+    onStar,
     onSpeed: (speed) => {
       speedValue = speed;
       onSpeed(speed);
@@ -66,17 +70,12 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   let zoomValue = 1;
   let shown: CaseView | null = null;
   let solution: PlayView | null = null;
+  // What animates: the screen's own pick (the starred alg) until the picker
+  // says otherwise. Only a preview, so it is never written anywhere.
+  let chosenAlg = 0;
 
-  // F2L only: the other views have no F, U, R reading to keep up with. The
-  // letters come from where the centers are now, so an x, y or z in the
-  // algorithm turns them while the camera follows.
   function refreshLegend(): void {
-    const mask = shown === null ? null : caseMask(shown.c);
-    if (session === null || mask === null || mask.kind !== "f2l" || session.view.camera.getMode() !== "locked") {
-      legend.update(null);
-      return;
-    }
-    legend.update(viewFaces(colorsAtCubies(session.view.player.currentFrame().cubies), mask.slot));
+    legend.update(session === null || shown === null ? null : legendFaces(session, shown.c));
   }
 
   const start = () =>
@@ -98,9 +97,15 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   function load({ view, stepper }: PanelSession): void {
     if (shown === null) return;
     view.showCase(caseMask(shown.c), withCore(cubiesFromColors(playStart(shown.c, shown.auf))));
-    const moves = solution?.moves ?? [];
+    const moves = solution === null ? [] : algMoves(shown.c, shown.auf, chosenAlg);
     strip.load(moves);
     stepper.load(moves);
+  }
+
+  function chooseAlg(algIndex: number): void {
+    chosenAlg = algIndex;
+    clearTimeout(hold);
+    if (session !== null) load(session);
   }
 
   // Playing from the end or halfway through would be disorienting, so the
@@ -129,6 +134,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
   function close(): void {
     clearTimeout(hold);
     speedPop.close();
+    algPicker.close();
     legend.update(null);
     picture.hidden = false;
     player.hidden = true;
@@ -140,7 +146,7 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     session = null;
   }
 
-  function open(next: CaseView, play: PlayView | null, prefs: Prefs): void {
+  function open(next: CaseView, play: PlayView | null, prefs: Prefs, stars: Progress["stars"]): void {
     player.hidden = false;
     session ??= start();
     if (session === null) {
@@ -162,8 +168,10 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
         session.view.camera.setMode("locked");
       }
       clearTimeout(hold);
+      chosenAlg = play?.alg ?? 0;
       load(session);
     }
+    algPicker.sync(play !== null, next.c, next.auf, chosenAlg, starredAlg(next.c, stars));
     strip.setPosition(session.stepper.boundary());
     speedPop.setValue(prefs.speed);
   }
@@ -174,9 +182,9 @@ export function createPlayPanel({ onSpeed, onZoom }: PlayHandlers) {
     picture,
     // Null closes the 3D view and gives its GPU context back.
     // Says whether the 3D view is showing.
-    show(next: CaseView | null, play: PlayView | null, prefs: Prefs): boolean {
+    show(next: CaseView | null, play: PlayView | null, prefs: Prefs, stars: Progress["stars"]): boolean {
       if (next === null) close();
-      else open(next, play, prefs);
+      else open(next, play, prefs, stars);
       return session !== null;
     },
     // Whether the key was used, so an arrow with nothing to step keeps its default.

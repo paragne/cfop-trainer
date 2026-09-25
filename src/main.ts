@@ -1,14 +1,16 @@
 import "./style.css";
 import { ALL_CASES } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
+import { caseView } from "./lib/play.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
+import { setMode, setNote, setNumberPref, setPref, setStar, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
+import { starredAlg } from "./lib/stars.ts";
 import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
 import { createHelp } from "./ui/help.ts";
@@ -46,7 +48,15 @@ const topbar = createTopbar({
   onNotes: () => (screen.kind === "verify" ? verify.editNote() : flashcard.editNote()),
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
 });
+// Starring the starred alg again clears it, back to the primary.
+function star(algIndex: number): void {
+  const view = caseView(screen);
+  if (view === null) throw new Error("alg starred with no case on screen");
+  commit(setStar(progress, view.c.id, starredAlg(view.c, progress.stars) === algIndex ? 0 : algIndex));
+}
+
 const play = {
+  onStar: star,
   onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
   onZoom: (zoom: number) => commit(setNumberPref(progress, "zoom", zoom)),
 };
@@ -84,6 +94,7 @@ const flashcard = createFlashcard({
     if (view === null) throw new Error("note edited with no card on screen");
     persist(setNote(progress, view.c.id, text));
   },
+  onStar: star,
   play,
 });
 const verify = createVerify({
@@ -99,6 +110,7 @@ const verify = createVerify({
     if (v === null) throw new Error("note edited with no case on screen");
     persist(setNote(progress, v.current.id, text));
   },
+  onStar: star,
   onRestart: () => startMode("verify"),
   onHome: goHome,
   onSkipIntro: (skip) => commit(setPref(progress, "skipVerifyIntro", skip)),

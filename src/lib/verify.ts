@@ -8,6 +8,7 @@ import { parse } from "./notation.ts";
 import type { Progress } from "./progress.ts";
 import { inReadingOrder } from "./selection.ts";
 import { orderer } from "./shuffle.ts";
+import { starredAlg } from "./stars.ts";
 
 export type Phase = "ready" | "attempt" | "checked" | "missed";
 
@@ -19,7 +20,7 @@ export type Verify = {
   // after a Reset, otherwise wherever the last step's Match left it.
   cube: Cube;
   auf: Auf;
-  // Index into current.algs; 0 at every new step. See choose().
+  // Index into current.algs; the starred alg at every new step. See choose().
   chosen: number;
   phase: Phase;
   step: number;
@@ -41,7 +42,7 @@ export function startVerify(
     current,
     cube: SOLVED,
     auf: pickAuf(current, progress.prefs.randomRotation, random),
-    chosen: 0,
+    chosen: starredAlg(current, progress.stars),
     phase: "ready",
     step: 1,
     matches: 0,
@@ -110,7 +111,7 @@ function advance(v: Verify, cube: Cube, progress: Progress, random: () => number
     bag,
     cube,
     auf: pickAuf(current, progress.prefs.randomRotation, random),
-    chosen: 0,
+    chosen: starredAlg(current, progress.stars),
     phase: "attempt",
     step: v.step + 1,
   };

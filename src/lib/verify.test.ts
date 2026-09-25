@@ -29,6 +29,17 @@ describe("startVerify", () => {
     expect(v).toMatchObject({ step: 1, phase: "ready", matches: 0, cube: SOLVED, chosen: 0 });
   });
 
+  it("starts each step on the starred alg, the primary when none is starred", () => {
+    const pair = [byId("oll-24"), byId("oll-25")];
+    const stars = { "oll-24": 1, "oll-25": 1 };
+    const p = { ...withVerify(["Full OLL"]), stars };
+    const v = startVerify(pair, p, () => 0.5);
+    expect(v.chosen).toBe(1);
+    expect(expected(check(begin(v)))).toEqual(applyMoves(v.cube, parse(v.current.algs[1].moves)));
+    expect(judge(v, true, p, () => 0.5).chosen).toBe(1);
+    expect(startVerify(pair, withVerify(["Full OLL"]), () => 0.5).chosen).toBe(0);
+  });
+
   it("throws when the selection has fewer than two cases", () => {
     const single = [byId("oll-27")];
     expect(() => startVerify(single, withVerify(["Full OLL"]), Math.random)).toThrow(/two/);

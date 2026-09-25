@@ -11,12 +11,18 @@ const escape = (text: string) => text.replace(/[&<>"]/g, (ch) => ESCAPES[ch]);
 // Such an alg can leave another slot unsolved, which matters mid-solve.
 const FLAG = '<span class="alg-flag" title="Affects more than one slot">multi-slot</span>';
 
-export function renderSolution(c: Case, auf: Auf): string {
+// One per alg, read back by the caller from data-alg-star. Filled when it is
+// the starred one; aria-pressed carries the same state for a screen reader.
+const star = (i: number, starred: number) =>
+  `<button type="button" class="alg-star" data-alg-star="${i}" aria-pressed="${i === starred}" aria-label="Star this algorithm">${i === starred ? "★" : "☆"}</button>`;
+
+export function renderSolution(c: Case, auf: Auf, starred: number): string {
   const [primary, ...alternates] = c.algs;
   const algs = [
-    `<p class="alg primary">${escape(prefixed(auf, primary.display))}</p>`,
+    `<p class="alg primary">${star(0, starred)}${escape(prefixed(auf, primary.display))}</p>`,
     ...alternates.map(
-      (alg) => `<p class="alg alt">${escape(prefixed(auf, alg.display))}${alg.affectsOtherSlots === true ? ` ${FLAG}` : ""}</p>`,
+      (alg, k) =>
+        `<p class="alg alt">${star(k + 1, starred)}${escape(prefixed(auf, alg.display))}${alg.affectsOtherSlots === true ? ` ${FLAG}` : ""}</p>`,
     ),
   ].join("");
   if (c.videoUrl === null) return algs;

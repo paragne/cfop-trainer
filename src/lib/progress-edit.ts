@@ -12,6 +12,15 @@ export function setNote(progress: Progress, id: string, text: string): Progress 
   return { ...progress, notes };
 }
 
+// Index 0 is what an unstarred case already uses, so it is deleted rather than
+// stored, and un-starring and starting over agree.
+export function setStar(progress: Progress, id: string, algIndex: number): Progress {
+  const stars = { ...progress.stars };
+  if (algIndex === 0) delete stars[id];
+  else stars[id] = algIndex;
+  return { ...progress, stars };
+}
+
 export function setPref(
   progress: Progress,
   key:

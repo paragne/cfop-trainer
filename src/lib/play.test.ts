@@ -91,6 +91,17 @@ describe("what the view carries", () => {
     expect(view.moves).toEqual(parse(prefixed(view.auf, view.c.algs[0].moves)));
   });
 
+  it("plays the starred alg in Learn, the primary without one, and the primary when the star is stale", () => {
+    const pair = ALL_CASES.filter((c) => c.id === "oll-24" || c.id === "oll-25");
+    const p = progress({ sets: { ...defaultProgress().prefs.sets, learn: ["Full OLL"] } });
+    const screen = after(start("learn", { ...ctx(p), cases: pair }), p, "reveal");
+    const id = playView(screen)?.c.id;
+    if (id === undefined) throw new Error("revealed card has no play view");
+    expect(playView(screen)?.alg).toBe(0);
+    expect(playView(screen, { [id]: 1 })?.alg).toBe(1);
+    expect(playView(screen, { [id]: 2 })?.alg).toBe(0);
+  });
+
   it("follows the alg chosen in Verify, keeping the card's key", () => {
     const pair = ALL_CASES.filter((c) => c.id === "oll-24" || c.id === "oll-25");
     const p = progress({ mode: "verify", sets: { ...defaultProgress().prefs.sets, verify: ["Full OLL"] } });

@@ -1,5 +1,6 @@
 import type { Case } from "../data/algorithms.ts";
 import { parse } from "./notation.ts";
+import { starredAlg } from "./stars.ts";
 
 // How long a case took to solve, aggregated rather than kept as a full event
 // history, so storage stays bounded regardless of how long a case is drilled.
@@ -28,7 +29,9 @@ export function recordMatch(prev: VerifyStat | undefined): VerifyStat {
   return { ...prev, matches: prev.matches + 1 };
 }
 
-const moveCount = (c: Case): number => parse(c.algs[0].moves).length;
+// Of the alg the user actually runs: the starred one, else the primary.
+const moveCount = (c: Case, stars: Readonly<Record<string, number>>): number =>
+  parse(c.algs[starredAlg(c, stars)].moves).length;
 
 export const secondsPerMove = (stat: TimedStat, moves: number): number =>
   stat.totalMs / stat.attempts / moves / 1000;
@@ -40,12 +43,13 @@ export function paceRank<T extends TimedStat>(
   cases: readonly Case[],
   stats: Readonly<Record<string, T>>,
   minAttempts: number,
+  stars: Readonly<Record<string, number>>,
 ): { case: Case; stat: T; secondsPerMove: number }[] {
   return cases
     .flatMap((c) => {
       const stat = stats[c.id];
       if (stat === undefined || stat.attempts < minAttempts) return [];
-      return [{ case: c, stat, secondsPerMove: secondsPerMove(stat, moveCount(c)) }];
+      return [{ case: c, stat, secondsPerMove: secondsPerMove(stat, moveCount(c, stars)) }];
     })
     .toSorted((a, b) => b.secondsPerMove - a.secondsPerMove);
 }
@@ -63,8 +67,12 @@ export type PaceRow = {
   bestMs: number | null;
 };
 
-export function drillPaceRows(cases: readonly Case[], drillStats: Readonly<Record<string, TimedStat>>): PaceRow[] {
-  return paceRank(cases, drillStats, MIN_PACE_ATTEMPTS).map(({ case: c, stat, secondsPerMove: spm }) => ({
+export function drillPaceRows(
+  cases: readonly Case[],
+  drillStats: Readonly<Record<string, TimedStat>>,
+  stars: Readonly<Record<string, number>>,
+): PaceRow[] {
+  return paceRank(cases, drillStats, MIN_PACE_ATTEMPTS, stars).map(({ case: c, stat, secondsPerMove: spm }) => ({
     case: c,
     attempts: stat.attempts,
     secondsPerMove: spm,
@@ -73,8 +81,12 @@ export function drillPaceRows(cases: readonly Case[], drillStats: Readonly<Recor
   }));
 }
 
-export function verifyPaceRows(cases: readonly Case[], verifyStats: Readonly<Record<string, VerifyStat>>): PaceRow[] {
-  return paceRank(cases, verifyStats, MIN_PACE_ATTEMPTS).map(({ case: c, stat, secondsPerMove: spm }) => ({
+export function verifyPaceRows(
+  cases: readonly Case[],
+  verifyStats: Readonly<Record<string, VerifyStat>>,
+  stars: Readonly<Record<string, number>>,
+): PaceRow[] {
+  return paceRank(cases, verifyStats, MIN_PACE_ATTEMPTS, stars).map(({ case: c, stat, secondsPerMove: spm }) => ({
     case: c,
     attempts: stat.attempts,
     secondsPerMove: spm,

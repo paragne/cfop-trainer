@@ -50,3 +50,12 @@ export function squareButton(label: string, markup: string, onClick: () => void)
   node.addEventListener("click", onClick);
   return node;
 }
+
+// The solution's star buttons are rebuilt with its markup, so one listener on
+// the container serves them all.
+export function onStarClick(container: HTMLElement, onStar: (algIndex: number) => void): void {
+  container.addEventListener("click", (e) => {
+    const target = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-alg-star]") : null;
+    if (target !== null) onStar(Number(target.dataset.algStar));
+  });
+}

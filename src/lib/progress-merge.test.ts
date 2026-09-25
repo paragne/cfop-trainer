@@ -75,6 +75,11 @@ describe("mergeProgress", () => {
     expect(merged.notes).toEqual({ [A]: "a", [B]: "b" });
   });
 
+  it("keeps the local star on a conflict and adds one found only on the other side", () => {
+    const merged = mergeProgress(progress({ stars: { [A]: 1 } }), progress({ stars: { [A]: 2, [B]: 1 } }));
+    expect(merged.stars).toEqual({ [A]: 1, [B]: 1 });
+  });
+
   it("leaves its inputs alone", () => {
     const local = Object.freeze(progress({ cards: Object.freeze({ [A]: card() }), notes: Object.freeze({ [A]: "x" }) }));
     const imported = Object.freeze(progress({ cards: Object.freeze({ [A]: card({ seen: 9 }) }), notes: Object.freeze({ [A]: "y" }) }));

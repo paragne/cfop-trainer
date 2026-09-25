@@ -1,4 +1,9 @@
+import type { Case } from "../../data/algorithms.ts";
+import { caseMask } from "../../lib/case-state.ts";
 import { toRgb } from "../../lib/palette.ts";
+import { colorsAtCubies } from "../../lib/physical-cube.ts";
+import { viewFaces } from "../../lib/view-faces.ts";
+import type { ViewFaces } from "../../lib/view-faces.ts";
 import { ZOOM_RANGE } from "../../lib/prefs.ts";
 import { createCubeView } from "./cube-view.ts";
 import type { CubeView } from "./cube-view.ts";
@@ -49,4 +54,13 @@ export function startPanelSession({ stage, speed, zoom, onZoom, onSettled, onPro
   attachZoom(canvas, (farther) => onZoom(Math.min(ZOOM_RANGE.max, Math.max(ZOOM_RANGE.min, zoom() / farther))));
   const stepper = createStepMode(view.player, { onSettled, onProgress, durationMs: () => speedToDurationMs(speed()) });
   return { gl, view, stepper, loaded: "", caseKey: "" };
+}
+
+// F2L only: the other views have no F, U, R reading to keep up with. The
+// letters come from where the centers are now, so an x, y or z in the
+// algorithm turns them while the camera follows.
+export function legendFaces({ view }: PanelSession, c: Case): ViewFaces | null {
+  const mask = caseMask(c);
+  if (mask.kind !== "f2l" || view.camera.getMode() !== "locked") return null;
+  return viewFaces(colorsAtCubies(view.player.currentFrame().cubies), mask.slot);
 }

@@ -239,6 +239,14 @@ body {
 .alg { margin: 0.25rem 0; font: 1.15rem/1.4 var(--mono); overflow-wrap: anywhere; }
 .alg.alt { color: var(--dim); font-size: 0.95rem; }
 .alg-flag { margin-left: 0.25rem; padding: 0 0.3rem; border: 1px solid var(--line); border-radius: 2px; color: var(--dim); font-size: 0.7rem; vertical-align: middle; white-space: nowrap; }
+.alg-star { float: left; width: 2.75rem; min-height: 2.75rem; margin: -0.25rem 0.25rem -0.25rem -0.5rem; padding: 0; border-color: transparent; background: none; color: var(--dim); font-size: 1.25rem; }
+.alg-star[aria-pressed="true"] { color: var(--fg); }
+.alg { display: flow-root; }
+.alg-pop { width: min(24rem, calc(100vw - 2rem)); }
+.alg-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.alg-row { display: flex; gap: 0.25rem; }
+.alg-row .alg-star { float: none; flex: none; margin: 0; }
+.alg-choice { flex: 1; min-width: 0; min-height: 2.75rem; text-align: left; font: 0.875rem var(--mono); overflow-wrap: anywhere; }
 .video { display: inline-block; margin-top: 0.25rem; color: var(--fg); }
 
 .note {

@@ -7,6 +7,7 @@ import { parse } from "./notation.ts";
 import type { Move } from "./notation.ts";
 import { cardView } from "./screen.ts";
 import type { Screen } from "./screen.ts";
+import { starredAlg } from "./stars.ts";
 
 // What a 3D picture of the card shows: the case at rest, which is the 2D
 // picture's own information.
@@ -25,6 +26,9 @@ export type PlayView = CaseView & {
   moves: readonly Move[];
 };
 
+// The alg's moves as shown, with the AUF merged in.
+export const algMoves = (c: Case, auf: Auf, alg: number): readonly Move[] => parse(prefixed(auf, c.algs[alg].moves));
+
 const caseOf = (c: Case, auf: Auf): CaseView => ({ key: `${c.id}|${auf}`, c, auf });
 
 // Verify shows its picture from the attempt on.
@@ -40,19 +44,20 @@ export function caseView(screen: Screen): CaseView | null {
 const playOf = (c: Case, auf: Auf, alg: number): PlayView => ({
   ...caseOf(c, auf),
   alg,
-  moves: parse(prefixed(auf, c.algs[alg].moves)),
+  moves: algMoves(c, auf, alg),
 });
 
 // The only way to the solution's moves and the controls that play them, which
 // reveal it: null until the solution is shown, so revealed in Learn and Drill,
-// checked in Verify.
-export function playView(screen: Screen): PlayView | null {
+// checked in Verify. Learn and Drill play the starred alg, the primary when
+// none is starred.
+export function playView(screen: Screen, stars: Readonly<Record<string, number>> = {}): PlayView | null {
   if (screen.kind === "verify") {
     const { phase, current, auf, chosen } = screen.verify;
     return phase === "checked" || phase === "missed" ? playOf(current, auf, chosen) : null;
   }
   const card = cardView(screen);
-  return card !== null && card.revealed ? playOf(card.c, card.auf, 0) : null;
+  return card !== null && card.revealed ? playOf(card.c, card.auf, starredAlg(card.c, stars)) : null;
 }
 
 // What the 2D picture shows before masking, so 3D starts from the same cube.
