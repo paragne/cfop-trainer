@@ -13,6 +13,7 @@ import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
 import { createHelp } from "./ui/help.ts";
 import { createHome } from "./ui/home.ts";
+import { createIntro } from "./ui/intro.ts";
 import { bindKeys } from "./ui/keys.ts";
 import { createMenu } from "./ui/menu.ts";
 import { createPrefBar } from "./ui/pref-bar.ts";
@@ -56,8 +57,9 @@ const home = createHome({
   onSet: (set) => switchSet(set),
   onShuffle: () => commit(setPref(progress, "shuffle", !progress.prefs.shuffle)),
   onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),
-  onStart: () => startMode(progress.prefs.mode),
+  onStart: () => handle("reveal"),
 });
+const intro = createIntro(() => handle("reveal"));
 const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
@@ -105,6 +107,7 @@ const menu = createMenu({
     if (result.ok) {
       progress = result.progress;
       if (screen.kind === "home") render();
+      else if (screen.kind === "intro") startMode(screen.mode);
       else startMode(screen.kind);
     }
     return result;
@@ -149,7 +152,7 @@ function switchSet(set: CaseSet): void {
 }
 
 const render = (): void =>
-  renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen);
+  renderApp({ topbar, menu, help, home, intro, prefBar, flashcard, verify, summary }, progress, screen);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());
@@ -164,6 +167,7 @@ document.body.append(
   help.element,
   status.element,
   home.element,
+  intro.element,
   flashcard.element,
   verify.element,
   summary.element,

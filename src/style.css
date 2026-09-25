@@ -331,6 +331,9 @@ kbd {
 .summary h1 { margin: 0; font-size: 1.5rem; }
 .result { margin: 0; color: var(--dim); }
 
+.intro h1 { margin: 0; font-size: 1.5rem; }
+.intro-body { display: flex; flex-direction: column; gap: 0.5rem; }
+
 /* Drill has no grades: Next takes the row under Reveal. */
 [data-mode="drill"] .actions > button:not(.primary) { grid-column: 1 / -1; }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultProgress } from "./progress.ts";
 import type { Progress } from "./progress.ts";
-import { cardView, press, resultText, start } from "./screen.ts";
+import { cardView, introMode, press, resultText, start } from "./screen.ts";
 import type { Action, Context, Screen } from "./screen.ts";
 import { mk, NOW } from "./session.fixture.ts";
 
@@ -28,9 +28,20 @@ describe("home", () => {
   it.each<[string, "learn" | "drill"]>([
     ["a learn session", "learn"],
     ["a drill", "drill"],
-  ])("starts %s from the mode last used", (_, mode) => {
+  ])("goes to the intro for %s, from the mode last used", (_, mode) => {
     const next = press(home, "reveal", ctx(inMode(mode)));
-    expect(next.screen.kind).toBe(mode);
+    expect(next.screen.kind).toBe("intro");
+    expect(introMode(next.screen)).toBe(mode);
+  });
+
+  it("starts verify directly, since its own ready phase is already an instruction screen", () => {
+    const base = defaultProgress();
+    const verifyMode = {
+      ...base,
+      prefs: { ...base.prefs, mode: "verify" as const, sets: { ...base.prefs.sets, verify: ["F2L" as const] } },
+    };
+    const next = press(home, "reveal", ctx(verifyMode));
+    expect(next.screen.kind).toBe("verify");
   });
 
   it("does not start a mode with no sets selected", () => {
@@ -46,6 +57,23 @@ describe("home", () => {
     const context = ctx();
     const next = press(home, action, context);
     expect(next.screen).toBe(home);
+    expect(next.progress).toBe(context.progress);
+  });
+});
+
+describe("intro", () => {
+  it.each<"learn" | "drill">(["learn", "drill"])("reveal begins the real %s screen", (mode) => {
+    const intro: Screen = { kind: "intro", mode };
+    const next = press(intro, "reveal", ctx());
+    expect(next.screen.kind).toBe(mode);
+    expect(introMode(next.screen)).toBeNull();
+  });
+
+  it.each<Action>(["dontKnow", "know"])("ignores %s", (action) => {
+    const intro: Screen = { kind: "intro", mode: "learn" };
+    const context = ctx();
+    const next = press(intro, action, context);
+    expect(next.screen).toBe(intro);
     expect(next.progress).toBe(context.progress);
   });
 });
@@ -142,6 +170,18 @@ describe("views", () => {
   it("has no card and no summary on home", () => {
     expect(cardView({ kind: "home" })).toBeNull();
     expect(resultText({ kind: "home" })).toBeNull();
+  });
+
+  it("has no card, summary or intro mode outside intro", () => {
+    expect(introMode({ kind: "home" })).toBeNull();
+    expect(introMode(learn())).toBeNull();
+  });
+
+  it("has no card or summary on intro, and reports its mode", () => {
+    const intro: Screen = { kind: "intro", mode: "drill" };
+    expect(cardView(intro)).toBeNull();
+    expect(resultText(intro)).toBeNull();
+    expect(introMode(intro)).toBe("drill");
   });
 
   it("has a card and no summary mid-session", () => {

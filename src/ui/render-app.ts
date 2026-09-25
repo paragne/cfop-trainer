@@ -1,12 +1,13 @@
 import { ALL_CASES } from "../data/algorithms.ts";
 import { caseView, playView } from "../lib/play.ts";
 import type { Progress } from "../lib/progress.ts";
-import { cardView, resultText, verifyView } from "../lib/screen.ts";
+import { cardView, introMode, resultText, verifyView } from "../lib/screen.ts";
 import type { Screen } from "../lib/screen.ts";
 import { setStats } from "../lib/stats.ts";
 import type { createFlashcard } from "./flashcard.ts";
 import type { createHelp } from "./help.ts";
 import type { createHome } from "./home.ts";
+import type { createIntro } from "./intro.ts";
 import type { createMenu } from "./menu.ts";
 import type { createPrefBar } from "./pref-bar.ts";
 import type { createSummary } from "./summary.ts";
@@ -19,6 +20,7 @@ type Parts = {
   menu: ReturnType<typeof createMenu>;
   help: ReturnType<typeof createHelp>;
   home: ReturnType<typeof createHome>;
+  intro: ReturnType<typeof createIntro>;
   prefBar: ReturnType<typeof createPrefBar>;
   flashcard: ReturnType<typeof createFlashcard>;
   verify: ReturnType<typeof createVerify>;
@@ -28,18 +30,20 @@ type Parts = {
 // Brings every part of the page in line with the state: which screen shows,
 // and what each part on it says.
 export function renderApp(
-  { topbar, menu, help, home, prefBar, flashcard, verify, summary }: Parts,
+  { topbar, menu, help, home, intro, prefBar, flashcard, verify, summary }: Parts,
   progress: Progress,
   screen: Screen,
 ): void {
   const onHome = screen.kind === "home";
+  const introFor = introMode(screen);
   topbar.setHomeTools(onHome);
   if (!onHome) {
     menu.close();
     help.close();
   }
   home.element.hidden = !onHome;
-  prefBar.element.hidden = onHome;
+  intro.element.hidden = introFor === null;
+  prefBar.element.hidden = onHome || introFor !== null;
   if (onHome) {
     home.render({
       mode: progress.prefs.mode,
@@ -48,6 +52,8 @@ export function renderApp(
       rotation: progress.prefs.randomRotation,
       stats: setStats(ALL_CASES, progress.cards, Date.now()),
     });
+  } else if (introFor !== null) {
+    intro.render(introFor, progress.prefs.showHotkeys);
   } else {
     prefBar.render(progress);
   }

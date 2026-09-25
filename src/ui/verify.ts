@@ -21,11 +21,22 @@ type Handlers = {
   play: PlayHandlers;
 };
 
+// Shown before the first step, in place of the case. Static text: nothing
+// here is built from user input.
+const READY_COPY: readonly string[] = [
+  "Hold a solved cube, yellow up, green front.",
+  "You execute each case's algorithm on your physical cube from whatever state it is already in. It will not look like the pictured case: the check is on the result, not the setup.",
+  "Press Check to reveal the expected result. If Random AUF is on, first make the U turns needed to line the case up as shown, then execute the algorithm.",
+  "Answer Match or Mismatch. Mismatch shows the correct algorithm(s) and a Reset once you have fixed the cube by hand.",
+  "The header only tallies your step count and matches. Nothing here is scheduled or saved to your cards.",
+];
+
 // Built once, like flashcard: render() only syncs what the phase says.
 export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onRestart, onHome, play }: Handlers) {
   const element = el("section", "card verify");
   const count = el("p", "meta");
-  const ready = el("p", "hint", "Hold a solved cube yellow up, green front.");
+  const ready = el("div", "intro-body");
+  ready.append(...READY_COPY.map((text) => el("p", "hint", text)));
   const figure = el("figure", "case");
   const stage = createPlayPanel(play);
   figure.append(stage.element);

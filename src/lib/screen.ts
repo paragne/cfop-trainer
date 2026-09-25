@@ -11,8 +11,13 @@ import type { Session } from "./session.ts";
 import { begin, check, choose as chooseAlg, judge, reset, startVerify } from "./verify.ts";
 import type { Verify } from "./verify.ts";
 
+// Verify has its own instruction phase built into its state (see Phase
+// "ready" below), so the shared intro screen only ever fronts Learn and Drill.
+export type IntroMode = "learn" | "drill";
+
 export type Screen =
   | { kind: "home" }
+  | { kind: "intro"; mode: IntroMode }
   | { kind: "learn"; session: Session; auf: Auf }
   | { kind: "drill"; drill: Drill; auf: Auf }
   | { kind: "verify"; verify: Verify };
@@ -64,11 +69,17 @@ export function press(
   const { progress, random } = ctx;
   const unchanged = { screen, progress };
   if (screen.kind === "home") {
-    const startable = progress.prefs.sets[progress.prefs.mode].length > 0;
-    return action === "reveal" && startable ? { screen: start(progress.prefs.mode, ctx), progress } : unchanged;
+    const mode = progress.prefs.mode;
+    const startable = progress.prefs.sets[mode].length > 0;
+    if (action !== "reveal" || !startable) return unchanged;
+    // Verify's own "ready" phase is already its instruction screen.
+    return { screen: mode === "verify" ? start(mode, ctx) : { kind: "intro", mode }, progress };
   }
   if (action === "toggleNames") {
     return { screen, progress: setPref(progress, "showNames", !progress.prefs.showNames) };
+  }
+  if (screen.kind === "intro") {
+    return action === "reveal" ? { screen: start(screen.mode, ctx), progress } : unchanged;
   }
   if (screen.kind === "verify") {
     const verify = pressVerify(screen.verify, action, ctx);
@@ -116,6 +127,12 @@ export function resultText(screen: Screen): string | null {
 // Verify has no card to show and drives its own screen instead of flashcard's.
 export function verifyView(screen: Screen): Verify | null {
   return screen.kind === "verify" ? screen.verify : null;
+}
+
+// The instruction page shown once, between Home's Start button and the first
+// case, for whichever mode was chosen.
+export function introMode(screen: Screen): IntroMode | null {
+  return screen.kind === "intro" ? screen.mode : null;
 }
 
 // Picks which of a case's algs was executed, when they disagree on where the
