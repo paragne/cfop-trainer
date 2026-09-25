@@ -45,17 +45,19 @@ describe("press on a verify screen", () => {
     expect(press(attempt, "dontKnow", ctx()).screen).toBe(attempt);
   });
 
-  it("know (Match) advances to the next step and never touches progress", () => {
+  it("know (Match) advances to the next step, grading nothing but the match itself", () => {
     const p = progress();
-    let screen = start("verify", ctx(p));
-    screen = press(screen, "reveal", ctx(p)).screen; // attempt
-    screen = press(screen, "reveal", ctx(p)).screen; // checked
-    const before = verifyView(screen);
-    const result = press(screen, "know", ctx(p));
+    let state = { screen: start("verify", ctx(p)), progress: p };
+    state = press(state.screen, "reveal", ctx(state.progress)); // attempt
+    const id = verifyView(state.screen)?.current.id ?? "";
+    state = press(state.screen, "reveal", ctx(state.progress)); // checked, records the time
+    const before = verifyView(state.screen);
+    const result = press(state.screen, "know", ctx(state.progress));
     expect(verifyView(result.screen)?.phase).toBe("attempt");
     expect(verifyView(result.screen)?.matches).toBe(1);
     expect(verifyView(result.screen)?.current.id).not.toBe(before?.current.id);
-    expect(result.progress).toBe(p);
+    expect(result.progress.verifyStats[id]).toMatchObject({ attempts: 1, matches: 1 });
+    expect(result.progress.cards).toEqual({});
   });
 
   it("dontKnow (Mismatch) moves to missed without touching the tally", () => {
@@ -77,7 +79,7 @@ describe("press on a verify screen", () => {
     expect(verifyView(result.screen)?.phase).toBe("attempt");
   });
 
-  it("never writes a card or a note for progress, across a full session", () => {
+  it("never writes a card or a note across a full session, only verifyStats", () => {
     const p = progress();
     let state = { screen: start("verify", ctx(p)), progress: p };
     for (let step = 0; step < 5; step++) {
@@ -85,22 +87,23 @@ describe("press on a verify screen", () => {
       state = press(state.screen, "reveal", ctx(state.progress));
       state = press(state.screen, "know", ctx(state.progress));
     }
-    expect(state.progress).toBe(p);
     expect(state.progress.cards).toEqual({});
+    expect(state.progress.notes).toEqual({});
+    expect(Object.keys(state.progress.verifyStats).length).toBeGreaterThan(0);
   });
 });
 
 describe("a long session", () => {
   it("never finishes: 30 matches later the verify view is still up, with no summary", () => {
     const p = progress();
-    let screen = start("verify", ctx(p));
+    let state = { screen: start("verify", ctx(p)), progress: p };
     for (let step = 0; step < 30; step++) {
-      screen = press(screen, "reveal", ctx(p)).screen;
-      screen = press(screen, "reveal", ctx(p)).screen;
-      screen = press(screen, "know", ctx(p)).screen;
+      state = press(state.screen, "reveal", ctx(state.progress));
+      state = press(state.screen, "reveal", ctx(state.progress));
+      state = press(state.screen, "know", ctx(state.progress));
     }
-    expect(verifyView(screen)).toMatchObject({ step: 31, matches: 30 });
-    expect(resultText(screen)).toBeNull();
+    expect(verifyView(state.screen)).toMatchObject({ step: 31, matches: 30 });
+    expect(resultText(state.screen)).toBeNull();
   });
 });
 

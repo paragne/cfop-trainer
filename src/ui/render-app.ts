@@ -4,6 +4,7 @@ import type { Progress } from "../lib/progress.ts";
 import { cardView, introMode, resultText, verifyView } from "../lib/screen.ts";
 import type { Screen } from "../lib/screen.ts";
 import { setStats } from "../lib/stats.ts";
+import { drillPaceRows, verifyPaceRows } from "../lib/timed-stats.ts";
 import type { createFlashcard } from "./flashcard.ts";
 import type { createHelp } from "./help.ts";
 import type { createHome } from "./home.ts";
@@ -51,6 +52,8 @@ export function renderApp(
       shuffle: progress.prefs.shuffle,
       rotation: progress.prefs.randomRotation,
       stats: setStats(ALL_CASES, progress.cards, Date.now()),
+      drillPace: drillPaceRows(ALL_CASES, progress.drillStats),
+      verifyPace: verifyPaceRows(ALL_CASES, progress.verifyStats),
     });
   } else if (introFor !== null) {
     const skipped = introFor === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;

@@ -5,7 +5,7 @@ import { nextCase, startDrill } from "./drill.ts";
 import type { Drill } from "./drill.ts";
 import type { Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
-import { setPref } from "./progress-edit.ts";
+import { recordDrillTime, recordVerifyMatch, recordVerifyTime, setPref } from "./progress-edit.ts";
 import { answer, current, startSession, toggleReveal } from "./session.ts";
 import type { Session } from "./session.ts";
 import { begin, check, choose as chooseAlg, judge, reset, startVerify } from "./verify.ts";
@@ -19,8 +19,12 @@ export type Screen =
   | { kind: "home" }
   | { kind: "intro"; mode: IntroMode }
   | { kind: "learn"; session: Session; auf: Auf }
-  | { kind: "drill"; drill: Drill; auf: Auf }
-  | { kind: "verify"; verify: Verify };
+  // startedAt marks when the current card was shown, for Drill's pace stat.
+  // timedThisCard is true once that card's first reveal has been recorded, so
+  // toggling the solution back off and on again does not record it twice.
+  | { kind: "drill"; drill: Drill; auf: Auf; startedAt: number; timedThisCard: boolean }
+  // startedAt marks when the current attempt began, for Verify's time stat.
+  | { kind: "verify"; verify: Verify; startedAt: number };
 
 export type Action = "reveal" | "dontKnow" | "know" | "next" | "toggleNames";
 
@@ -53,9 +57,9 @@ export function start(mode: Mode, ctx: Context): Screen {
   }
   if (mode === "drill") {
     const drill = startDrill(cases, progress, random);
-    return { kind: "drill", drill, auf: aufFor(drill.current, ctx) };
+    return { kind: "drill", drill, auf: aufFor(drill.current, ctx), startedAt: now, timedThisCard: false };
   }
-  return { kind: "verify", verify: startVerify(cases, progress, random) };
+  return { kind: "verify", verify: startVerify(cases, progress, random), startedAt: now };
 }
 
 // In Drill, "next" moves on, and so does "know": numpad . is the one
@@ -75,7 +79,8 @@ export function press(
     if (mode === "verify") {
       const verify = startVerify(ctx.cases, progress, random);
       // "Don't show this again" skips straight past Verify's own ready phase.
-      return { screen: { kind: "verify", verify: progress.prefs.skipVerifyIntro ? begin(verify) : verify }, progress };
+      const skipped = progress.prefs.skipVerifyIntro;
+      return { screen: { kind: "verify", verify: skipped ? begin(verify) : verify, startedAt: ctx.now }, progress };
     }
     const skip = mode === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;
     return { screen: skip ? start(mode, ctx) : { kind: "intro", mode }, progress };
@@ -87,16 +92,29 @@ export function press(
     return action === "reveal" ? { screen: start(screen.mode, ctx), progress } : unchanged;
   }
   if (screen.kind === "verify") {
-    const verify = pressVerify(screen.verify, action, ctx);
-    return verify === screen.verify ? unchanged : { screen: { kind: "verify", verify }, progress };
+    const { verify, startedAt, progress: next } = pressVerify(screen.verify, screen.startedAt, action, ctx);
+    return verify === screen.verify && startedAt === screen.startedAt && next === progress
+      ? unchanged
+      : { screen: { kind: "verify", verify, startedAt }, progress: next };
   }
   if (screen.kind === "drill") {
     if (action === "reveal") {
-      return { screen: { ...screen, drill: toggleReveal(screen.drill) }, progress };
+      // Only the transition into view is timed, and only when the card did
+      // not start pre-revealed (auto-reveal on): there is no honest interval
+      // to measure once the solution shows the moment the case does.
+      const timing = !screen.drill.revealed && !screen.timedThisCard && !progress.prefs.showSolutions;
+      const nextProgress = timing ? recordDrillTime(progress, screen.drill.current.id, ctx.now - screen.startedAt) : progress;
+      return {
+        screen: { ...screen, drill: toggleReveal(screen.drill), timedThisCard: timing || screen.timedThisCard },
+        progress: nextProgress,
+      };
     }
     if (action !== "next" && action !== "know") return unchanged;
     const drill = nextCase(screen.drill, progress, random);
-    return { screen: { kind: "drill", drill, auf: aufFor(drill.current, ctx) }, progress };
+    return {
+      screen: { kind: "drill", drill, auf: aufFor(drill.current, ctx), startedAt: ctx.now, timedThisCard: false },
+      progress,
+    };
   }
   if (current(screen.session) === null) {
     return action === "reveal" ? { screen: start("learn", ctx), progress } : unchanged;
@@ -145,19 +163,36 @@ export function introMode(screen: Screen): IntroMode | null {
 // one of the alternates, not by a key.
 export function chooseAlt(screen: Screen, i: number): Screen {
   if (screen.kind !== "verify") throw new Error("chooseAlt called outside Verify");
-  return { kind: "verify", verify: chooseAlg(screen.verify, i) };
+  return { kind: "verify", verify: chooseAlg(screen.verify, i), startedAt: screen.startedAt };
 }
 
 // Verify reuses the flashcard action names: reveal is the primary action
-// (Begin, Check, or Reset), dontKnow is Mismatch and know is Match.
-function pressVerify(v: Verify, action: Action, { progress, random }: Context): Verify {
-  if (v.phase === "ready") return action === "reveal" ? begin(v) : v;
-  if (v.phase === "attempt") return action === "reveal" ? check(v) : v;
+// (Begin, Check, or Reset), dontKnow is Mismatch and know is Match. Timing
+// runs from whenever the current attempt began (startedAt) to Check, which is
+// what "attempts" and the time aggregates count; Match separately counts
+// "matches" on top of a time already recorded by that Check.
+function pressVerify(
+  v: Verify,
+  startedAt: number,
+  action: Action,
+  { progress, random, now }: Context,
+): { verify: Verify; startedAt: number; progress: Progress } {
+  const unchanged = { verify: v, startedAt, progress };
+  if (v.phase === "ready") {
+    return action === "reveal" ? { verify: begin(v), startedAt: now, progress } : unchanged;
+  }
+  if (v.phase === "attempt") {
+    if (action !== "reveal") return unchanged;
+    const withTime = recordVerifyTime(progress, v.current.id, now - startedAt);
+    return { verify: check(v), startedAt, progress: withTime };
+  }
   if (v.phase === "checked") {
-    if (action === "know") return judge(v, true, progress, random);
-    if (action === "dontKnow") return judge(v, false, progress, random);
-    return v;
+    if (action === "know") {
+      return { verify: judge(v, true, progress, random), startedAt: now, progress: recordVerifyMatch(progress, v.current.id) };
+    }
+    if (action === "dontKnow") return { verify: judge(v, false, progress, random), startedAt, progress };
+    return unchanged;
   }
   // "missed": Reset.
-  return action === "reveal" ? reset(v, progress, random) : v;
+  return action === "reveal" ? { verify: reset(v, progress, random), startedAt: now, progress } : unchanged;
 }

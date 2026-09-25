@@ -4,8 +4,10 @@ import type { Mode } from "../lib/prefs.ts";
 import { SET_ORDER } from "../lib/selection.ts";
 import { tickStates } from "../lib/stats.ts";
 import type { SetStats } from "../lib/stats.ts";
+import type { PaceRow } from "../lib/timed-stats.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
 import { AUF_ICON, CREDIT_MARK, SHUFFLE_ICON } from "./icons.ts";
+import { createStatsTable } from "./stats-table.ts";
 
 type Handlers = {
   // Only modes that exist. A mode added to this list gets a button.
@@ -25,6 +27,8 @@ export type HomeView = {
   shuffle: boolean;
   rotation: boolean;
   stats: readonly SetStats[];
+  drillPace: readonly PaceRow[];
+  verifyPace: readonly PaceRow[];
 };
 
 const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify" };
@@ -94,15 +98,19 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
   });
 
   // Both apply in every mode, so they sit with the session setup and not on
-  // the card screens. A random AUF turns the OLL and PLL pictures.
+  // the card screens. A random AUF turns the OLL and PLL pictures. Start sits
+  // right after them: it is still the primary action, just no longer the
+  // full-width thumb target now that the stats below make the page scroll.
   const shuffle = iconToggle("Toggle Shuffle", SHUFFLE_ICON, onShuffle);
   const rotation = iconToggle("Toggle Random AUF", AUF_ICON, onRotation);
+  const start = keyedButton("primary compact", "Start", "space", onStart);
   const options = el("div", "options");
-  options.append(shuffle, rotation);
+  options.append(shuffle, rotation, start.node);
 
+  const learnHeading = el("h3", "stat-table-title", "Learn");
   const stats = el("div", "stats");
-
-  const start = keyedButton("primary", "Start", "space", onStart);
+  const drillTable = createStatsTable("Drill · pace");
+  const verifyTable = createStatsTable("Verify · pace and accuracy");
 
   const credit = el("p", "credit");
   const mark = el("span", "credit-mark");
@@ -111,17 +119,17 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
   author.href = REPO_URL;
   credit.append(mark, author, ` · v${__APP_VERSION__}`);
 
-  // Sticky as a pair, so the credit line never lands past the reachable
-  // bottom of the scroll where a sticky footer's own height would hide it.
-  const startBar = el("div", "start");
-  startBar.append(start.node, credit);
+  // Sticky, on its own opaque bar: a faint line marking the edge of the
+  // scrollable stats above, with the credit visible over them once scrolled.
+  const foot = el("div", "foot");
+  foot.append(credit);
 
   const element = el("main", "home");
-  element.append(modeBox, ...setRows, options, stats, startBar);
+  element.append(modeBox, ...setRows, options, learnHeading, stats, drillTable.element, verifyTable.element, foot);
 
   return {
     element,
-    render({ mode, selected, shuffle: shuffled, rotation: randomAuf, stats: view }: HomeView): void {
+    render({ mode, selected, shuffle: shuffled, rotation: randomAuf, stats: view, drillPace, verifyPace }: HomeView): void {
       for (const [m, button] of modeButtons) {
         button.setAttribute("aria-pressed", String(m === mode));
       }
@@ -149,6 +157,8 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
           return row;
         }),
       );
+      drillTable.render(drillPace);
+      verifyTable.render(verifyPace);
     },
   };
 }

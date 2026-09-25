@@ -17,8 +17,11 @@ const progress = (over: Partial<Progress["prefs"]> = {}): Progress => {
 
 const ctx = (p: Progress): Context => ({ progress: p, cases: ALL_CASES, now: NOW, random: () => 0.5 });
 
+// Threads progress across the given actions, not just the screen: Verify's
+// Check now writes a stat that its own following Match reads back, so a
+// multi-action chain must see each step's progress, not the caller's snapshot.
 const after = (screen: Screen, p: Progress, ...actions: Action[]): Screen =>
-  actions.reduce((s, action) => press(s, action, ctx(p)).screen, screen);
+  actions.reduce((s, action) => press(s.screen, action, ctx(s.progress)), { screen, progress: p }).screen;
 
 describe("the gate", () => {
   it("is closed on home", () => {

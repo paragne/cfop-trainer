@@ -3,13 +3,17 @@ import { Invalid, isRecord, reject } from "./blob.ts";
 import { migrateV1toV2 } from "./migrate.ts";
 import { defaultPrefs, readPrefs } from "./prefs.ts";
 import type { Prefs } from "./prefs.ts";
+import { mergeTimedStats, readTimedStat, readVerifyStat } from "./progress-timed.ts";
 import { EASE_FLOOR } from "./srs.ts";
 import type { Card } from "./srs.ts";
+import type { TimedStat, VerifyStat } from "./timed-stats.ts";
 
 export type Progress = {
   prefs: Prefs;
   cards: Record<string, Card>;
   notes: Record<string, string>;
+  drillStats: Record<string, TimedStat>;
+  verifyStats: Record<string, VerifyStat>;
 };
 
 export type ParseResult =
@@ -19,7 +23,7 @@ export type ParseResult =
 const VERSION = 2;
 
 export function defaultProgress(): Progress {
-  return { prefs: defaultPrefs(), cards: {}, notes: {} };
+  return { prefs: defaultPrefs(), cards: {}, notes: {}, drillStats: {}, verifyStats: {} };
 }
 
 export function serialize(progress: Progress, now: number): string {
@@ -30,6 +34,8 @@ export function serialize(progress: Progress, now: number): string {
       prefs: progress.prefs,
       cards: progress.cards,
       notes: progress.notes,
+      drillStats: progress.drillStats,
+      verifyStats: progress.verifyStats,
     },
     null,
     2,
@@ -47,6 +53,12 @@ export function exportName(now: Date): string {
 function section(raw: Record<string, unknown>, key: string): Record<string, unknown> {
   const value = raw[key];
   return isRecord(value) ? value : reject(`"${key}" must be an object`);
+}
+
+// drillStats and verifyStats were added after v2's first release, so a blob
+// written before them has no key at all, not an empty object.
+function optionalSection(raw: Record<string, unknown>, key: string): Record<string, unknown> {
+  return raw[key] === undefined ? {} : section(raw, key);
 }
 
 function finite(value: unknown, where: string, min: number): number {
@@ -117,7 +129,17 @@ function read(text: string, cases: readonly Case[]) {
       notes[id] = value;
     }
   }
-  return { progress: { prefs, cards, notes }, updatedAt, dropped, migrated };
+  const drillStats: Record<string, TimedStat> = {};
+  for (const [id, value] of Object.entries(optionalSection(raw, "drillStats"))) {
+    if (known.has(id)) drillStats[id] = readTimedStat(id, value);
+    else dropped++;
+  }
+  const verifyStats: Record<string, VerifyStat> = {};
+  for (const [id, value] of Object.entries(optionalSection(raw, "verifyStats"))) {
+    if (known.has(id)) verifyStats[id] = readVerifyStat(id, value);
+    else dropped++;
+  }
+  return { progress: { prefs, cards, notes, drillStats, verifyStats }, updatedAt, dropped, migrated };
 }
 
 export function parseProgress(text: string, cases: readonly Case[]): ParseResult {
@@ -151,5 +173,7 @@ export function mergeProgress(local: Progress, imported: Progress): Progress {
   for (const [id, theirs] of Object.entries(imported.notes)) {
     notes[id] = id in notes ? mergeNote(notes[id], theirs) : theirs;
   }
-  return { prefs: local.prefs, cards, notes };
+  const drillStats = mergeTimedStats(local.drillStats, imported.drillStats);
+  const verifyStats = mergeTimedStats(local.verifyStats, imported.verifyStats);
+  return { prefs: local.prefs, cards, notes, drillStats, verifyStats };
 }

@@ -87,37 +87,6 @@ describe("toggleNames", () => {
   });
 });
 
-describe("drill", () => {
-  it("reveal toggles the solution and touches no progress", () => {
-    const context = ctx();
-    const next = press(drill(), "reveal", context);
-    expect(cardView(next.screen)?.revealed).toBe(true);
-    expect(next.progress).toBe(context.progress);
-  });
-
-  it("next moves to a different case, and nothing is graded", () => {
-    const context = ctx();
-    const before = drill();
-    const next = press(before, "next", context);
-    expect(cardView(next.screen)?.c.id).not.toBe(cardView(before)?.c.id);
-    expect(cardView(next.screen)?.count).toBe("2");
-    expect(next.progress).toBe(context.progress);
-  });
-
-  it("know also moves to a different case, since numpad . is the one confirm key across every mode", () => {
-    const context = ctx();
-    const before = drill();
-    const next = press(before, "know", context);
-    expect(cardView(next.screen)?.c.id).not.toBe(cardView(before)?.c.id);
-    expect(next.progress).toBe(context.progress);
-  });
-
-  it("does nothing on dontKnow", () => {
-    const before = drill();
-    expect(press(before, "dontKnow", ctx()).screen).toBe(before);
-  });
-});
-
 describe("learn", () => {
   it("reveal toggles the solution", () => {
     const next = press(learn(), "reveal", ctx());

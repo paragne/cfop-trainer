@@ -66,6 +66,8 @@ describe("the frozen v1 blob", () => {
         },
         cards: CARDS,
         notes: NOTES,
+        drillStats: {},
+        verifyStats: {},
       },
       updatedAt: NOW,
       dropped: 0,

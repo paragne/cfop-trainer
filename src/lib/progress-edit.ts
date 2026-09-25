@@ -1,6 +1,7 @@
 import type { CaseSet } from "../data/algorithms.ts";
 import type { Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
+import { recordMatch, recordTime } from "./timed-stats.ts";
 
 // An empty note is deleted rather than stored, matching what parsing does with
 // an empty string, so clearing a note and reloading agree.
@@ -48,3 +49,19 @@ const withSets = (progress: Progress, mode: Mode, selected: CaseSet[]): Progress
   ...progress,
   prefs: { ...progress.prefs, sets: { ...progress.prefs.sets, [mode]: selected } },
 });
+
+export function recordDrillTime(progress: Progress, id: string, elapsedMs: number): Progress {
+  const stat = recordTime(progress.drillStats[id] ?? null, elapsedMs);
+  return { ...progress, drillStats: { ...progress.drillStats, [id]: stat } };
+}
+
+export function recordVerifyTime(progress: Progress, id: string, elapsedMs: number): Progress {
+  const prev = progress.verifyStats[id];
+  const stat = { ...recordTime(prev ?? null, elapsedMs), matches: prev?.matches ?? 0 };
+  return { ...progress, verifyStats: { ...progress.verifyStats, [id]: stat } };
+}
+
+export function recordVerifyMatch(progress: Progress, id: string): Progress {
+  const stat = recordMatch(progress.verifyStats[id]);
+  return { ...progress, verifyStats: { ...progress.verifyStats, [id]: stat } };
+}

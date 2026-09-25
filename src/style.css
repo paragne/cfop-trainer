@@ -90,8 +90,9 @@ body {
 .set-row .toggle { flex: 1; }
 .set-row.f2l { width: 88%; }
 .set-row.last-layer { width: 68%; }
-.options { align-self: center; justify-content: center; width: 40%; min-width: 9rem; }
-.options .icon-toggle { flex: 1; width: auto; }
+.options { align-self: center; justify-content: center; gap: 0.5rem; }
+.options .icon-toggle { flex: 0 0 auto; width: 2.75rem; }
+.options button.compact { min-height: 2.25rem; padding: 0.25rem 1rem; font-size: 0.875rem; }
 
 .stats { display: grid; gap: 1rem; padding: 0.5rem 0; }
 .stat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; margin-bottom: 0.4rem; }
@@ -103,18 +104,23 @@ body {
 .tick.missed { background: var(--set); opacity: 0.35; }
 .icon-toggle { display: grid; place-items: center; width: 2.75rem; padding: 0; }
 
-/* Thumb range, like the card's action bar. */
-.start {
+.stat-table-title { margin: 0.5rem 0 0; color: var(--dim); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-table-rows { display: grid; gap: 0.35rem; margin-top: 0.5rem; }
+.stat-table-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 0.75rem; padding: 0.35rem 0; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+.stat-table-name { min-width: 0; overflow-wrap: anywhere; }
+.stat-table-numbers { color: var(--dim); font-size: 0.8125rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Start moved up beside Shuffle and Random AUF; what is left at the bottom is
+   just the credit line, pinned on its own opaque bar so it stays legible over
+   the stats scrolling underneath, with a faint line marking that edge. */
+.foot {
   position: sticky;
   bottom: 0;
   margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
   background: var(--bg);
 }
-.start button { width: 100%; }
 
 .meta {
   display: flex;
