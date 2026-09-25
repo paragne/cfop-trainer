@@ -37,6 +37,9 @@ describe("a frozen version 2 blob", () => {
           speed: 1,
           zoom: 2,
           showHotkeys: true,
+          skipLearnIntro: false,
+          skipDrillIntro: false,
+          skipVerifyIntro: false,
           sets: {
             learn: ["Full OLL", "F2L"],
             drill: ["2-Look PLL", "Full PLL"],

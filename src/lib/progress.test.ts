@@ -56,6 +56,7 @@ describe("serialize and parseProgress", () => {
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         shuffle: false,
         threeD: true, speed: 2, zoom: 2, showHotkeys: false,
+        skipLearnIntro: true, skipDrillIntro: false, skipVerifyIntro: true,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },
@@ -73,7 +74,8 @@ describe("serialize and parseProgress", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
     expect(Object.keys(progress().prefs)).toEqual([
-      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "showHotkeys", "sets",
+      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "showHotkeys",
+      "skipLearnIntro", "skipDrillIntro", "skipVerifyIntro", "sets",
     ]);
   });
 });
@@ -142,30 +144,12 @@ describe("parseProgress tolerates", () => {
 
   it("missing pref fields, taking their defaults", () => {
     const result = parse(blob({ prefs: { showNames: false } }));
-    expect(result.ok && result.progress.prefs).toEqual({
-      showNames: false,
-      showSolutions: false,
-      showNotes: true,
-      randomRotation: false,
-      mode: "learn",
-      sets: SETS,
-      shuffle: true,
-      threeD: false, speed: 1, zoom: 1, showHotkeys: true,
-    });
+    expect(result.ok && result.progress.prefs).toEqual({ ...defaultProgress().prefs, showNames: false });
   });
 
   it("a mode given on its own, keeping the other prefs' defaults", () => {
     const result = parse(blob({ prefs: { mode: "drill" } }));
-    expect(result.ok && result.progress.prefs).toEqual({
-      showNames: true,
-      showSolutions: false,
-      showNotes: true,
-      randomRotation: false,
-      mode: "drill",
-      sets: SETS,
-      shuffle: true,
-      threeD: false, speed: 1, zoom: 1, showHotkeys: true,
-    });
+    expect(result.ok && result.progress.prefs).toEqual({ ...defaultProgress().prefs, mode: "drill" });
   });
 
   it("a set list given for one mode, defaulting the others", () => {

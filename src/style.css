@@ -334,6 +334,14 @@ kbd {
 .intro h1 { margin: 0; font-size: 1.5rem; }
 .intro-body { display: flex; flex-direction: column; gap: 0.5rem; }
 
+/* Overrides the shared .actions grid only while it holds the "don't show this
+   again" checkbox next to a single Begin button, on an intro or Verify's
+   ready phase. */
+.actions.confirm-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.actions.confirm-row .primary { flex: 1 1 auto; min-width: 8rem; }
+.checkbox-label { display: flex; align-items: center; gap: 0.4rem; color: var(--dim); font-size: 0.875rem; white-space: nowrap; }
+.checkbox-label input { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); }
+
 /* Drill has no grades: Next takes the row under Reveal. */
 [data-mode="drill"] .actions > button:not(.primary) { grid-column: 1 / -1; }
 

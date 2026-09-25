@@ -72,8 +72,13 @@ export function press(
     const mode = progress.prefs.mode;
     const startable = progress.prefs.sets[mode].length > 0;
     if (action !== "reveal" || !startable) return unchanged;
-    // Verify's own "ready" phase is already its instruction screen.
-    return { screen: mode === "verify" ? start(mode, ctx) : { kind: "intro", mode }, progress };
+    if (mode === "verify") {
+      const verify = startVerify(ctx.cases, progress, random);
+      // "Don't show this again" skips straight past Verify's own ready phase.
+      return { screen: { kind: "verify", verify: progress.prefs.skipVerifyIntro ? begin(verify) : verify }, progress };
+    }
+    const skip = mode === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;
+    return { screen: skip ? start(mode, ctx) : { kind: "intro", mode }, progress };
   }
   if (action === "toggleNames") {
     return { screen, progress: setPref(progress, "showNames", !progress.prefs.showNames) };

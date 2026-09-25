@@ -22,6 +22,11 @@ export type Prefs = {
   // Mobile is detected, never stored: a touch-primary device shows no
   // labels regardless of this pref.
   showHotkeys: boolean;
+  // "Don't show this again", checked from a mode's own intro screen. There is
+  // no toggle to turn one back on; the only way is to clear it by hand or wipe.
+  skipLearnIntro: boolean;
+  skipDrillIntro: boolean;
+  skipVerifyIntro: boolean;
 };
 
 // The playback speeds the 3D view offers, as multipliers of the base pace.
@@ -43,6 +48,9 @@ export function defaultPrefs(): Prefs {
     speed: 1,
     zoom: 1,
     showHotkeys: true,
+    skipLearnIntro: false,
+    skipDrillIntro: false,
+    skipVerifyIntro: false,
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -100,7 +108,19 @@ function readInRange(
 
 export function readPrefs(raw: Record<string, unknown>): Prefs {
   const defaults = defaultPrefs();
-  const flag = (key: "showNames" | "showSolutions" | "showNotes" | "randomRotation" | "shuffle" | "threeD" | "showHotkeys"): boolean => {
+  const flag = (
+    key:
+      | "showNames"
+      | "showSolutions"
+      | "showNotes"
+      | "randomRotation"
+      | "shuffle"
+      | "threeD"
+      | "showHotkeys"
+      | "skipLearnIntro"
+      | "skipDrillIntro"
+      | "skipVerifyIntro",
+  ): boolean => {
     const value = raw[key];
     if (value === undefined) return defaults[key];
     return typeof value === "boolean" ? value : reject(`prefs.${key} must be true or false`);
@@ -117,5 +137,8 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
     showHotkeys: flag("showHotkeys"),
+    skipLearnIntro: flag("skipLearnIntro"),
+    skipDrillIntro: flag("skipDrillIntro"),
+    skipVerifyIntro: flag("skipVerifyIntro"),
   };
 }

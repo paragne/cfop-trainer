@@ -53,7 +53,8 @@ export function renderApp(
       stats: setStats(ALL_CASES, progress.cards, Date.now()),
     });
   } else if (introFor !== null) {
-    intro.render(introFor, progress.prefs.showHotkeys);
+    const skipped = introFor === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;
+    intro.render(introFor, progress.prefs.showHotkeys, skipped);
   } else {
     prefBar.render(progress);
   }

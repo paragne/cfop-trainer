@@ -21,6 +21,17 @@ export function keyedButton(className: string, label: string, key: string, onCli
   return { node, text, kbd };
 }
 
+// A checkbox with its own label text, for a plain preference like "don't show
+// this again", not a pressed-state toggle button.
+export function checkboxLabel(text: string, onChange: (checked: boolean) => void) {
+  const input = el("input", "");
+  input.type = "checkbox";
+  input.addEventListener("change", () => onChange(input.checked));
+  const label = el("label", "checkbox-label");
+  label.append(input, text);
+  return { label, input };
+}
+
 export function toggleButton(label: string, onClick: () => void): HTMLButtonElement {
   const node = el("button", "toggle", label);
   node.type = "button";

@@ -5,7 +5,7 @@ import { renderCase, viewFor } from "../lib/render.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { choices, expected, regrip } from "../lib/verify.ts";
 import type { Verify } from "../lib/verify.ts";
-import { el, keyedButton, toggleButton } from "./dom.ts";
+import { checkboxLabel, el, keyedButton, toggleButton } from "./dom.ts";
 import { createNotes } from "./notes.ts";
 import { createPlayPanel } from "./play-panel.ts";
 import type { PlayHandlers } from "./play-panel.ts";
@@ -18,6 +18,7 @@ type Handlers = {
   onNote: (text: string) => void;
   onRestart: () => void;
   onHome: () => void;
+  onSkipIntro: (skip: boolean) => void;
   play: PlayHandlers;
 };
 
@@ -32,7 +33,7 @@ const READY_COPY: readonly string[] = [
 ];
 
 // Built once, like flashcard: render() only syncs what the phase says.
-export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onRestart, onHome, play }: Handlers) {
+export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onRestart, onHome, onSkipIntro, play }: Handlers) {
   const element = el("section", "card verify");
   const count = el("p", "meta");
   const ready = el("div", "intro-body");
@@ -55,6 +56,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   const mismatch = keyedButton("", "Mismatch", "1 / num3", onMismatch);
   const match = keyedButton("", "Match", "2 / num.", onMatch);
   const kbds = [primary.kbd, mismatch.kbd, match.kbd];
+  const skipIntro = checkboxLabel("Don't show this again", onSkipIntro);
   // Only shown after a Mismatch: the streak is over, so the user is offered a
   // way out on top of Reset, which keeps the same session going.
   const restart = el("button", "quiet", "Start another session");
@@ -64,7 +66,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
   home.type = "button";
   home.addEventListener("click", onHome);
   const actions = el("nav", "actions");
-  actions.append(primary.node, mismatch.node, match.node, restart, home);
+  actions.append(skipIntro.label, primary.node, mismatch.node, match.node, restart, home);
 
   element.append(headline, count, ready, figure, solution, altLabel, altPicker, regripLine, actions);
 
@@ -113,6 +115,8 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
     }
     notes.show(progress.notes[v.current.id] ?? "", progress.prefs.showNotes);
     for (const kbd of kbds) kbd.hidden = !progress.prefs.showHotkeys;
+    skipIntro.label.hidden = v.phase !== "ready";
+    skipIntro.input.checked = progress.prefs.skipVerifyIntro;
 
     missed = v.phase === "missed";
     showSolution();
@@ -137,6 +141,7 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote,
     restart.hidden = v.phase !== "missed";
     home.hidden = v.phase !== "missed";
     actions.classList.toggle("paired", v.phase === "checked" || v.phase === "missed");
+    actions.classList.toggle("confirm-row", v.phase === "ready");
   }
 
   return {

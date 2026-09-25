@@ -1,5 +1,10 @@
 import type { IntroMode } from "../lib/screen.ts";
-import { el, keyedButton } from "./dom.ts";
+import { checkboxLabel, el, keyedButton } from "./dom.ts";
+
+type Handlers = {
+  onBegin: () => void;
+  onSkip: (skip: boolean) => void;
+};
 
 // The instruction page shown once, between Home's Start button and the first
 // case, for Learn and Drill. Verify has its own equivalent built into its
@@ -23,22 +28,24 @@ const COPY: Record<IntroMode, { title: string; body: readonly string[] }> = {
   },
 };
 
-export function createIntro(onBegin: () => void) {
+export function createIntro({ onBegin, onSkip }: Handlers) {
   const element = el("section", "card intro");
   const title = el("h1", "");
   const body = el("div", "intro-body");
   const begin = keyedButton("primary", "Begin", "space / num0", onBegin);
-  const actions = el("nav", "actions");
-  actions.append(begin.node);
+  const skip = checkboxLabel("Don't show this again", onSkip);
+  const actions = el("nav", "actions confirm-row");
+  actions.append(skip.label, begin.node);
   element.append(title, body, actions);
 
   return {
     element,
-    render(mode: IntroMode, showHotkeys: boolean): void {
+    render(mode: IntroMode, showHotkeys: boolean, skipped: boolean): void {
       const copy = COPY[mode];
       title.textContent = copy.title;
       body.replaceChildren(...copy.body.map((text) => el("p", "hint", text)));
       begin.kbd.hidden = !showHotkeys;
+      skip.input.checked = skipped;
     },
   };
 }

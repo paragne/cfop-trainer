@@ -13,7 +13,17 @@ export function setNote(progress: Progress, id: string, text: string): Progress 
 
 export function setPref(
   progress: Progress,
-  key: "showNames" | "showSolutions" | "showNotes" | "randomRotation" | "shuffle" | "threeD" | "showHotkeys",
+  key:
+    | "showNames"
+    | "showSolutions"
+    | "showNotes"
+    | "randomRotation"
+    | "shuffle"
+    | "threeD"
+    | "showHotkeys"
+    | "skipLearnIntro"
+    | "skipDrillIntro"
+    | "skipVerifyIntro",
   value: boolean,
 ): Progress {
   return { ...progress, prefs: { ...progress.prefs, [key]: value } };

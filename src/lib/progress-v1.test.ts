@@ -55,6 +55,9 @@ describe("the frozen v1 blob", () => {
           speed: 1,
           zoom: 1,
           showHotkeys: true,
+          skipLearnIntro: false,
+          skipDrillIntro: false,
+          skipVerifyIntro: false,
           sets: {
             learn: ["F2L", "2-Look PLL"],
             drill: ["F2L", "2-Look OLL", "2-Look PLL"],

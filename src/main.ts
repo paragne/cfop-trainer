@@ -59,7 +59,13 @@ const home = createHome({
   onRotation: () => commit(setPref(progress, "randomRotation", !progress.prefs.randomRotation)),
   onStart: () => handle("reveal"),
 });
-const intro = createIntro(() => handle("reveal"));
+const intro = createIntro({
+  onBegin: () => handle("reveal"),
+  onSkip: (skip) => {
+    if (screen.kind !== "intro") throw new Error("skip toggled outside the intro screen");
+    commit(setPref(progress, screen.mode === "learn" ? "skipLearnIntro" : "skipDrillIntro", skip));
+  },
+});
 const prefBar = createPrefBar({
   onNames: () => handle("toggleNames"),
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
@@ -95,6 +101,7 @@ const verify = createVerify({
   },
   onRestart: () => startMode("verify"),
   onHome: goHome,
+  onSkipIntro: (skip) => commit(setPref(progress, "skipVerifyIntro", skip)),
   play,
 });
 const summary = createSummary(() => handle("reveal"), goHome);
