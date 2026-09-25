@@ -175,6 +175,12 @@ body {
 .step-buttons.frame-controls { position: absolute; z-index: 1; right: 0.25rem; bottom: 0.25rem; }
 .step { display: grid; place-items: center; width: 2.75rem; min-height: 2.75rem; padding: 0; font: 0.875rem var(--mono); }
 .step[aria-expanded="true"], .step[aria-pressed="true"] { border-color: var(--fg); }
+/* Sit on the corner like a map's locate button: faint until hovered. */
+.frame-controls > .step { border-color: transparent; background: none; opacity: 0.4; }
+.frame-controls > .step:hover, .frame-controls > .step:focus-visible, .frame-controls > .step[aria-expanded="true"] {
+  border-color: transparent;
+  opacity: 1;
+}
 .speed-value { font-size: 0.75rem; }
 /* Floats over the picture, so opening it moves nothing. */
 .speed-pop {
