@@ -69,23 +69,24 @@ const FL: Mask = { kind: "f2l", slot: "FL" };
 
 function f2l(
   id: string,
+  name: string,
   section: string,
   mask: Mask,
   algs: Alg[],
 ): Case {
-  return { id, group: "F2L", sets: ["F2L"], section, name: null, aliases: [], algs, mask, setup: null, videoUrl: null };
+  return { id, group: "F2L", sets: ["F2L"], section, name, aliases: [], algs, mask, setup: null, videoUrl: null };
 }
 
 // J Perm presents every Advanced case in the front-right slot. A setup is
 // given only where algs[0] starts with a rotation: the picture is then the
 // cube as seen after that rotation, and the setup reaches it with the rotation
 // undone, so the 3D model and the 2D picture start from the same cube.
-function f2lAdvanced(id: string, section: string, algs: Alg[], setup: string | null = null): Case {
-  return { ...f2l(id, section, FR, algs), sets: ["Advanced F2L"], setup };
+function f2lAdvanced(id: string, name: string, section: string, algs: Alg[], setup: string | null = null): Case {
+  return { ...f2l(id, name, section, FR, algs), sets: ["Advanced F2L"], setup };
 }
 
-function f2lExpert(id: string, section: string, algs: Alg[], setup: string | null = null): Case {
-  return { ...f2l(id, section, FR, algs), sets: ["Expert F2L"], setup };
+function f2lExpert(id: string, name: string, section: string, algs: Alg[], setup: string | null = null): Case {
+  return { ...f2l(id, name, section, FR, algs), sets: ["Expert F2L"], setup };
 }
 
 function a(display: string, moves: string): Alg {
@@ -134,61 +135,61 @@ function pll(id: string, section: string, name: string, algs: Alg[], aliases: st
 
 export const F2L_CASES: Case[] = [
   // --- Easy Inserts (4) ---------------------------------------------------
-  f2l("f2l-easy-1", "Easy Inserts", FR, [
+  f2l("f2l-easy-1", "White-Front Corner, Edge Near", "Easy Inserts", FR, [
     a("U (R U' R')", "U R U' R'"),
     a("(R' F R F')", "R' F R F'"),
   ]),
-  f2l("f2l-easy-2", "Easy Inserts", FL, [
+  f2l("f2l-easy-2", "Left White-Front Corner, Edge Near", "Easy Inserts", FL, [
     a("U' (L' U L)", "U' L' U L"),
     a("(L F' L' F)", "L F' L' F"),
   ]),
-  f2l("f2l-easy-3", "Easy Inserts", FR, [a("(R U R')", "R U R'")]),
-  f2l("f2l-easy-4", "Easy Inserts", FL, [a("(L' U' L)", "L' U' L")]),
+  f2l("f2l-easy-3", "White-Side Corner, Edge Back", "Easy Inserts", FR, [a("(R U R')", "R U R'")]),
+  f2l("f2l-easy-4", "Left White-Side Corner, Edge Back", "Easy Inserts", FL, [a("(L' U' L)", "L' U' L")]),
 
   // --- Disconnected Pairs (10) -------------------------------------------
-  f2l("f2l-disconnected-1", "Disconnected Pairs", FR, [
+  f2l("f2l-disconnected-1", "White-Front Corner, Edge Back", "Disconnected Pairs", FR, [
     a("U' (R U R') [U2 R U' R']", "U' R U R' U2 R U' R'"),
     a("y U l' U L U' L' U' l", "y U l' U L U' L' U' l"),
   ]),
-  f2l("f2l-disconnected-2", "Disconnected Pairs", FR, [
+  f2l("f2l-disconnected-2", "White-Front Corner, Edge Far", "Disconnected Pairs", FR, [
     a("U' (R U2' R') [U2 R U' R']", "U' R U2' R' U2 R U' R'"),
     a("y l U2 L2' U' L2 U' l'", "y l U2 L2' U' L2 U' l'"),
   ]),
-  f2l("f2l-disconnected-3", "Disconnected Pairs", FR, [
+  f2l("f2l-disconnected-3", "White-Side Corner, Edge Far", "Disconnected Pairs", FR, [
     a("U' (R U R') [U R U R']", "U' R U R' U R U R'"),
     a("U2 (R U' R') U' (R U R')", "U2 R U' R' U' R U R'"),
     multi("R' U R2 U R'", "R' U R2 U R'"),
   ]),
-  f2l("f2l-disconnected-4", "Disconnected Pairs", FR, [
+  f2l("f2l-disconnected-4", "White-Up Corner, Edge Back", "Disconnected Pairs", FR, [
     a("U (R U2' R') [U R U' R']", "U R U2' R' U R U' R'"),
   ]),
-  f2l("f2l-disconnected-5", "Disconnected Pairs", FR, [
+  f2l("f2l-disconnected-5", "White-Up Corner, Edge Far", "Disconnected Pairs", FR, [
     a("U2 (R U R') [U R U' R']", "U2 R U R' U R U' R'"),
     a("y F R U2 R' F'", "y F R U2 R' F'"),
   ]),
-  f2l("f2l-disconnected-6", "Disconnected Pairs", FL, [
+  f2l("f2l-disconnected-6", "Left White-Front Corner, Edge Back", "Disconnected Pairs", FL, [
     a("U (L' U' L) [U2' L' U L]", "U L' U' L U2' L' U L"),
     a("y' U' r U' R' U R U r'", "y' U' r U' R' U R U r'"),
   ]),
-  f2l("f2l-disconnected-7", "Disconnected Pairs", FL, [
+  f2l("f2l-disconnected-7", "Left White-Front Corner, Edge Far", "Disconnected Pairs", FL, [
     a("U (L' U2 L) [U2' L' U L]", "U L' U2 L U2' L' U L"),
     a("y' r' U2 R2 U R2' U r", "y' r' U2 R2 U R2' U r"),
   ]),
-  f2l("f2l-disconnected-8", "Disconnected Pairs", FL, [
+  f2l("f2l-disconnected-8", "Left White-Side Corner, Edge Far", "Disconnected Pairs", FL, [
     a("U (L' U' L) [U' L' U' L]", "U L' U' L U' L' U' L"),
     a("U2 (L' U L) U (L' U' L)", "U2 L' U L U L' U' L"),
     multi("L U' L2' U' L", "L U' L2' U' L"),
   ]),
-  f2l("f2l-disconnected-9", "Disconnected Pairs", FL, [
+  f2l("f2l-disconnected-9", "Left White-Up Corner, Edge Back", "Disconnected Pairs", FL, [
     a("U' (L' U2 L) [U' L' U L]", "U' L' U2 L U' L' U L"),
   ]),
-  f2l("f2l-disconnected-10", "Disconnected Pairs", FL, [
+  f2l("f2l-disconnected-10", "Left White-Up Corner, Edge Far", "Disconnected Pairs", FL, [
     a("U2 (L' U' L) [U' L' U L]", "U2 L' U' L U' L' U L"),
     a("y' F' L' U2 L F", "y' F' L' U2 L F"),
   ]),
 
   // --- Corner in Slot (6) -------------------------------------------------
-  f2l("f2l-corner-1", "Corner in Slot", FR, [
+  f2l("f2l-corner-1", "Solved Corner, Edge Near", "Corner in Slot", FR, [
     a("U' (R' F R F') [R U R']", "U' R' F R F' R U R'"),
     a("(R' F' R) (U R U' R') F", "R' F' R U R U' R' F"),
     a("U' F' (R U R' U') (R' F R)", "U' F' R U R' U' R' F R"),
@@ -196,15 +197,15 @@ export const F2L_CASES: Case[] = [
     a("y2 U' M U L U' M' U L'", "y2 U' M U L U' M' U L'"),
     a("y' U' R' U M U' R U M'", "y' U' R' U M U' R U M'"),
   ]),
-  f2l("f2l-corner-2", "Corner in Slot", FR, [
+  f2l("f2l-corner-2", "Slot Corner White-Front, Edge Near", "Corner in Slot", FR, [
     a("(R U' R') [U R U' R']", "R U' R' U R U' R'"),
   ]),
-  f2l("f2l-corner-3", "Corner in Slot", FR, [
+  f2l("f2l-corner-3", "Slot Corner White-Side, Edge Near", "Corner in Slot", FR, [
     a("(R U R') [U' R U R']", "R U R' U' R U R'"),
     a("y M' (U' L' U L) (U' L' U l)", "y M' U' L' U L U' L' U l"),
     a("y (L F' L' F)*2", "y L F' L' F L F' L' F"),
   ]),
-  f2l("f2l-corner-4", "Corner in Slot", FL, [
+  f2l("f2l-corner-4", "Left Solved Corner, Edge Near", "Corner in Slot", FL, [
     a("U (L F' L' F) [L' U' L]", "U L F' L' F L' U' L"),
     a("(L F L') (U' L' U L) F'", "L F L' U' L' U L F'"),
     a("U F (L' U' L U) (L F' L')", "U F L' U' L U L F' L'"),
@@ -212,36 +213,36 @@ export const F2L_CASES: Case[] = [
     a("y2 U M U' R' U M' U' R", "y2 U M U' R' U M' U' R"),
     a("y U L U' M U L' U' M'", "y U L U' M U L' U' M'"),
   ]),
-  f2l("f2l-corner-5", "Corner in Slot", FL, [
+  f2l("f2l-corner-5", "Left Slot Corner White-Front, Edge Near", "Corner in Slot", FL, [
     a("(L' U L) [U' L' U L]", "L' U L U' L' U L"),
   ]),
-  f2l("f2l-corner-6", "Corner in Slot", FL, [
+  f2l("f2l-corner-6", "Left Slot Corner White-Side, Edge Near", "Corner in Slot", FL, [
     a("(L' U' L) [U L' U' L]", "L' U' L U L' U' L"),
     a("y' M' (U R U' R') (U R U' r')", "y' M' U R U' R' U R U' r'"),
     a("y' (R' F R F')*2", "y' R' F R F' R' F R F'"),
   ]),
 
   // --- Edge in Slot (6) ---------------------------------------------------
-  f2l("f2l-edge-1", "Edge in Slot", FR, [
+  f2l("f2l-edge-1", "White-Up Corner, Solved Edge", "Edge in Slot", FR, [
     a("(U R U' R')*3", "U R U' R' U R U' R' U R U' R'"),
   ]),
-  f2l("f2l-edge-2", "Edge in Slot", FR, [
+  f2l("f2l-edge-2", "White-Up Corner, Flipped Edge", "Edge in Slot", FR, [
     a("U' (R' F R F') [R U' R']", "U' R' F R F' R U' R'"),
     a("(R U' R') (F' U2 F)", "R U' R' F' U2 F"),
     a("y' R' U R' F R F' R", "y' R' U R' F R F' R"),
     a("y' U' (R' U2 R) (f R f')", "y' U' R' U2 R f R f'"),
   ]),
-  f2l("f2l-edge-3", "Edge in Slot", FR, [
+  f2l("f2l-edge-3", "White-Front Corner, Solved Edge", "Edge in Slot", FR, [
     a("U' (R U' R') [U2 R U' R']", "U' R U' R' U2 R U' R'"),
     a("y U' (L' U' L) U2 (L' U' L)", "y U' L' U' L U2 L' U' L"),
     a("y U (L' U2 L) U' (L' U' L)", "y U L' U2 L U' L' U' L"),
   ]),
-  f2l("f2l-edge-4", "Edge in Slot", FR, [
+  f2l("f2l-edge-4", "White-Side Corner, Solved Edge", "Edge in Slot", FR, [
     a("U (R U R') [U2' R U R']", "U R U R' U2' R U R'"),
     a("U' (R U2 R') U (R U R')", "U' R U2 R' U R U R'"),
     a("y U (L' U L) U2 (L' U L)", "y U L' U L U2 L' U L"),
   ]),
-  f2l("f2l-edge-5", "Edge in Slot", FR, [
+  f2l("f2l-edge-5", "White-Front Corner, Flipped Edge", "Edge in Slot", FR, [
     a("U2 (R U R') [F R' F' R]", "U2 R U R' F R' F' R"),
     a("y U' (F U F') U (L' U' L)", "y U' F U F' U L' U' L"),
     a("U M' (U R U' r') (R U' R')", "U M' U R U' r' R U' R'"),
@@ -250,7 +251,7 @@ export const F2L_CASES: Case[] = [
     a("y2 U2 L U M U L' U' M'", "y2 U2 L U M U L' U' M'"),
     a("y' U' (f R f') U (R' U' R)", "y' U' f R f' U R' U' R"),
   ]),
-  f2l("f2l-edge-6", "Edge in Slot", FR, [
+  f2l("f2l-edge-6", "White-Side Corner, Flipped Edge", "Edge in Slot", FR, [
     a("U2 (F' U' F) [U R U' R']", "U2 F' U' F U R U' R'"),
     a("U (F' U' F) U' (R U R')", "U F' U' F U' R U R'"),
     a("y U2 (L' U' L) (F' L F L')", "y U2 L' U' L F' L F L'"),
@@ -262,16 +263,16 @@ export const F2L_CASES: Case[] = [
   ]),
 
   // --- Connected Pairs (10) -----------------------------------------------
-  f2l("f2l-connected-1", "Connected Pairs", FR, [
+  f2l("f2l-connected-1", "White-Side Corner, Edge Front", "Connected Pairs", FR, [
     a("(R U' R') (U R U' R') [U2 R U' R']", "R U' R' U R U' R' U2 R U' R'"),
     a("R' U2 R2 U R2' U R", "R' U2 R2 U R2' U R"),
     multi("R' U2 R2 U R'", "R' U2 R2 U R'"),
     a("y U L' U2 L U' y' R U R'", "y U L' U2 L U' y' R U R'"),
   ]),
-  f2l("f2l-connected-2", "Connected Pairs", FR, [
+  f2l("f2l-connected-2", "White-Side Corner, Edge Near", "Connected Pairs", FR, [
     a("U' (R U' R') [U R U R']", "U' R U' R' U R U R'"),
   ]),
-  f2l("f2l-connected-3", "Connected Pairs", FR, [
+  f2l("f2l-connected-3", "White-Front Corner, Edge Front", "Connected Pairs", FR, [
     a("(R U R') (U2 R U' R') [U R U' R']", "R U R' U2 R U' R' U R U' R'"),
     a("M U (L F' L') U' M'", "M U L F' L' U' M'"),
     multi("U' (R' U R) U' (R U R')", "U' R' U R U' R U R'"),
@@ -279,10 +280,10 @@ export const F2L_CASES: Case[] = [
     a("y' (R2' F R F' R) U2 (R' U R)", "y' R2' F R F' R U2 R' U R"),
     a("y2 (f' L f) U2 (L U L')", "y2 f' L f U2 L U L'"),
   ]),
-  f2l("f2l-connected-4", "Connected Pairs", FR, [
+  f2l("f2l-connected-4", "White-Up Corner, Edge Near", "Connected Pairs", FR, [
     a("(R U2' R') [U' R U R']", "R U2' R' U' R U R'"),
   ]),
-  f2l("f2l-connected-5", "Connected Pairs", FR, [
+  f2l("f2l-connected-5", "White-Up Corner, Edge Front", "Connected Pairs", FR, [
     a("U (R U' R') (U' R U' R') [U R U' R']", "U R U' R' U' R U' R' U R U' R'"),
     a("U (F R' F' R) U (R U R')", "U F R' F' R U R U R'"),
     multi("U2 (L F' L' F) (R U R')", "U2 L F' L' F R U R'"),
@@ -290,16 +291,16 @@ export const F2L_CASES: Case[] = [
     a("y F' (U' L' U L) F (L' U L)", "y F' U' L' U L F L' U L"),
     multi("y' U2 R U' R' U' S R' S'", "y' U2 R U' R' U' S R' S'"),
   ]),
-  f2l("f2l-connected-6", "Connected Pairs", FL, [
+  f2l("f2l-connected-6", "Left White-Side Corner, Edge Front", "Connected Pairs", FL, [
     a("(L' U L) (U' L' U L) [U2' L' U L]", "L' U L U' L' U L U2' L' U L"),
     a("L U2 L2' U' L2 U' L'", "L U2 L2' U' L2 U' L'"),
     multi("L U2 L2' U' L", "L U2 L2' U' L"),
     a("y' U' (R U2 R') U y (L' U' L)", "y' U' R U2 R' U y L' U' L"),
   ]),
-  f2l("f2l-connected-7", "Connected Pairs", FL, [
+  f2l("f2l-connected-7", "Left White-Side Corner, Edge Near", "Connected Pairs", FL, [
     a("U (L' U L) [U' L' U' L]", "U L' U L U' L' U' L"),
   ]),
-  f2l("f2l-connected-8", "Connected Pairs", FL, [
+  f2l("f2l-connected-8", "Left White-Front Corner, Edge Front", "Connected Pairs", FL, [
     a("(L' U' L) (U2' L' U L) [U' L' U L]", "L' U' L U2' L' U L U' L' U L"),
     a("M U' (R' F R) U M'", "M U' R' F R U M'"),
     multi("U (L U' L') U (L' U' L)", "U L U' L' U L' U' L"),
@@ -307,10 +308,10 @@ export const F2L_CASES: Case[] = [
     a("y (L2 F' L' F L') U2 (L U' L')", "y L2 F' L' F L' U2 L U' L'"),
     a("y2 (f R' f') U2 R' U' R", "y2 f R' f' U2 R' U' R"),
   ]),
-  f2l("f2l-connected-9", "Connected Pairs", FL, [
+  f2l("f2l-connected-9", "Left White-Up Corner, Edge Near", "Connected Pairs", FL, [
     a("(L' U2 L) [U L' U' L]", "L' U2 L U L' U' L"),
   ]),
-  f2l("f2l-connected-10", "Connected Pairs", FL, [
+  f2l("f2l-connected-10", "Left White-Up Corner, Edge Front", "Connected Pairs", FL, [
     a("U' (L' U L) (U L' U L) [U' L' U L]", "U' L' U L U L' U L U' L' U L"),
     a("U' (F' L F L') U' (L' U' L)", "U' F' L F L' U' L' U' L"),
     a("y' U' R U (R2' F R F') (R U' R')", "y' U' R U R2' F R F' R U' R'"),
@@ -319,29 +320,29 @@ export const F2L_CASES: Case[] = [
   ]),
 
   // --- Pieces in Slot (5) -------------------------------------------------
-  f2l("f2l-slot-1", "Pieces in Slot", FR, [
+  f2l("f2l-slot-1", "Slot Corner White-Front, Solved Edge", "Pieces in Slot", FR, [
     a("(R U' R') (U' R U R') [U2 R U' R']", "R U' R' U' R U R' U2 R U' R'"),
     a("y (L' U L) U' (L' U2' L U' L' U L)", "y L' U L U' L' U2' L U' L' U L"),
   ]),
-  f2l("f2l-slot-2", "Pieces in Slot", FR, [
+  f2l("f2l-slot-2", "Slot Corner White-Side, Solved Edge", "Pieces in Slot", FR, [
     a("(R U' R') (U R U2' R') [U R U' R']", "R U' R' U R U2' R' U R U' R'"),
     a("y (L' U L) U (L' U' L U2' L' U L)", "y L' U L U L' U' L U2' L' U L"),
   ]),
-  f2l("f2l-slot-3", "Pieces in Slot", FR, [
+  f2l("f2l-slot-3", "Slot Corner White-Front, Flipped Edge", "Pieces in Slot", FR, [
     a("(R U' R') (U' R U' R') [d R' U' R]", "R U' R' U' R U' R' d R' U' R"),
     a("y (L' U L) (F R U2' R' F')", "y L' U L F R U2' R' F'"),
     a("(F' L' U2 L F) (R U R')", "F' L' U2 L F R U R'"),
     a("y' R2' F' U' F U R U' R", "y' R2' F' U' F U R U' R"),
     a("y2 L U' L U F U' F' L2'", "y2 L U' L U F U' F' L2'"),
   ]),
-  f2l("f2l-slot-4", "Pieces in Slot", FR, [
+  f2l("f2l-slot-4", "Slot Corner White-Side, Flipped Edge", "Pieces in Slot", FR, [
     a("(R U R') (U' R U' R') [U2 y' R' U' R]", "R U R' U' R U' R' U2 y' R' U' R"),
     a("(R U' R') (F' L' U2 L F)", "R U' R' F' L' U2 L F"),
     a("y (F R U2' R' F') (L' U' L)", "y F R U2' R' F' L' U' L"),
     a("y2 L2 F U F' U' L' U L'", "y2 L2 F U F' U' L' U L'"),
     a("y' R' U R' U' F' U F R2", "y' R' U R' U' F' U F R2"),
   ]),
-  f2l("f2l-slot-5", "Pieces in Slot", FR, [
+  f2l("f2l-slot-5", "Solved Corner, Flipped Edge", "Pieces in Slot", FR, [
     a("(R U' R') (d R' U2' R) [U R' U2' R]", "R U' R' d R' U2' R U R' U2' R"),
     a("R2' U2' F R2 F' U2' R' U R'", "R2' U2' F R2 F' U2' R' U R'"),
     a("y L2 U2 F' L2' F U2 L U' L", "y L2 U2 F' L2' F U2 L U' L"),
@@ -353,204 +354,204 @@ export const F2L_CASES: Case[] = [
   // Each cell's picture colors only the cross and the target corner, so a cell
   // can pool algorithms for loose-piece arrangements it does not distinguish.
   // Only algs that solve the displayed state are kept.
-  f2lAdvanced("f2l-adv-edge-up-1", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-1", "UFR white up, BR green back; BR corner UBR white back; BR edge UR up", "White Sticker Faces Up", [
     a("U' R' U R2 U' R'", "U' R' U R2 U' R'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-up-2", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-2", "UFR white up, FL green front; FL corner UFL white left; FL edge UF front", "White Sticker Faces Up", [
     a("y U L U' L2' U L", "y U L U' L2' U L"),
   ], "y L' U' L2' U L' U' y'"),
-  f2lAdvanced("f2l-adv-edge-up-3", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-3", "UFR white up, BR green right; BR corner UBL white left; BR edge UR right", "White Sticker Faces Up", [
     a("U2 (R' U R) U' (S R S')", "U2 R' U R U' S R S'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-up-4", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-4", "UFR white up, FL green left; FL corner UBL white back; FL edge UF up", "White Sticker Faces Up", [
     a("y U2 (L U' L') U (S' L' S)", "y U2 L U' L' U S' L' S"),
   ], "y S' L S U' L U L' U2 y'"),
-  f2lAdvanced("f2l-adv-edge-up-5", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-5", "corner solved, BL green back; BL corner UFR white up; BL edge FR front", "White Sticker Faces Up", [
     a("U2 L2' u L2 u' L2'", "U2 L2' u L2 u' L2'"),
     a("y U2 R2 u' R2' u R2", "y U2 R2 u' R2' u R2"),
     a("y' U2 L2' u' L2 u L2'", "y' U2 L2' u' L2 u L2'"),
     a("y2 U2 R2 u R2' u' R2", "y2 U2 R2 u R2' u' R2"),
   ]),
-  f2lAdvanced("f2l-adv-edge-up-6", "White Sticker Faces Up", [
+  f2lAdvanced("f2l-adv-edge-up-6", "UBR white back, UR green right; BL corner UFR white up; BL edge FR right", "White Sticker Faces Up", [
     a("L F' U F L'", "L F' U F L'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-1", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-1", "UFR white right, BR green back; BR corner UBR white right; BR edge UF up", "White Sticker Faces Side/Front", [
     a("R' U' R2 U R'", "R' U' R2 U R'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-2", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-2", "UFR white front, FL green front; FL corner UFL white front; FL edge UR right", "White Sticker Faces Side/Front", [
     a("y L U L2' U' L", "y L U L2' U' L"),
   ], "y L' U L2' U' L' y'"),
-  f2lAdvanced("f2l-adv-edge-side-3", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-3", "UFR white right, BR green right; BR edge UR up", "White Sticker Faces Side/Front", [
     a("F D R D' F'", "F D R D' F'"),
     a("y' R u R u' R'", "y' R u R u' R'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-4", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-4", "UFR white front, FL green left; FL edge UF front", "White Sticker Faces Side/Front", [
     a("y F' D' L' D F", "y F' D' L' D F"),
     a("y2 L' u' L' u L", "y2 L' u' L' u L"),
   ], "y F' D' L D F y'"),
-  f2lAdvanced("f2l-adv-edge-side-5", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-5", "UFR white right, FL green front; FL corner UBL white back; FL edge UR up", "White Sticker Faces Side/Front", [
     a("U' (L' U' L) (R U' R')", "U' L' U' L R U' R'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-6", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-6", "UFR white front, BR green back; BR corner UBL white left; BR edge UF front", "White Sticker Faces Side/Front", [
     a("y U (R U R') (L' U L)", "y U R U R' L' U L"),
   ], "y L' U' L R U' R' U' y'"),
-  f2lAdvanced("f2l-adv-edge-side-7", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-7", "UFR white right, FL green left; FL corner UBR white right; FL edge UB back", "White Sticker Faces Side/Front", [
     a("(F U2 F') (R U R')", "F U2 F' R U R'"),
     a("y L U2 L' F U F'", "y L U2 L' F U F'"),
     a("y' R U2 R' f R f'", "y' R U2 R' f R f'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-8", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-8", "UFR white front, BR green right; BR corner UFL white front; BR edge UL up", "White Sticker Faces Side/Front", [
     a("y (F' U2 F) (L' U' L)", "y F' U2 F L' U' L"),
     a("R' U2 R F' U' F", "R' U2 R F' U' F"),
     a("y2 L' U2 L f' L' f", "y2 L' U2 L f' L' f"),
   ], "y L' U L F' U2 F y'"),
-  f2lAdvanced("f2l-adv-edge-side-9", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-9", "UBR white back, UL green up; BL corner UFR white right; BL edge FR front", "White Sticker Faces Side/Front", [
     a("U (R U R') (L U L')", "U R U R' L U L'"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-10", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-10", "UFL white left, UB green back; BL corner UFR white front; BL edge FR front", "White Sticker Faces Side/Front", [
     a("y U' (L' U' L) (R' U' R)", "y U' L' U' L R' U' R"),
   ], "y R' U R L' U L U y'"),
-  f2lAdvanced("f2l-adv-edge-side-11", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-11", "UFL white front, UL green left; BL corner UFR white right; BL edge FR right", "White Sticker Faces Side/Front", [
     a("U2 F' (L U L') F", "U2 F' L U L' F"),
     a("y U2 L' (B U B') L", "y U2 L' B U B' L"),
     a("y' U2 R' (F U F') R", "y' U2 R' F U F' R"),
     a("y2 U2 f' U L U' f", "y2 U2 f' U L U' f"),
   ]),
-  f2lAdvanced("f2l-adv-edge-side-12", "White Sticker Faces Side/Front", [
+  f2lAdvanced("f2l-adv-edge-side-12", "UBR white right, UB green up; BL corner UFR white front; BL edge FR right", "White Sticker Faces Side/Front", [
     a("y U2' F (R' U' R) F'", "y U2' F R' U' R F'"),
     a("U2' R (B' U' B) R'", "U2' R B' U' B R'"),
     a("y2 U2' L (F' U' F) L'", "y2 U2' L F' U' F L'"),
     a("y' U2 f U' R' U f'", "y' U2 f U' R' U f'"),
   ], "y F R' U R F' U2' y'"),
-  f2lAdvanced("f2l-adv-corner-right-1", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-1", "UFR white front, UR green up; FL corner DFR white down; FL edge UF up", "Corner In The Right Slot", [
     a("U (R U' R') (L' U L)", "U R U' R' L' U L"),
   ]),
-  f2lAdvanced("f2l-adv-corner-right-2", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-2", "UBL white left, UB green back; FL corner DFR white down; FL edge UF front", "Corner In The Right Slot", [
     a("y (L' U2 L) U' (L U L')", "y L' U2 L U' L U L'"),
   ], "y L U' L' U L' U2 L y'"),
-  f2lAdvanced("f2l-adv-corner-right-3", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-3", "UBR white right, UB green up; FL corner DFR white front; FL edge UF up", "Corner In The Right Slot", [
     a("U2 (R U' R') U (L' U' L)", "U2 R U' R' U L' U' L"),
   ]),
-  f2lAdvanced("f2l-adv-corner-right-4", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-4", "UFL white left, UB green back; FL corner DFR white front; FL edge UF front", "Corner In The Right Slot", [
     a("y U' L' U' L2 U2 L'", "y U' L' U' L2 U2 L'"),
   ], "y L U2 L2 U L U y'"),
-  f2lAdvanced("f2l-adv-corner-right-5", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-5", "UFR white right, UB green up; FL corner DFR white right; FL edge UF up", "Corner In The Right Slot", [
     a("(R U R') U' (L' U L)", "R U R' U' L' U L"),
     a("y (S' L S)", "y S' L S"),
   ]),
-  f2lAdvanced("f2l-adv-corner-right-6", "Corner In The Right Slot", [
+  f2lAdvanced("f2l-adv-corner-right-6", "UFL white front, UR green up; FL corner DFR white right; FL edge UF front", "Corner In The Right Slot", [
     a("U' (R U R') (F U F')", "U' R U R' F U F'"),
     a("y U' (F U F') (L U L')", "y U' F U F' L U L'"),
   ]),
-  f2lAdvanced("f2l-adv-corner-left-1", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-1", "UFR white right, UF green front; BR corner DFR white down; BR edge UR right", "Corner In The Left Slot", [
     a("y U' (L' U L) (R U' R')", "y U' L' U L R U' R'"),
   ], "y R U R' L' U' L U y'"),
-  f2lAdvanced("f2l-adv-corner-left-2", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-2", "UBL white back, UL green up; BR corner DFR white down; BR edge UR up", "Corner In The Left Slot", [
     a("(R U2 R') U (R' U' R)", "R U2 R' U R' U' R"),
   ]),
-  f2lAdvanced("f2l-adv-corner-left-3", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-3", "UFR white right, UF green front; BR corner DFR white right; BR edge UR right", "Corner In The Left Slot", [
     a("(F R' F' R) U (R' U2 R)", "F R' F' R U R' U2 R"),
   ]),
-  f2lAdvanced("f2l-adv-corner-left-4", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-4", "UBR white back, UL green up; BR corner DFR white right; BR edge UR up", "Corner In The Left Slot", [
     a("U R U R2' U2 R", "U R U R2' U2 R"),
   ]),
-  f2lAdvanced("f2l-adv-corner-left-5", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-5", "UFR white front, UL green left; BR corner DFR white front; BR edge UR right", "Corner In The Left Slot", [
     a("(S R' S')", "S R' S'"),
     a("y (L' U' L) U (R U' R')", "y L' U' L U R U' R'"),
   ]),
-  f2lAdvanced("f2l-adv-corner-left-6", "Corner In The Left Slot", [
+  f2lAdvanced("f2l-adv-corner-left-6", "UBR white right, UF green front; BR corner DFR white front; BR edge UR up", "Corner In The Left Slot", [
     a("y U (L' U' L) (F' U' F)", "y U L' U' L F' U' F"),
   ], "y F' U F L' U L U' y'"),
-  f2lAdvanced("f2l-adv-corner-opposite-1", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-1", "UFR white right, UF green front; BL corner DFR white down; BL edge UR up", "Corner In The Opposite Slot", [
     a("U' (F' U F) (L U2 L')", "U' F' U F L U2 L'"),
     a("y U' (L' U L) U' (f R' f')", "y U' L' U L U' f R' f'"),
   ]),
-  f2lAdvanced("f2l-adv-corner-opposite-2", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-2", "UFR white front, UR green up; BL corner DFR white down; BL edge UF front", "Corner In The Opposite Slot", [
     a("U (R U' R') U (f' L f)", "U R U' R' U f' L f"),
     a("y U (F U' F') (R' U2 R)", "y U F U' F' R' U2 R"),
   ]),
-  f2lAdvanced("f2l-adv-corner-opposite-3", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-3", "UFL white left, UF green up; BL corner DFR white front; BL edge UR up", "Corner In The Opposite Slot", [
     a("(R U' R') (L U2 L')", "R U' R' L U2 L'"),
   ]),
-  f2lAdvanced("f2l-adv-corner-opposite-4", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-4", "UFR white right, UB green up; BL corner DFR white right; BL edge UF front", "Corner In The Opposite Slot", [
     a("(R U R') (f' L f)", "R U R' f' L f"),
   ]),
-  f2lAdvanced("f2l-adv-corner-opposite-5", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-5", "UFR white right, UF green front; BL corner DFR white right; BL edge UR up", "Corner In The Opposite Slot", [
     a("y (L F' L' F) (R' U2 R)", "y L F' L' F R' U2 R"),
   ], "y R' U2 R F' L F L' y'"),
-  f2lAdvanced("f2l-adv-corner-opposite-6", "Corner In The Opposite Slot", [
+  f2lAdvanced("f2l-adv-corner-opposite-6", "UFR white front, UR green up; BL corner DFR white front; BL edge UF front", "Corner In The Opposite Slot", [
     a("(R' F R F') (L U2 L')", "R' F R F' L U2 L'"),
   ]),
   // --- Expert F2L, J Perm Section 3 (17) ----------------------------------
   // Same pooling rule as Advanced: only algs that solve the displayed state.
   // corner-solved-5 and -6 are drawn on the sheet with the pair at the back
   // right; they are presented one whole-cube y from it so the target is FR.
-  f2lExpert("f2l-exp-corner-solved-1", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-1", "corner solved, BR green back; BR corner UBR white up; BR edge FR front", "Corner Is Solved", [
     a("R2 U' R2' U R2", "R2 U' R2' U R2"),
     a("y2 L2' U' L2 U L2'", "y2 L2' U' L2 U L2'"),
     a("y F' R' F2 R F", "y F' R' F2 R F"),
   ]),
-  f2lExpert("f2l-exp-corner-solved-2", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-2", "corner solved, BR green right; BR corner UBL white left; BR edge UB up", "Corner Is Solved", [
     a("f' R' U R f", "f' R' U R f"),
     a("y R' u' R u R", "y R' u' R u R"),
     a("y' L' u' L u L", "y' L' u' L u L"),
     a("y2 f' D' L D f", "y2 f' D' L D f"),
   ]),
-  f2lExpert("f2l-exp-corner-solved-3", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-3", "corner solved, FL green front; FL corner UFL white up; FL edge FR front", "Corner Is Solved", [
     a("y L2' U L2 U' L2'", "y L2' U L2 U' L2'"),
     a("y' R2 U R2' U' R2", "y' R2 U R2' U' R2"),
     a("F L F2' L' F'", "F L F2' L' F'"),
   ], "y L2' U L2 U' L2' y'"),
-  f2lExpert("f2l-exp-corner-solved-4", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-4", "corner solved, FL green left; FL corner UBL white back; FL edge UL left", "Corner Is Solved", [
     a("y f L U' L' f'", "y f L U' L' f'"),
     a("L u L' u' L'", "L u L' u' L'"),
     a("y2 R u R' u' R'", "y2 R u R' u' R'"),
     a("y' f D R' D' f'", "y' f D R' D' f'"),
   ], "y f L U L' f' y'"),
-  f2lExpert("f2l-exp-corner-solved-5", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-5", "corner solved, BL green back; BL corner UBL white up; BL edge FR front", "Corner Is Solved", [
     a("y' L2' u' L2 u L2'", "y' L2' u' L2 u L2'"),
     a("y2 R2 u R2' u' R2", "y2 R2 u R2' u' R2"),
     a("L2' u L2 u' L2'", "L2' u L2 u' L2'"),
     a("y R2 u' R2' u R2", "y R2 u' R2' u R2"),
   ], "y' L2' u' L2 u L2' y"),
-  f2lExpert("f2l-exp-corner-solved-6", "Corner Is Solved", [
+  f2lExpert("f2l-exp-corner-solved-6", "corner solved, BL green left; BL corner UFL white front; BL edge UL left", "Corner Is Solved", [
     a("y' (L' u' L) U (L' u L)", "y' L' u' L U L' u L"),
     a("y (R' u' R) U (R' u R)", "y R' u' R U R' u R"),
   ], "y' L' u' L U' L' u L y"),
-  f2lExpert("f2l-exp-pair-wrong-1", "Pair In The Wrong Slot", [
+  f2lExpert("f2l-exp-pair-wrong-1", "DFL white down, FL green left; FL corner UBL white back; FL edge UL left", "Pair In The Wrong Slot", [
     a("R' F R2 U' R2' F' R", "R' F R2 U' R2' F' R"),
   ]),
-  f2lExpert("f2l-exp-pair-wrong-2", "Pair In The Wrong Slot", [
+  f2lExpert("f2l-exp-pair-wrong-2", "DBR white down, BR green right; BR corner UBL white left; BR edge UB up", "Pair In The Wrong Slot", [
     a("y L F' L2' U L2 F L'", "y L F' L2' U L2 F L'"),
   ], "y L F' L2 U' L2' F L' y'"),
-  f2lExpert("f2l-exp-pair-wrong-3", "Pair In The Wrong Slot", [
+  f2lExpert("f2l-exp-pair-wrong-3", "DBL white down, BL green back; BL corner DFR white down; BL edge FR front", "Pair In The Wrong Slot", [
     a("R (L U2 L') R'", "R L U2 L' R'"),
     a("y L' (R' U2 R) L", "y L' R' U2 R L"),
   ]),
-  f2lExpert("f2l-exp-flipped-1", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-1", "DFL white front, FR green right; FL corner UFL white front; FL edge UL up", "Flipped Edge & Corner In Adjacent Slot", [
     a("L F2' L' F U' F", "L F2' L' F U' F"),
     a("(L F' L' U' F) U' (R U R')", "L F' L' U' F U' R U R'"),
   ]),
-  f2lExpert("f2l-exp-flipped-2", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-2", "DBR white right, FR green right; BR corner UBR white right; BR edge UB back", "Flipped Edge & Corner In Adjacent Slot", [
     a("y R' F2 R F' U F'", "y R' F2 R F' U F'"),
     a("y (R' F R U F') U (L' U' L)", "y R' F R U F' U L' U' L"),
   ], "y F U' F R' F2 R y'"),
-  f2lExpert("f2l-exp-flipped-3", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-3", "DFL white left, FR green right; FL corner UBL white back; FL edge UL left", "Flipped Edge & Corner In Adjacent Slot", [
     a("(R' F R U' F') (R U' R')", "R' F R U' F' R U' R'"),
   ]),
-  f2lExpert("f2l-exp-flipped-4", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-4", "DBR white back, FR green right; BR corner UBL white left; BR edge UB up", "Flipped Edge & Corner In Adjacent Slot", [
     a("y (L F' L' U F) (L' U L)", "y L F' L' U F L' U L"),
   ], "y L' U' L F' U' L F L' y'"),
-  f2lExpert("f2l-exp-flipped-5", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-5", "DFL white down, FR green right; FL corner UFR white right; FL edge UF up", "Flipped Edge & Corner In Adjacent Slot", [
     a("(L' U L) (M' U R U' r') (R U' R')", "L' U L M' U R U' r' R U' R'"),
   ]),
-  f2lExpert("f2l-exp-flipped-6", "Flipped Edge & Corner In Adjacent Slot", [
+  f2lExpert("f2l-exp-flipped-6", "DBR white down, FR green right; BR corner UFR white front; BR edge UR right", "Flipped Edge & Corner In Adjacent Slot", [
     a("y (R U' R') (M' U' L' U l) (L' U L)", "y R U' R' M' U' L' U l L' U L"),
   ], "y L' U' L l' U' L U M R U R' y'"),
-  f2lExpert("f2l-exp-other-1", "Other Easy Cases", [
+  f2lExpert("f2l-exp-other-1", "DFR white front, FL green left; FL corner UBL white back; FL edge UL left", "Other Easy Cases", [
     a("(R' F R U' F') U (R U' R')", "R' F R U' F' U R U' R'"),
   ]),
-  f2lExpert("f2l-exp-other-2", "Other Easy Cases", [
+  f2lExpert("f2l-exp-other-2", "DFR white right, BR green right; BR corner UBL white left; BR edge UB up", "Other Easy Cases", [
     a("y (L F' L' U F) U' (L' U L)", "y L F' L' U F U' L' U L"),
   ], "y L' U' L U F' U' L F L' y'"),
 ];
