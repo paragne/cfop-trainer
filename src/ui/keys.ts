@@ -1,8 +1,10 @@
 import type { Action } from "../lib/screen.ts";
 
 // `control` is a focused button, link or field, where Enter already means
-// something and must keep meaning it.
-type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean };
+// something and must keep meaning it. `code` is the physical key
+// (KeyboardEvent.code), used only to tell the numpad's 0 apart from the top
+// row's, since both report the same `key`.
+type KeyInput = { key: string; typing: boolean; modifier: boolean; repeat: boolean; control?: boolean; code?: string };
 
 const BINDINGS = new Map<string, Action>([
   [" ", "reveal"],
@@ -14,8 +16,11 @@ const BINDINGS = new Map<string, Action>([
 
 // Typing in a note must not grade, a held modifier is a browser shortcut
 // (Ctrl+1 switches tabs), and auto-repeat must not grade five cards.
-export function actionForKey({ key, typing, modifier, repeat, control = false }: KeyInput): Action | null {
+export function actionForKey({ key, typing, modifier, repeat, control = false, code }: KeyInput): Action | null {
   if (typing || modifier || repeat || (control && key === "Enter")) return null;
+  // Numpad 1 already lands on "1" through `key`; only Numpad 0 needs its own
+  // trigger, since plain "0" is otherwise unbound.
+  if (code === "Numpad0") return "reveal";
   return BINDINGS.get(key.toLowerCase()) ?? null;
 }
 
@@ -52,6 +57,7 @@ export function bindKeys(onAction: (action: Action) => void, onStep: (step: Step
       modifier: e.ctrlKey || e.metaKey || e.altKey,
       repeat: e.repeat,
       control: e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement || e.target instanceof HTMLInputElement,
+      code: e.code,
     });
     if (action === null) return;
     e.preventDefault();

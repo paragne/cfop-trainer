@@ -4,6 +4,11 @@ import { isRecord, reject } from "./blob.ts";
 
 export type Mode = "learn" | "drill" | "verify";
 
+// Which key labels the card screens show. Mobile is detected, never stored:
+// a touch-primary device always shows no labels, regardless of this pref.
+export type HotkeyLabels = "numpad" | "keyboard";
+const HOTKEY_LABELS: readonly HotkeyLabels[] = ["numpad", "keyboard"];
+
 // Only modes that exist can be remembered as the last one used.
 export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify"];
 
@@ -18,6 +23,7 @@ export type Prefs = {
   threeD: boolean;
   speed: number;
   zoom: number;
+  hotkeyLabels: HotkeyLabels;
 };
 
 // The playback speeds the 3D view offers, as multipliers of the base pace.
@@ -38,6 +44,7 @@ export function defaultPrefs(): Prefs {
     threeD: false,
     speed: 1,
     zoom: 1,
+    hotkeyLabels: "keyboard",
     sets: {
       learn: ["F2L", "2-Look OLL", "2-Look PLL"],
       drill: ["F2L", "2-Look OLL", "2-Look PLL"],
@@ -64,6 +71,14 @@ function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
   const verify = list("verify");
   if (verify.some((set) => SET_GROUP[set] === "F2L")) reject("prefs.sets.verify must not include an F2L set");
   return { learn: list("learn"), drill: list("drill"), verify };
+}
+
+function readHotkeyLabels(value: unknown, fallback: HotkeyLabels): HotkeyLabels {
+  if (value === undefined) return fallback;
+  return (
+    HOTKEY_LABELS.find((mode) => mode === value) ??
+    reject(`prefs.hotkeyLabels must be one of ${HOTKEY_LABELS.join(", ")}`)
+  );
 }
 
 function readMode(value: unknown, fallback: Mode): Mode {
@@ -111,5 +126,6 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     threeD: flag("threeD"),
     speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
+    hotkeyLabels: readHotkeyLabels(raw.hotkeyLabels, defaults.hotkeyLabels),
   };
 }

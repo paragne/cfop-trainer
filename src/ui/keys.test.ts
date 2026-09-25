@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { actionForKey, stepForKey } from "./keys.ts";
 import type { Action } from "../lib/screen.ts";
 
-const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean; control: boolean }> = {}) =>
+const press = (key: string, over: Partial<{ typing: boolean; modifier: boolean; repeat: boolean; control: boolean; code: string }> = {}) =>
   actionForKey({ key, typing: false, modifier: false, repeat: false, ...over });
 
 describe("actionForKey", () => {
@@ -34,6 +34,24 @@ describe("actionForKey", () => {
 
   it.each([" ", "1", "2", "n"])("does nothing for an auto-repeated %j", (key) => {
     expect(press(key, { repeat: true })).toBeNull();
+  });
+});
+
+describe("Numpad 0", () => {
+  it("also triggers reveal, alongside Space", () => {
+    expect(press("0", { code: "Numpad0" })).toBe("reveal");
+  });
+
+  it("leaves the top-row 0 alone, since it is not the numpad", () => {
+    expect(press("0", { code: "Digit0" })).toBeNull();
+  });
+
+  it("does nothing while typing in a note", () => {
+    expect(press("0", { code: "Numpad0", typing: true })).toBeNull();
+  });
+
+  it("does nothing with Ctrl, Cmd or Alt held", () => {
+    expect(press("0", { code: "Numpad0", modifier: true })).toBeNull();
   });
 });
 

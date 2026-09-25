@@ -250,6 +250,11 @@ body {
 /* Verify shows the primary alone through ready, attempt and missed, so it
    stays full width even in the three-column desktop layout. */
 .verify .actions .primary { grid-column: 1 / -1; }
+/* Checked shows only Mismatch and Match; missed adds Start another session and
+   Return Home under Reset. Either way it is a narrow, centered pair, not the
+   content column's full width. */
+.verify .actions.paired { grid-template-columns: 1fr 1fr; max-width: 24rem; margin: 0 auto; }
+.verify .actions.paired .quiet { grid-column: auto; border-color: transparent; background: none; }
 
 button {
   min-height: 3.25rem;
@@ -284,13 +289,15 @@ kbd {
 }
 @media (hover: none) { kbd { display: none; } }
 
-/* A card under the top bar; floats, so opening it moves nothing. */
+/* A card under the top bar, centered over the content column; floats, so
+   opening it moves nothing. Menu and help share the exact same slot. */
 .data {
   position: fixed;
   top: 3.5rem;
-  left: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1;
-  width: min(22rem, calc(100% - 1.5rem));
+  width: min(40rem, calc(100% - 1.5rem));
   padding: 0.75rem;
   border: 1px solid var(--line);
   border-radius: 2px;
@@ -304,14 +311,14 @@ kbd {
 .import-strip { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--line); }
 .import-strip p { flex-basis: 100%; color: var(--fg); }
 .data button { min-height: 2.5rem; }
-/* The how-to sits under the button on its own side. */
-.data.help { left: auto; right: 0.75rem; }
 .help-list { display: grid; gap: 0.25rem 0.75rem; margin: 0; }
 .help-list dt { color: var(--fg); font-weight: 600; }
 .help-list dd { margin: 0 0 0.5rem; }
 
-.credit { margin: 0; color: var(--dim); font-size: 0.75rem; text-align: right; }
+.credit { margin: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; color: var(--dim); font-size: 0.75rem; }
 .credit a { color: inherit; }
+.credit-mark { display: flex; width: 0.9em; height: 0.9em; }
+.credit-mark svg { width: 100%; height: 100%; }
 
 .summary { justify-content: center; text-align: center; }
 .summary h1 { margin: 0; font-size: 1.5rem; }

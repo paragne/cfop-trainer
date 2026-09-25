@@ -5,8 +5,8 @@ import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
-import { cardView, chooseAlt, press, start } from "./lib/screen.ts";
+import { setHotkeyLabels, setMode, setNote, setNumberPref, setPref, toggleSet } from "./lib/progress-edit.ts";
+import { cardView, chooseAlt, press, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
 import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
@@ -20,6 +20,7 @@ import { renderApp } from "./ui/render-app.ts";
 import { createStatus } from "./ui/status.ts";
 import { createSummary } from "./ui/summary.ts";
 import { createTopbar } from "./ui/topbar.ts";
+import { isTouchPrimary } from "./ui/touch.ts";
 import { createVerify } from "./ui/verify.ts";
 
 const NOT_SAVING = "Progress can't be saved in this browser. Export it to keep it.";
@@ -28,6 +29,7 @@ const SET_ASIDE = "Saved progress could not be read and was set aside. Starting 
 const loaded = load(ALL_CASES);
 let progress = loaded.progress;
 let screen: Screen = { kind: "home" };
+const touchPrimary = isTouchPrimary();
 
 const status = createStatus();
 const topbar = createTopbar({
@@ -40,8 +42,9 @@ const topbar = createTopbar({
     menu.close();
     help.toggle();
   },
-  onNotes: () => flashcard.editNote(),
+  onNotes: () => (screen.kind === "verify" ? verify.editNote() : flashcard.editNote()),
   onThreeD: () => commit(setPref(progress, "threeD", !progress.prefs.threeD)),
+  onHotkeyLabels: (mode) => commit(setHotkeyLabels(progress, mode)),
 });
 const play = {
   onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
@@ -82,6 +85,13 @@ const verify = createVerify({
     screen = chooseAlt(screen, i);
     render();
   },
+  onNote: (text) => {
+    const v = verifyView(screen);
+    if (v === null) throw new Error("note edited with no case on screen");
+    persist(setNote(progress, v.current.id, text));
+  },
+  onRestart: () => startMode("verify"),
+  onHome: goHome,
   play,
 });
 const summary = createSummary(() => handle("reveal"), goHome);
@@ -137,7 +147,8 @@ function switchSet(set: CaseSet): void {
   commit(toggleSet(progress, progress.prefs.mode, set));
 }
 
-const render = (): void => renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen);
+const render = (): void =>
+  renderApp({ topbar, menu, help, home, prefBar, flashcard, verify, summary }, progress, screen, touchPrimary);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());

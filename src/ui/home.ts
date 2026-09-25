@@ -5,7 +5,7 @@ import { SET_ORDER } from "../lib/selection.ts";
 import { tickStates } from "../lib/stats.ts";
 import type { SetStats } from "../lib/stats.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
-import { AUF_ICON, SHUFFLE_ICON } from "./icons.ts";
+import { AUF_ICON, CREDIT_MARK, SHUFFLE_ICON } from "./icons.ts";
 
 type Handlers = {
   // Only modes that exist. A mode added to this list gets a button.
@@ -103,16 +103,21 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
   const stats = el("div", "stats");
 
   const start = keyedButton("primary", "Start", "space", onStart);
-  const startBar = el("div", "start");
-  startBar.append(start.node);
 
   const credit = el("p", "credit");
+  const mark = el("span", "credit-mark");
+  mark.innerHTML = CREDIT_MARK;
   const author = el("a", "", "Paragone on GitHub");
   author.href = REPO_URL;
-  credit.append(author, ` · v${__APP_VERSION__}`);
+  credit.append(mark, author, ` · v${__APP_VERSION__}`);
+
+  // Sticky as a pair, so the credit line never lands past the reachable
+  // bottom of the scroll where a sticky footer's own height would hide it.
+  const startBar = el("div", "start");
+  startBar.append(start.node, credit);
 
   const element = el("main", "home");
-  element.append(modeBox, ...setRows, options, stats, credit, startBar);
+  element.append(modeBox, ...setRows, options, stats, startBar);
 
   return {
     element,

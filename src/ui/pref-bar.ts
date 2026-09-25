@@ -23,9 +23,8 @@ export function createPrefBar({ onNames, onAutoReveal, onNotes }: Handlers) {
       autoReveal.setAttribute("aria-pressed", String(prefs.showSolutions));
       notes.setAttribute("aria-pressed", String(prefs.showNotes));
       // Verify has no per-card solution reveal, since the algorithm only
-      // appears after a Mismatch, and no notes.
+      // appears after a Mismatch.
       autoReveal.hidden = prefs.mode === "verify";
-      notes.hidden = prefs.mode === "verify";
     },
   };
 }

@@ -9,15 +9,16 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-// The label span is returned so a caller can change the text without touching
-// the key hint.
+// The label span and the key hint are both returned so a caller can change
+// either without touching the other.
 export function keyedButton(className: string, label: string, key: string, onClick: () => void) {
   const node = el("button", className);
   node.type = "button";
   const text = el("span", "", label);
-  node.append(text, el("kbd", "", key));
+  const kbd = el("kbd", "", key);
+  node.append(text, kbd);
   node.addEventListener("click", onClick);
-  return { node, text };
+  return { node, text, kbd };
 }
 
 export function toggleButton(label: string, onClick: () => void): HTMLButtonElement {

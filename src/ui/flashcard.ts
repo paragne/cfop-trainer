@@ -1,5 +1,6 @@
 import { turnState } from "../lib/auf.ts";
 import { caseState } from "../lib/case-state.ts";
+import type { HotkeyLabels } from "../lib/prefs.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
 import type { CardView } from "../lib/screen.ts";
@@ -32,10 +33,9 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
   const notes = createNotes(onNote);
 
   const reveal = keyedButton("primary", "Reveal", "space", onReveal);
-  const grades = [
-    keyedButton("", "Don't know", "1", onDontKnow).node,
-    keyedButton("", "Know it", "2", onKnow).node,
-  ];
+  const dontKnow = keyedButton("", "Don't know", "1", onDontKnow);
+  const know = keyedButton("", "Know it", "2", onKnow);
+  const grades = [dontKnow.node, know.node];
   const next = keyedButton("", "Next", "enter", onNext).node;
   const actions = el("nav", "actions");
   actions.append(reveal.node, ...grades, next);
@@ -77,6 +77,7 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     notes.show(progress.notes[c.id] ?? "", progress.prefs.showNotes);
 
     name.hidden = !progress.prefs.showNames || name.textContent === "";
+    meta.hidden = !progress.prefs.showNames;
     revealed = view.revealed;
     showSolution();
     reveal.text.textContent = view.revealed ? "Hide" : "Reveal";
@@ -95,5 +96,11 @@ export function createFlashcard({ onReveal, onDontKnow, onKnow, onNext, onNote, 
     },
     step: stage.step,
     editNote: notes.edit,
+    // Next stays Enter in both modes, so its kbd hint never changes.
+    setHotkeyMode(mode: HotkeyLabels): void {
+      reveal.kbd.textContent = mode === "numpad" ? "num0" : "space";
+      dontKnow.kbd.textContent = mode === "numpad" ? "num1" : "1";
+      know.kbd.textContent = mode === "numpad" ? "enter" : "2";
+    },
   };
 }

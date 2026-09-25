@@ -55,7 +55,7 @@ describe("serialize and parseProgress", () => {
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         shuffle: false,
-        threeD: true, speed: 2, zoom: 2,
+        threeD: true, speed: 2, zoom: 2, hotkeyLabels: "numpad",
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
       notes: { [B]: "hook" },
@@ -73,7 +73,7 @@ describe("serialize and parseProgress", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes"]);
     expect(Object.keys(progress().prefs)).toEqual([
-      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "sets",
+      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "hotkeyLabels", "sets",
     ]);
   });
 });
@@ -150,7 +150,7 @@ describe("parseProgress tolerates", () => {
       mode: "learn",
       sets: SETS,
       shuffle: true,
-      threeD: false, speed: 1, zoom: 1,
+      threeD: false, speed: 1, zoom: 1, hotkeyLabels: "keyboard",
     });
   });
 
@@ -164,7 +164,7 @@ describe("parseProgress tolerates", () => {
       mode: "drill",
       sets: SETS,
       shuffle: true,
-      threeD: false, speed: 1, zoom: 1,
+      threeD: false, speed: 1, zoom: 1, hotkeyLabels: "keyboard",
     });
   });
 

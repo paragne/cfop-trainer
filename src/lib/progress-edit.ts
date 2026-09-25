@@ -1,5 +1,5 @@
 import type { CaseSet } from "../data/algorithms.ts";
-import type { Mode } from "./prefs.ts";
+import type { HotkeyLabels, Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
 
 // An empty note is deleted rather than stored, matching what parsing does with
@@ -25,6 +25,10 @@ export function setNumberPref(progress: Progress, key: "speed" | "zoom", value: 
 
 export function setMode(progress: Progress, mode: Mode): Progress {
   return { ...progress, prefs: { ...progress.prefs, mode } };
+}
+
+export function setHotkeyLabels(progress: Progress, hotkeyLabels: HotkeyLabels): Progress {
+  return { ...progress, prefs: { ...progress.prefs, hotkeyLabels } };
 }
 
 // Every set can be switched off: with none selected the home screen offers no

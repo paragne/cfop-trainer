@@ -1,11 +1,13 @@
 import { prefixed, turnState } from "../lib/auf.ts";
 import { caseState } from "../lib/case-state.ts";
+import type { HotkeyLabels } from "../lib/prefs.ts";
 import type { Progress } from "../lib/progress.ts";
 import { renderCase, viewFor } from "../lib/render.ts";
 import { renderSolution } from "../lib/solution.ts";
 import { choices, expected, regrip } from "../lib/verify.ts";
 import type { Verify } from "../lib/verify.ts";
 import { el, keyedButton, toggleButton } from "./dom.ts";
+import { createNotes } from "./notes.ts";
 import { createPlayPanel } from "./play-panel.ts";
 import type { PlayHandlers } from "./play-panel.ts";
 
@@ -14,11 +16,14 @@ type Handlers = {
   onMismatch: () => void;
   onMatch: () => void;
   onChoose: (i: number) => void;
+  onNote: (text: string) => void;
+  onRestart: () => void;
+  onHome: () => void;
   play: PlayHandlers;
 };
 
 // Built once, like flashcard: render() only syncs what the phase says.
-export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }: Handlers) {
+export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, onNote, onRestart, onHome, play }: Handlers) {
   const element = el("section", "card verify");
   const count = el("p", "meta");
   const ready = el("p", "hint", "Hold a solved cube yellow up, green front.");
@@ -26,6 +31,9 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
   const stage = createPlayPanel(play);
   figure.append(stage.element);
   const name = el("p", "name");
+  const notes = createNotes(onNote);
+  const headline = el("div", "headline");
+  headline.append(name, notes.element);
   const solution = el("div", "solution");
   const altLabel = el("p", "hint", "Expected if you used:");
   const altPicker = el("div", "set-toggles");
@@ -36,10 +44,18 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
   const primary = keyedButton("primary", "Begin", "space", onPrimary);
   const mismatch = keyedButton("", "Mismatch", "1", onMismatch);
   const match = keyedButton("", "Match", "2", onMatch);
+  // Only shown after a Mismatch: the streak is over, so the user is offered a
+  // way out on top of Reset, which keeps the same session going.
+  const restart = el("button", "quiet", "Start another session");
+  restart.type = "button";
+  restart.addEventListener("click", onRestart);
+  const home = el("button", "quiet", "Return Home");
+  home.type = "button";
+  home.addEventListener("click", onHome);
   const actions = el("nav", "actions");
-  actions.append(primary.node, mismatch.node, match.node);
+  actions.append(primary.node, mismatch.node, match.node, restart, home);
 
-  element.append(name, count, ready, figure, solution, altLabel, altPicker, regripLine, actions);
+  element.append(headline, count, ready, figure, solution, altLabel, altPicker, regripLine, actions);
 
   function renderAlts(v: Verify): void {
     const indices = choices(v);
@@ -56,13 +72,22 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
 
   let missed = false;
   let threeD = false;
+  let shownCase: string | null = null;
+  let phase: Verify["phase"] = "ready";
+  let hotkeyMode: HotkeyLabels = "keyboard";
 
   // The 3D view writes the solution out itself, so this copy would only repeat it.
   const showSolution = () => {
     solution.hidden = !missed || threeD;
   };
 
+  // Only Check, during the attempt, has a numpad label other than Space: the
+  // primary button is also Begin and Reset, neither of which the table lists.
+  const primaryKey = () => (hotkeyMode === "numpad" && phase === "attempt" ? "enter" : "space");
+
   function render(v: Verify, progress: Progress): void {
+    phase = v.phase;
+    primary.kbd.textContent = primaryKey();
     count.textContent = `Verify · step ${v.step} · ${v.matches} matched`;
     ready.hidden = v.phase !== "ready";
 
@@ -79,6 +104,11 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
 
     name.hidden = v.phase === "ready" || !progress.prefs.showNames;
     name.textContent = [v.current.name, ...v.current.aliases].filter((s) => s !== null).join(" · ");
+    if (v.current.id !== shownCase) {
+      notes.stop();
+      shownCase = v.current.id;
+    }
+    notes.show(progress.notes[v.current.id] ?? "", progress.prefs.showNotes);
 
     missed = v.phase === "missed";
     showSolution();
@@ -100,6 +130,9 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
     primary.node.hidden = v.phase === "checked";
     mismatch.node.hidden = v.phase !== "checked";
     match.node.hidden = v.phase !== "checked";
+    restart.hidden = v.phase !== "missed";
+    home.hidden = v.phase !== "missed";
+    actions.classList.toggle("paired", v.phase === "checked" || v.phase === "missed");
   }
 
   return {
@@ -110,5 +143,12 @@ export function createVerify({ onPrimary, onMismatch, onMatch, onChoose, play }:
       showSolution();
     },
     step: stage.step,
+    editNote: notes.edit,
+    setHotkeyMode(mode: HotkeyLabels): void {
+      hotkeyMode = mode;
+      primary.kbd.textContent = primaryKey();
+      mismatch.kbd.textContent = mode === "numpad" ? "num1" : "1";
+      match.kbd.textContent = mode === "numpad" ? "enter" : "2";
+    },
   };
 }

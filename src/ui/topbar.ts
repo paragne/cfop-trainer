@@ -1,5 +1,6 @@
 import logoMark from "../assets/logo-mark.svg";
-import { el } from "./dom.ts";
+import type { HotkeyLabels } from "../lib/prefs.ts";
+import { el, toggleButton } from "./dom.ts";
 import { HELP_ICON, MENU_ICON, NOTE_EDIT_ICON, THREE_D_ICON } from "./icons.ts";
 
 type Handlers = {
@@ -8,6 +9,7 @@ type Handlers = {
   onHelp: () => void;
   onNotes: () => void;
   onThreeD: () => void;
+  onHotkeyLabels: (mode: HotkeyLabels) => void;
 };
 
 function iconButton(className: string, label: string, markup: string, onClick: () => void) {
@@ -21,7 +23,7 @@ function iconButton(className: string, label: string, markup: string, onClick: (
   return node;
 }
 
-export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Handlers) {
+export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD, onHotkeyLabels }: Handlers) {
   const home = iconButton("logo", "CFOP Trainer, home", `<img src="${logoMark}" alt="" />`, onHome);
   const menu = iconButton("icon", "Menu", MENU_ICON, onMenu);
   menu.setAttribute("aria-expanded", "false");
@@ -29,6 +31,15 @@ export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Hand
   help.setAttribute("aria-expanded", "false");
   const notes = iconButton("icon", "Edit note", NOTE_EDIT_ICON, onNotes);
   notes.hidden = true;
+  // How the card screens label their key hints. Hidden entirely on a
+  // touch-primary device, where there is no keyboard to label anyway.
+  const numpad = toggleButton("Numpad", () => onHotkeyLabels("numpad"));
+  const keyboard = toggleButton("Keyboard", () => onHotkeyLabels("keyboard"));
+  const hotkeyLabels = el("div", "prefs");
+  hotkeyLabels.setAttribute("role", "group");
+  hotkeyLabels.setAttribute("aria-label", "Key hint labels");
+  hotkeyLabels.append(numpad, keyboard);
+  hotkeyLabels.hidden = true;
   const threeD = iconButton("icon", "3D view", THREE_D_ICON, onThreeD);
   threeD.setAttribute("aria-pressed", "false");
   threeD.hidden = true;
@@ -38,7 +49,7 @@ export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Hand
   const left = el("div", "topbar-left");
   left.append(menu);
   const tools = el("div", "tools");
-  tools.append(notes, threeD, help);
+  tools.append(notes, hotkeyLabels, threeD, help);
   const element = el("header", "topbar");
   element.append(left, home, tools);
 
@@ -61,6 +72,13 @@ export function createTopbar({ onHome, onMenu, onHelp, onNotes, onThreeD }: Hand
     // Only a Learn or Drill card has a note to write.
     setNotesAvailable(available: boolean): void {
       notes.hidden = !available;
+    },
+    // Shown only on a card screen, and only where there is a keyboard to
+    // label in the first place.
+    setHotkeyLabels(available: boolean, mode: HotkeyLabels): void {
+      hotkeyLabels.hidden = !available;
+      numpad.setAttribute("aria-pressed", String(mode === "numpad"));
+      keyboard.setAttribute("aria-pressed", String(mode === "keyboard"));
     },
     // A mode, not a per-card choice, so it stays pressed from card to card.
     setThreeD(available: boolean, on: boolean): void {
