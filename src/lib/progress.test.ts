@@ -56,7 +56,7 @@ describe("serialize and parseProgress", () => {
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         shuffle: false,
-        threeD: true, speed: 2, zoom: 2, showHotkeys: false,
+        threeD: true, speed: 2, zoom: 2, aesthetic: "gan", showHotkeys: false,
         skipLearnIntro: true, skipDrillIntro: false, skipVerifyIntro: true,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },
@@ -75,7 +75,7 @@ describe("serialize and parseProgress", () => {
     const written: Record<string, unknown> = JSON.parse(serialize(progress(), NOW));
     expect(Object.keys(written)).toEqual(["version", "updatedAt", "prefs", "cards", "notes", "drillStats", "verifyStats", "stars"]);
     expect(Object.keys(progress().prefs)).toEqual([
-      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "showHotkeys",
+      "showNames", "showSolutions", "showNotes", "randomRotation", "shuffle", "mode", "threeD", "speed", "zoom", "aesthetic", "showHotkeys",
       "skipLearnIntro", "skipDrillIntro", "skipVerifyIntro", "sets",
     ]);
   });

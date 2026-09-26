@@ -1,5 +1,7 @@
 import { CASE_SETS, SET_GROUP } from "../data/algorithms.ts";
 import type { CaseSet } from "../data/algorithms.ts";
+import { AESTHETICS } from "./aesthetic.ts";
+import type { Aesthetic } from "./aesthetic.ts";
 import { isRecord, reject } from "./blob.ts";
 
 export type Mode = "learn" | "drill" | "verify" | "gallery";
@@ -18,6 +20,7 @@ export type Prefs = {
   threeD: boolean;
   speed: number;
   zoom: number;
+  aesthetic: Aesthetic;
   // Whether the card screens show each button's key hint, as "space / num0".
   // Mobile is detected, never stored: a touch-primary device shows no
   // labels regardless of this pref.
@@ -47,6 +50,7 @@ export function defaultPrefs(): Prefs {
     threeD: false,
     speed: 1,
     zoom: 1,
+    aesthetic: "moyu",
     showHotkeys: true,
     skipLearnIntro: false,
     skipDrillIntro: false,
@@ -97,6 +101,11 @@ function readSpeed(value: unknown, fallback: number): number {
   return SPEEDS.reduce((best, s) => (Math.abs(s - value) < Math.abs(best - value) ? s : best));
 }
 
+function readAesthetic(value: unknown, fallback: Aesthetic): Aesthetic {
+  if (value === undefined) return fallback;
+  return AESTHETICS.find((a) => a === value) ?? reject(`prefs.aesthetic must be one of ${AESTHETICS.join(", ")}`);
+}
+
 function readInRange(
   value: unknown,
   range: { min: number; max: number },
@@ -138,6 +147,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     threeD: flag("threeD"),
     speed: readSpeed(raw.speed, defaults.speed),
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
+    aesthetic: readAesthetic(raw.aesthetic, defaults.aesthetic),
     showHotkeys: flag("showHotkeys"),
     skipLearnIntro: flag("skipLearnIntro"),
     skipDrillIntro: flag("skipDrillIntro"),

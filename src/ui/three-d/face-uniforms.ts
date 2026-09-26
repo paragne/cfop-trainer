@@ -10,9 +10,15 @@
 import { FILL, GRAY, toRgb } from "../../lib/palette.ts";
 import { isKeptSticker } from "../../lib/sticker-mask.ts";
 import type { ShownMask } from "../../lib/sticker-mask.ts";
+import type { Vec } from "../../lib/cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
 
-export type FaceUniforms = { color: Float32Array; visible: Float32Array };
+// `logo` is the face that carries the app's mark, on the one cubie that has one.
+export type FaceUniforms = {
+  color: Float32Array;
+  visible: Float32Array;
+  logo: { face: number; column: Vec; row: Vec } | null;
+};
 
 // The dark core's own fixed color — not one of the six sticker Colors (see
 // core-cubie.ts's core cubie, whose faces carry a placeholder Color never
@@ -24,17 +30,21 @@ export function faceColorUniforms(home: PhysicalCubie, mask: ShownMask | null): 
   const pieceColors = home.faces.filter((f) => f.isSticker).map((f) => f.colors[0]);
   const color = new Float32Array(18);
   const visible = new Float32Array(6);
+  let logo: FaceUniforms["logo"] = null;
   home.faces.forEach((face, i) => {
     if (!face.isSticker) return;
     const kept = mask === null || isKeptSticker(mask, pieceColors, face.colors[0]);
     color.set(toRgb(kept ? FILL[face.colors[0]] : GRAY), i * 3);
     visible[i] = 1;
+    // The white center only: any other piece, or a white center the mask
+    // grays out, has no mark.
+    if (kept && pieceColors.length === 1 && face.colors[0] === "D") logo = { face: i, column: face.column, row: face.row };
   });
-  return { color, visible };
+  return { color, visible, logo };
 }
 
 export function coreFaceColorUniforms(): FaceUniforms {
   const color = new Float32Array(18);
   for (let i = 0; i < 6; i++) color.set(CORE_COLOR, i * 3);
-  return { color, visible: new Float32Array(6).fill(1) };
+  return { color, visible: new Float32Array(6).fill(1), logo: null };
 }

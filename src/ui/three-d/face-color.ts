@@ -15,7 +15,12 @@
  * rotate-by-angle.ts's cross-checked twin — this file's tests are what prove
  * the shader port is correct.
  */
+import { STICKER_INSET, STICKER_MIN_RADIUS } from "../../lib/aesthetic.ts";
+import type { Profile } from "../../lib/aesthetic.ts";
 import type { Color, Vec } from "../../lib/cube.ts";
+import { ALL_AXES } from "../../lib/physical-cube.ts";
+import { BEVEL_RADIUS } from "./cubie-mesh.ts";
+import { CURVE_RADIUS } from "./piece-mesh.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -34,4 +39,48 @@ export function nearestVisibleFace(
     }
   }
   return best.color;
+}
+
+// Signed distance from a point on face `axis` to its sticker's outline, negative
+// inside: the piece's own outline (see piece-mesh.ts, which rounds the corner of
+// a face that points to the middle of the cube face) drawn STICKER_INSET in.
+function stickerDistance(local: Vec, axis: number, home: Vec): number {
+  const a = (axis + 1) % 3;
+  const b = (axis + 2) % 3;
+  const sa = local[a] < 0 ? -1 : 1;
+  const sb = local[b] < 0 ? -1 : 1;
+  const outline = home[a] !== sa && home[b] !== sb ? CURVE_RADIUS : BEVEL_RADIUS;
+  const r = Math.max(outline - STICKER_INSET, STICKER_MIN_RADIUS);
+  const dx = Math.abs(local[a]) - (0.5 - STICKER_INSET - r);
+  const dy = Math.abs(local[b]) - (0.5 - STICKER_INSET - r);
+  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - r;
+}
+
+// The rule gl-shaders.ts applies for a non-split profile, in TS so it can be
+// tested: the face a point belongs to is the axis its surface faces, and it
+// shows that face's color only if the cubie has a sticker there (and, for a
+// stickered profile, only inside the sticker's outline), otherwise body. The
+// shader softens that edge over a pixel; this takes it as a hard cut. `home` is
+// the piece's position in the solved cube.
+export function shadeSurface(
+  localPosition: Vec,
+  localNormal: Vec,
+  visibleFaces: readonly { normal: Vec; color: Color }[],
+  profile: Profile,
+  home: Vec,
+): Color | "body" {
+  if (profile.internals === "split") return nearestVisibleFace(localPosition, visibleFaces);
+  let faceIndex = 0;
+  let best = -Infinity;
+  ALL_AXES.forEach((candidate, i) => {
+    const score = dot(localNormal, candidate);
+    if (score > best) {
+      best = score;
+      faceIndex = i;
+    }
+  });
+  const face = visibleFaces.find((f) => dot(f.normal, ALL_AXES[faceIndex]) === 1);
+  if (face === undefined) return "body";
+  if (profile.stickered && stickerDistance(localPosition, Math.floor(faceIndex / 2), home) > 0) return "body";
+  return face.color;
 }

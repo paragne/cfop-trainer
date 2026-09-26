@@ -1,5 +1,5 @@
 /**
- * Compiles the one shader program, builds the one shared cubie mesh, and
+ * Compiles the one shader program, builds each cubie's mesh (see piece-mesh.ts), and
  * draws every cubie each frame with per-cubie uModel/color uniforms, plus a
  * lighting pair (uLightDir/uCameraPos) recomputed from the camera each
  * frame. Every internal cube boundary has two coincident, oppositely-facing
@@ -10,10 +10,15 @@
  * two z-fighting in the depth buffer.
  */
 import { unitCubeVertices } from "./cubie-mesh.ts";
-import { FRAGMENT_SHADER, VERTEX_SHADER } from "./gl-shaders.ts";
+import { pieceVertices } from "./piece-mesh.ts";
+import { link, requireAttrib, requireUniform } from "./gl-program.ts";
 import { coreFaceColorUniforms, faceColorUniforms } from "./face-uniforms.ts";
 import { animatedModelMatrix, bakedModelMatrix } from "./cubie-model.ts";
 import type { InFlight } from "./player.ts";
+import { PROFILES } from "../../lib/aesthetic.ts";
+import type { Aesthetic } from "../../lib/aesthetic.ts";
+import { toRgb } from "../../lib/palette.ts";
+import { createLogoTexture } from "./gl-logo.ts";
 import type { Mat4 } from "../../lib/mat4.ts";
 import type { Vec } from "../../lib/cube.ts";
 import type { PhysicalCubie } from "../../lib/physical-cube.ts";
@@ -32,53 +37,32 @@ export type GlScene = {
   // there is no single fixed "true color" identity to bake once at scene
   // creation and reuse across every case the way OLL/PLL cases allow.
   setMask(mask: ShownMask | null, home: readonly PhysicalCubie[]): void;
+  setAesthetic(aesthetic: Aesthetic): void;
 };
 
-function compile(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-  const shader = gl.createShader(type);
-  if (shader === null) throw new Error("createShader failed");
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const info = gl.getShaderInfoLog(shader);
-    gl.deleteShader(shader);
-    throw new Error(`shader compile failed: ${info ?? "unknown error"}`);
-  }
-  return shader;
-}
-
-function link(gl: WebGL2RenderingContext): WebGLProgram {
-  const program = gl.createProgram();
-  if (program === null) throw new Error("createProgram failed");
-  gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER));
-  gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const info = gl.getProgramInfoLog(program);
-    gl.deleteProgram(program);
-    throw new Error(`program link failed: ${info ?? "unknown error"}`);
-  }
-  return program;
-}
-
-function requireAttrib(gl: WebGL2RenderingContext, program: WebGLProgram, name: string): number {
-  const loc = gl.getAttribLocation(program, name);
-  if (loc === -1) throw new Error(`missing attribute ${name}`);
-  return loc;
-}
-
-function requireUniform(gl: WebGL2RenderingContext, program: WebGLProgram, name: string): WebGLUniformLocation {
-  const loc = gl.getUniformLocation(program, name);
-  if (loc === null) throw new Error(`missing uniform ${name}`);
-  return loc;
-}
+// Plastic body: what shows wherever a look has no color, so a shade off pure
+// black keeps the bevels readable under the lighting.
+const BODY = toRgb("#0d0d0d");
 
 const FLOATS_PER_VERTEX = 6; // position(3) + normal(3)
 
-function buildVertexArray(gl: WebGL2RenderingContext, program: WebGLProgram): number {
-  const vertices = unitCubeVertices();
-  const data = new Float32Array(vertices.length * FLOATS_PER_VERTEX);
-  vertices.forEach((v, i) => data.set([...v.position, ...v.normal], i * FLOATS_PER_VERTEX));
+// Every piece has its own shape (see piece-mesh.ts), so the buffer holds them
+// end to end, and `ranges` says where each cubie's begins. The core, hidden
+// in the middle, is the plain rounded box.
+function buildVertexArray(
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram,
+  homeCubies: readonly PhysicalCubie[],
+  coreIndex: number,
+): { first: number; count: number }[] {
+  const meshes = homeCubies.map((cubie, i) => (i === coreIndex ? unitCubeVertices() : pieceVertices(cubie.position)));
+  const data = new Float32Array(meshes.reduce((sum, m) => sum + m.length, 0) * FLOATS_PER_VERTEX);
+  let vertex = 0;
+  const ranges = meshes.map((mesh) => {
+    const first = vertex;
+    for (const v of mesh) data.set([...v.position, ...v.normal], vertex++ * FLOATS_PER_VERTEX);
+    return { first, count: mesh.length };
+  });
   const buffer = gl.createBuffer();
   if (buffer === null) throw new Error("createBuffer failed");
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -91,7 +75,7 @@ function buildVertexArray(gl: WebGL2RenderingContext, program: WebGLProgram): nu
   gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, stride, 0);
   gl.enableVertexAttribArray(aNormal);
   gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, stride, 3 * 4);
-  return vertices.length;
+  return ranges;
 }
 
 const add = (a: Vec, b: Vec): Vec => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -120,12 +104,13 @@ export function createGlScene(
   homeCubies: readonly PhysicalCubie[],
   coreIndex: number,
   background: readonly [number, number, number],
+  onLogoReady: () => void,
 ): GlScene {
   const program = link(gl);
   const vao = gl.createVertexArray();
   if (vao === null) throw new Error("createVertexArray failed");
   gl.bindVertexArray(vao);
-  const vertexCount = buildVertexArray(gl, program);
+  const ranges = buildVertexArray(gl, program, homeCubies, coreIndex);
   gl.bindVertexArray(null);
 
   const uProjection = requireUniform(gl, program, "uProjection");
@@ -135,6 +120,16 @@ export function createGlScene(
   const uFaceVisible = requireUniform(gl, program, "uFaceVisible");
   const uLightDir = requireUniform(gl, program, "uLightDir");
   const uCameraPos = requireUniform(gl, program, "uCameraPos");
+  const uBlackInternals = requireUniform(gl, program, "uBlackInternals");
+  const uStickered = requireUniform(gl, program, "uStickered");
+  const uBody = requireUniform(gl, program, "uBody");
+  const uHome = requireUniform(gl, program, "uHome");
+  const uLogo = requireUniform(gl, program, "uLogo");
+  const uLogoFace = requireUniform(gl, program, "uLogoFace");
+  const uLogoColumn = requireUniform(gl, program, "uLogoColumn");
+  const uLogoRow = requireUniform(gl, program, "uLogoRow");
+  createLogoTexture(gl, onLogoReady);
+  let profile = PROFILES.moyu;
   let faceUniforms = homeCubies.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, null)));
 
   gl.enable(gl.DEPTH_TEST);
@@ -151,6 +146,10 @@ export function createGlScene(
     gl.uniformMatrix4fv(uView, false, [...view]);
     gl.uniform3fv(uLightDir, cameraRelativeLightDir(eye, up));
     gl.uniform3fv(uCameraPos, eye);
+    gl.uniform1f(uBlackInternals, profile.internals === "black" ? 1 : 0);
+    gl.uniform1f(uStickered, profile.stickered ? 1 : 0);
+    gl.uniform3fv(uBody, BODY);
+    gl.uniform1i(uLogo, 0);
 
     cubies.forEach((cubie, i) => {
       const model =
@@ -158,10 +157,14 @@ export function createGlScene(
           ? animatedModelMatrix(cubie, inFlight.axis, inFlight.angleDeg)
           : bakedModelMatrix(cubie);
       gl.uniformMatrix4fv(uModel, false, [...model]);
-      const { color, visible } = faceUniforms[i];
+      const { color, visible, logo } = faceUniforms[i];
+      gl.uniform3fv(uHome, homeCubies[i].position);
+      gl.uniform1i(uLogoFace, logo === null ? -1 : logo.face);
+      gl.uniform3fv(uLogoColumn, logo === null ? [0, 0, 0] : logo.column);
+      gl.uniform3fv(uLogoRow, logo === null ? [0, 0, 0] : logo.row);
       gl.uniform3fv(uFaceColor, color);
       gl.uniform1fv(uFaceVisible, visible);
-      gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+      gl.drawArrays(gl.TRIANGLES, ranges[i].first, ranges[i].count);
     });
 
     gl.bindVertexArray(null);
@@ -171,5 +174,9 @@ export function createGlScene(
     faceUniforms = home.map((cubie, i) => (i === coreIndex ? coreFaceColorUniforms() : faceColorUniforms(cubie, mask)));
   }
 
-  return { render, setMask };
+  function setAesthetic(aesthetic: Aesthetic): void {
+    profile = PROFILES[aesthetic];
+  }
+
+  return { render, setMask, setAesthetic };
 }

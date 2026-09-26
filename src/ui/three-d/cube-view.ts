@@ -4,6 +4,7 @@
  * change, a resize or an in-flight move asks for it. At rest no rAF callback
  * fires at all.
  */
+import type { Aesthetic } from "../../lib/aesthetic.ts";
 import type { ShownMask } from "../../lib/sticker-mask.ts";
 import { blendFit, fitMatrix, lockedFit, sphereFit } from "../../lib/fit.ts";
 import type { Fit } from "../../lib/fit.ts";
@@ -41,6 +42,7 @@ export type CubeView = {
   // Off, the camera's radius alone sets the size and the cube is not centered.
   setFit(on: boolean): void;
   setZoom(zoom: number): void;
+  setAesthetic(aesthetic: Aesthetic): void;
   dispose(): void;
 };
 
@@ -52,13 +54,14 @@ export function createCubeView(
 ): CubeView {
   const { gl, resize, onContextRestored } = glContext;
   const initialCubies = homeCubiesWithCore();
-  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background);
+  let glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background, requestRedraw);
   let fit = false;
   let zoom = 1;
   // What is applied now, chasing what the view calls for, so a change of
   // fit (entering an orbit, a zoom) eases in instead of jumping.
   let applied: Fit | null = null;
   let mask: ShownMask | null = null;
+  let aesthetic: Aesthetic = "moyu";
   let home: readonly PhysicalCubie[] = initialCubies;
 
   let frame: number | null = null;
@@ -108,8 +111,9 @@ export function createCubeView(
 
   onContextRestored(() => {
     // The lost context took its program, buffers and VAO with it.
-    glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background);
+    glScene = createGlScene(gl, initialCubies, initialCubies.length - 1, background, requestRedraw);
     glScene.setMask(mask, home);
+    glScene.setAesthetic(aesthetic);
     requestRedraw();
   });
 
@@ -135,6 +139,11 @@ export function createCubeView(
     setMask,
     setFit(on) {
       fit = on;
+      requestRedraw();
+    },
+    setAesthetic(next) {
+      aesthetic = next;
+      glScene.setAesthetic(next);
       requestRedraw();
     },
     setZoom(next) {

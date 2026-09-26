@@ -1,4 +1,5 @@
 import type { CaseSet } from "../data/algorithms.ts";
+import type { Aesthetic } from "./aesthetic.ts";
 import type { Mode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
 import { recordMatch, recordTime } from "./timed-stats.ts";
@@ -41,6 +42,10 @@ export function setPref(
 
 export function setNumberPref(progress: Progress, key: "speed" | "zoom", value: number): Progress {
   return { ...progress, prefs: { ...progress.prefs, [key]: value } };
+}
+
+export function setAesthetic(progress: Progress, aesthetic: Aesthetic): Progress {
+  return { ...progress, prefs: { ...progress.prefs, aesthetic } };
 }
 
 export function setMode(progress: Progress, mode: Mode): Progress {

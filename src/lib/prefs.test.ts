@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AESTHETICS } from "./aesthetic.ts";
 import { defaultPrefs, readPrefs, SPEEDS, ZOOM_RANGE } from "./prefs.ts";
 
 describe("readPrefs for the 3D view", () => {
@@ -54,5 +55,19 @@ describe("readPrefs for Verify's sets", () => {
   it("accepts every last-layer set", () => {
     const verify = ["2-Look OLL", "2-Look PLL", "Full OLL", "Full PLL"];
     expect(readPrefs({ sets: { verify } }).sets.verify).toEqual(verify);
+  });
+});
+
+describe("readPrefs for the cube aesthetic", () => {
+  it("defaults to Moyu, the look before the choice existed", () => {
+    expect(readPrefs({}).aesthetic).toBe("moyu");
+  });
+
+  it.each(AESTHETICS)("keeps %s", (aesthetic) => {
+    expect(readPrefs({ aesthetic }).aesthetic).toBe(aesthetic);
+  });
+
+  it("rejects one that is not offered", () => {
+    expect(() => readPrefs({ aesthetic: "cubicle" })).toThrow("prefs.aesthetic");
   });
 });

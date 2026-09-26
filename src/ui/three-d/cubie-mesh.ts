@@ -19,11 +19,11 @@
 import { ALL_AXES, perpendicularBasis } from "../../lib/physical-cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 
-export const BEVEL_RADIUS = 0.1; // single named constant; hand-tune from screenshots
+export const BEVEL_RADIUS = 0.03; // the small fillet on a piece's outer edges; faces are flat, not pillowed
 const INNER_HALF = 0.5 - BEVEL_RADIUS;
 
 // A uniform grid (SEGMENTS ~0.125 apart) under-samples a bevel band only
-// BEVEL_RADIUS (0.1) wide, faceting the fillet into two flat chords instead
+// BEVEL_RADIUS wide, faceting the fillet into two flat chords instead
 // of a smooth curve. Sample each bevel band on its own with BEVEL_SEGMENTS
 // steps, and the flat middle coarsely with INTERIOR_SEGMENTS steps.
 export const BEVEL_SEGMENTS = 6;

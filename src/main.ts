@@ -3,11 +3,12 @@ import { ALL_CASES } from "./data/algorithms.ts";
 import type { CaseSet } from "./data/algorithms.ts";
 import { closeCase, openCase } from "./lib/gallery.ts";
 import { caseView } from "./lib/play.ts";
+import type { Aesthetic } from "./lib/aesthetic.ts";
 import { SHIPPED_MODES } from "./lib/prefs.ts";
 import type { Mode } from "./lib/prefs.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
-import { setMode, setNote, setNumberPref, setPref, setStar, toggleSet } from "./lib/progress-edit.ts";
+import { setAesthetic, setMode, setNote, setNumberPref, setPref, setStar, toggleSet } from "./lib/progress-edit.ts";
 import { cardView, chooseAlt, press, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
@@ -61,6 +62,7 @@ function star(algIndex: number): void {
 const play = {
   onStar: star,
   onSpeed: (speed: number) => commit(setNumberPref(progress, "speed", speed)),
+  onAesthetic: (aesthetic: Aesthetic) => commit(setAesthetic(progress, aesthetic)),
   onZoom: (zoom: number) => commit(setNumberPref(progress, "zoom", zoom)),
 };
 const home = createHome({

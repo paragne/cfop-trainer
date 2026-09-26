@@ -17,6 +17,7 @@ import type { PanelSession } from "./three-d/panel-session.ts";
 export type PlayHandlers = {
   onStar: (algIndex: number) => void;
   onSpeed: (speed: number) => void;
+  onAesthetic: (aesthetic: Prefs["aesthetic"]) => void;
   onZoom: (zoom: number) => void;
 };
 
@@ -26,7 +27,7 @@ const START_HOLD_MS = 500;
 // A card's picture: the 2D one, or the case in 3D. The GPU context lives only
 // while a card is in 3D: created when it first shows, given back on close.
 // The solution's controls appear with the solution, and never before.
-export function createPlayPanel({ onStar, onSpeed, onZoom }: PlayHandlers) {
+export function createPlayPanel({ onStar, onSpeed, onAesthetic, onZoom }: PlayHandlers) {
   const element = el("div", "view");
   const picture = el("div", "picture");
   const player = el("div", "player");
@@ -34,7 +35,8 @@ export function createPlayPanel({ onStar, onSpeed, onZoom }: PlayHandlers) {
   const stage = el("div", "stage");
   const strip = createAlgStrip();
 
-  const { topRow, bottomRow, speedPop, algPicker } = createTransport({
+  const { topRow, bottomRow, speedPop, algPicker, aesthetic, closePopups } = createTransport({
+    onAesthetic,
     onChooseAlg: chooseAlg,
     onStar,
     onSpeed: (speed) => {
@@ -133,8 +135,7 @@ export function createPlayPanel({ onStar, onSpeed, onZoom }: PlayHandlers) {
 
   function close(): void {
     clearTimeout(hold);
-    speedPop.close();
-    algPicker.close();
+    closePopups();
     legend.update(null);
     picture.hidden = false;
     player.hidden = true;
@@ -159,6 +160,8 @@ export function createPlayPanel({ onStar, onSpeed, onZoom }: PlayHandlers) {
     shown = next;
     solution = play;
     session.view.setZoom(prefs.zoom);
+    session.view.setAesthetic(prefs.aesthetic);
+    aesthetic.setValue(prefs.aesthetic);
     controls.hidden = play === null;
     const id = `${next.key}|${play === null ? "-" : play.alg}`;
     if (session.loaded !== id) {

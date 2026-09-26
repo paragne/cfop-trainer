@@ -36,6 +36,7 @@ describe("a frozen version 2 blob", () => {
           // 1x and 2x and snaps to the slower.
           speed: 1,
           zoom: 2,
+          aesthetic: "moyu",
           showHotkeys: true,
           skipLearnIntro: false,
           skipDrillIntro: false,

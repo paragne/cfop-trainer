@@ -54,6 +54,7 @@ describe("the frozen v1 blob", () => {
           threeD: false,
           speed: 1,
           zoom: 1,
+          aesthetic: "moyu",
           showHotkeys: true,
           skipLearnIntro: false,
           skipDrillIntro: false,
