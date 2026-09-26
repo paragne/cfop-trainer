@@ -23,3 +23,14 @@ describe("the default eye for a case", () => {
     },
   );
 });
+
+describe("the eye for a cross scramble", () => {
+  // The cross is on D, so both the masked and the all-stickers view must look
+  // from below, or toggling the mask would swing the camera.
+  it.each([false, true])("looks up at the D face, with all stickers %s", (all) => {
+    const eye = eyeFor({ kind: "cross", all });
+    expect(eye[1]).toBeLessThan(0);
+    expect(eye[0]).toBeGreaterThan(0);
+    expect(eye[2]).toBeGreaterThan(0);
+  });
+});

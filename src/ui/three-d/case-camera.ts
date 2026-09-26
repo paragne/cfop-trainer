@@ -46,12 +46,13 @@ const ORIGIN: Vec = [0, 0, 0];
 // that the side stickers a move exposes stay visible.
 const TOP_DOWN: Vec = [0, 3, 1.5];
 
-// A cross scramble is a whole cube, not a last-layer picture, so like an
-// unmasked cube it gets the isometric view that shows three faces.
-type EyeMask = Mask | { kind: "cross" };
+// A cross scramble is a whole cube, and the cross is on its D face, so the
+// eye sits below it: D, F and R show, and F and R keep their usual sides.
+type EyeMask = Mask | { kind: "cross"; all: boolean };
 
 export function eyeFor(mask: EyeMask | null): Vec {
-  if (mask === null || mask.kind === "cross") return [1, 1, 1];
+  if (mask === null) return [1, 1, 1];
+  if (mask.kind === "cross") return [1, -1, 1];
   if (mask.kind !== "f2l") return TOP_DOWN;
   return mask.slot === "FL" ? [-1, 1, 1] : [1, 1, 1];
 }

@@ -53,6 +53,10 @@ export const CENTER_PLATEAU_DIAMETER = 0.88;
 export const CENTER_RAMP_DEPTH = 0.07;
 export const CENTER_CORNER_RADIUS = 0.06;
 
+// How far along each side of the footprint a diagonal cut takes off each corner,
+// so the cut lines up with where the neighbouring edge pieces curve away.
+const CENTER_CHAMFER = 0.15;
+
 // How far round a curved corner, as the share of its outline normal that points
 // where the roll is wanted, the rolled edge holds its full radius before
 // tapering to BEVEL_RADIUS.
@@ -137,7 +141,9 @@ export function capDistance(p: Vec, home: Vec, axis: number): number {
   const corner = isCenter ? FOOT_CORNER : (inward ? CURVE_RADIUS : BEVEL_RADIUS) - FACE_INSET;
   const qa = Math.abs(p[a]) - (HALF - corner);
   const qb = Math.abs(p[b]) - (HALF - corner);
-  const outline = Math.hypot(Math.max(qa, 0), Math.max(qb, 0)) + Math.min(Math.max(qa, qb), 0) - corner;
+  const rounded = Math.hypot(Math.max(qa, 0), Math.max(qb, 0)) + Math.min(Math.max(qa, qb), 0) - corner;
+  const chamfer = (Math.abs(p[a]) + Math.abs(p[b]) - (2 * HALF - CENTER_CHAMFER)) * Math.SQRT1_2;
+  const outline = isCenter ? Math.max(rounded, chamfer) : rounded;
 
   // The outline's own outward normal at the nearest point, in (a, b).
   let na = 0;

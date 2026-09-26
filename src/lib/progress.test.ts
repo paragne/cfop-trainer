@@ -56,7 +56,7 @@ describe("serialize and parseProgress", () => {
         mode: "drill",
         sets: { ...SETS, learn: ["Full OLL"], drill: ["Full PLL", "F2L"] },
         shuffle: false,
-        threeD: true, speed: 2, zoom: 2, aesthetic: "gan", showHotkeys: false,
+        threeD: true, speed: 2, zoom: 2, aesthetic: "gan", crossAllStickers: true, showHotkeys: false,
         skipLearnIntro: true, skipDrillIntro: false, skipVerifyIntro: true,
       },
       cards: { [A]: card(), [B]: card({ seen: 1, known: 0, lastGrade: 0 }) },

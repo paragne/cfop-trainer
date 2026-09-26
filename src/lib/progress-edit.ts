@@ -1,6 +1,6 @@
 import type { CaseSet } from "../data/algorithms.ts";
 import type { Aesthetic } from "./aesthetic.ts";
-import type { Mode } from "./prefs.ts";
+import type { Mode, SetMode } from "./prefs.ts";
 import type { Progress } from "./progress.ts";
 import { recordMatch, recordTime } from "./timed-stats.ts";
 
@@ -32,6 +32,7 @@ export function setPref(
     | "shuffle"
     | "threeD"
     | "showHotkeys"
+    | "crossAllStickers"
     | "skipLearnIntro"
     | "skipDrillIntro"
     | "skipVerifyIntro",
@@ -54,12 +55,12 @@ export function setMode(progress: Progress, mode: Mode): Progress {
 
 // Every set can be switched off: with none selected the home screen offers no
 // Start, so an empty session never arises.
-export function toggleSet(progress: Progress, mode: Mode, set: CaseSet): Progress {
+export function toggleSet(progress: Progress, mode: SetMode, set: CaseSet): Progress {
   const selected = progress.prefs.sets[mode];
   return withSets(progress, mode, selected.includes(set) ? selected.filter((s) => s !== set) : [...selected, set]);
 }
 
-const withSets = (progress: Progress, mode: Mode, selected: CaseSet[]): Progress => ({
+const withSets = (progress: Progress, mode: SetMode, selected: CaseSet[]): Progress => ({
   ...progress,
   prefs: { ...progress.prefs, sets: { ...progress.prefs.sets, [mode]: selected } },
 });

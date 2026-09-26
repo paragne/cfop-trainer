@@ -71,3 +71,20 @@ describe("readPrefs for the cube aesthetic", () => {
     expect(() => readPrefs({ aesthetic: "cubicle" })).toThrow("prefs.aesthetic");
   });
 });
+
+describe("readPrefs for Cross", () => {
+  it("shows only the cross until told otherwise", () => {
+    expect(defaultPrefs().crossAllStickers).toBe(false);
+    expect(readPrefs({}).crossAllStickers).toBe(false);
+  });
+
+  it("reads a stored choice, and rejects anything but a boolean", () => {
+    expect(readPrefs({ crossAllStickers: true }).crossAllStickers).toBe(true);
+    expect(() => readPrefs({ crossAllStickers: "yes" })).toThrow();
+  });
+
+  it("remembers Cross as the last mode used, with no set selection of its own", () => {
+    expect(readPrefs({ mode: "cross" }).mode).toBe("cross");
+    expect(Object.keys(defaultPrefs().sets)).not.toContain("cross");
+  });
+});

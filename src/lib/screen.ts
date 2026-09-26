@@ -1,6 +1,8 @@
 import type { Case } from "../data/algorithms.ts";
 import { pickAuf } from "./auf.ts";
 import type { Auf } from "./auf.ts";
+import { chooseSolution, pressCross, startCross } from "./cross-round.ts";
+import type { CrossRound } from "./cross-round.ts";
 import { nextCase, startDrill } from "./drill.ts";
 import type { Drill } from "./drill.ts";
 import type { Mode } from "./prefs.ts";
@@ -28,7 +30,9 @@ export type Screen =
   | { kind: "verify"; verify: Verify; startedAt: number }
   // Browsing only: `open` is the case whose card is up, null on the grid. It
   // carries no session, so nothing here can be graded, scheduled or timed.
-  | { kind: "gallery"; open: Case | null };
+  | { kind: "gallery"; open: Case | null }
+  // A scramble and its solutions. Nothing in it is graded, scheduled or stored.
+  | { kind: "cross"; round: CrossRound };
 
 export type Action = "reveal" | "dontKnow" | "know" | "next" | "toggleNames";
 
@@ -56,6 +60,7 @@ const aufFor = (c: Case | null, { progress, random }: Context): Auf =>
 export function start(mode: Mode, ctx: Context): Screen {
   const { progress, cases, now, random } = ctx;
   if (mode === "gallery") return { kind: "gallery", open: null };
+  if (mode === "cross") return { kind: "cross", round: startCross(random) };
   if (mode === "learn") {
     const session = startSession(cases, progress, now, random);
     return { kind: "learn", session, auf: aufFor(current(session), ctx) };
@@ -79,8 +84,10 @@ export function press(
   const unchanged = { screen, progress };
   if (screen.kind === "home") {
     const mode = progress.prefs.mode;
-    const startable = progress.prefs.sets[mode].length > 0;
-    if (action !== "reveal" || !startable) return unchanged;
+    if (action !== "reveal") return unchanged;
+    // Cross draws no cases, so there is no selection to be empty.
+    if (mode === "cross") return { screen: start(mode, ctx), progress };
+    if (progress.prefs.sets[mode].length === 0) return unchanged;
     if (mode === "gallery") return { screen: start(mode, ctx), progress };
     if (mode === "verify") {
       const verify = startVerify(ctx.cases, progress, random);
@@ -91,6 +98,7 @@ export function press(
     const skip = mode === "learn" ? progress.prefs.skipLearnIntro : progress.prefs.skipDrillIntro;
     return { screen: skip ? start(mode, ctx) : { kind: "intro", mode }, progress };
   }
+  if (screen.kind === "cross") return { screen: { kind: "cross", round: pressCross(screen.round, action, random) }, progress };
   if (action === "toggleNames") {
     return { screen, progress: setPref(progress, "showNames", !progress.prefs.showNames) };
   }
@@ -159,6 +167,14 @@ export function resultText(screen: Screen): string | null {
 // Verify has no card to show and drives its own screen instead of flashcard's.
 export function verifyView(screen: Screen): Verify | null {
   return screen.kind === "verify" ? screen.verify : null;
+}
+
+// Cross has no card and no case, and drives its own screen.
+export const crossView = (screen: Screen): CrossRound | null => (screen.kind === "cross" ? screen.round : null);
+
+export function chooseCross(screen: Screen, i: number): Screen {
+  if (screen.kind !== "cross") throw new Error("chooseCross called outside Cross");
+  return { kind: "cross", round: chooseSolution(screen.round, i) };
 }
 
 // The instruction page shown once, between Home's Start button and the first

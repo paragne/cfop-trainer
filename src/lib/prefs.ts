@@ -4,10 +4,13 @@ import { AESTHETICS } from "./aesthetic.ts";
 import type { Aesthetic } from "./aesthetic.ts";
 import { isRecord, reject } from "./blob.ts";
 
-export type Mode = "learn" | "drill" | "verify" | "gallery";
+export type Mode = "learn" | "cross" | "drill" | "verify" | "gallery";
+
+// The modes that draw cases from chosen sets. Cross draws none.
+export type SetMode = Exclude<Mode, "cross">;
 
 // Only modes that exist can be remembered as the last one used.
-export const SHIPPED_MODES: readonly Mode[] = ["learn", "drill", "verify", "gallery"];
+export const SHIPPED_MODES: readonly Mode[] = ["learn", "cross", "drill", "verify", "gallery"];
 
 export type Prefs = {
   showNames: boolean;
@@ -16,11 +19,13 @@ export type Prefs = {
   randomRotation: boolean;
   shuffle: boolean;
   mode: Mode;
-  sets: Record<Mode, CaseSet[]>;
+  sets: Record<SetMode, CaseSet[]>;
   threeD: boolean;
   speed: number;
   zoom: number;
   aesthetic: Aesthetic;
+  // Cross mode shows only the cross by default; this shows every sticker.
+  crossAllStickers: boolean;
   // Whether the card screens show each button's key hint, as "space / num0".
   // Mobile is detected, never stored: a touch-primary device shows no
   // labels regardless of this pref.
@@ -51,6 +56,7 @@ export function defaultPrefs(): Prefs {
     speed: 1,
     zoom: 1,
     aesthetic: "moyu",
+    crossAllStickers: false,
     showHotkeys: true,
     skipLearnIntro: false,
     skipDrillIntro: false,
@@ -78,7 +84,7 @@ function readSetList(value: unknown, where: string): CaseSet[] {
 // import, not the UI, and is rejected rather than silently dropped.
 function readSets(value: unknown, defaults: Prefs["sets"]): Prefs["sets"] {
   if (!isRecord(value)) return reject("prefs.sets must be an object");
-  const list = (mode: Mode) =>
+  const list = (mode: SetMode) =>
     value[mode] === undefined ? defaults[mode] : readSetList(value[mode], `prefs.sets.${mode}`);
   const verify = list("verify");
   if (verify.some((set) => SET_GROUP[set] === "F2L")) reject("prefs.sets.verify must not include an F2L set");
@@ -128,6 +134,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
       | "shuffle"
       | "threeD"
       | "showHotkeys"
+      | "crossAllStickers"
       | "skipLearnIntro"
       | "skipDrillIntro"
       | "skipVerifyIntro",
@@ -149,6 +156,7 @@ export function readPrefs(raw: Record<string, unknown>): Prefs {
     zoom: readInRange(raw.zoom, ZOOM_RANGE, defaults.zoom, "prefs.zoom"),
     aesthetic: readAesthetic(raw.aesthetic, defaults.aesthetic),
     showHotkeys: flag("showHotkeys"),
+    crossAllStickers: flag("crossAllStickers"),
     skipLearnIntro: flag("skipLearnIntro"),
     skipDrillIntro: flag("skipDrillIntro"),
     skipVerifyIntro: flag("skipVerifyIntro"),

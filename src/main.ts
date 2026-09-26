@@ -9,11 +9,12 @@ import type { Mode } from "./lib/prefs.ts";
 import { defaultProgress } from "./lib/progress.ts";
 import type { Progress } from "./lib/progress.ts";
 import { setAesthetic, setMode, setNote, setNumberPref, setPref, setStar, toggleSet } from "./lib/progress-edit.ts";
-import { cardView, chooseAlt, press, start, verifyView } from "./lib/screen.ts";
+import { cardView, chooseAlt, chooseCross, press, start, verifyView } from "./lib/screen.ts";
 import type { Action, Screen } from "./lib/screen.ts";
 import { offeredSets } from "./lib/selection.ts";
 import { starredAlg } from "./lib/stars.ts";
 import { exportJson, importJson, load, save, wipe } from "./lib/storage.ts";
+import { createCross } from "./ui/cross.ts";
 import { createFlashcard } from "./ui/flashcard.ts";
 import { createGallery } from "./ui/gallery.ts";
 import { createHelp } from "./ui/help.ts";
@@ -86,6 +87,7 @@ const prefBar = createPrefBar({
   onAutoReveal: () => commit(setPref(progress, "showSolutions", !progress.prefs.showSolutions)),
   onNotes: () => commit(setPref(progress, "showNotes", !progress.prefs.showNotes)),
   onHotkeys: () => commit(setPref(progress, "showHotkeys", !progress.prefs.showHotkeys)),
+  onAllStickers: () => commit(setPref(progress, "crossAllStickers", !progress.prefs.crossAllStickers)),
   touchPrimary,
 });
 topbar.left.append(prefBar.element);
@@ -118,6 +120,7 @@ const verify = createVerify({
   onSkipIntro: (skip) => commit(setPref(progress, "skipVerifyIntro", skip)),
   play,
 });
+const cross = createCross({ onReveal: () => handle("reveal"), onNext: () => handle("next"), onChoose: (i) => show(chooseCross(screen, i)), play });
 const summary = createSummary(() => handle("reveal"), goHome);
 const gallery = createGallery((c) => show(openCase(screen, c)));
 const menu = createMenu({
@@ -173,11 +176,13 @@ function startMode(mode: Mode): void {
 }
 
 function switchSet(set: CaseSet): void {
-  commit(toggleSet(progress, progress.prefs.mode, set));
+  const { mode } = progress.prefs;
+  if (mode === "cross") throw new Error("set toggled in Cross, which has none");
+  commit(toggleSet(progress, mode, set));
 }
 
 const render = (): void =>
-  renderApp({ topbar, menu, help, home, intro, prefBar, flashcard, verify, summary, gallery }, progress, screen);
+  renderApp({ topbar, menu, help, home, intro, prefBar, flashcard, verify, cross, summary, gallery }, progress, screen);
 
 function handle(action: Action): void {
   const next = press(screen, action, context());
@@ -187,8 +192,8 @@ function handle(action: Action): void {
 }
 
 document.body.append(topbar.element, menu.element, help.element, status.element, home.element);
-document.body.append(gallery.element, intro.element, flashcard.element, verify.element, summary.element);
-bindKeys(handle, (step) => flashcard.step(step) || verify.step(step), () => screen.kind === "drill");
+document.body.append(gallery.element, intro.element, flashcard.element, verify.element, cross.element, summary.element);
+bindKeys(handle, (step) => flashcard.step(step) || verify.step(step) || cross.step(step), () => screen.kind === "drill" || screen.kind === "cross");
 if (loaded.problem === "unreadable") status.show(SET_ASIDE);
 if (loaded.problem === "unavailable") status.show(NOT_SAVING);
 render();

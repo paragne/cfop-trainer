@@ -2,10 +2,11 @@ import { ALL_CASES } from "../data/algorithms.ts";
 import { gallerySections } from "../lib/gallery.ts";
 import { caseView, playView } from "../lib/play.ts";
 import type { Progress } from "../lib/progress.ts";
-import { cardView, introMode, resultText, verifyView } from "../lib/screen.ts";
+import { cardView, crossView, introMode, resultText, verifyView } from "../lib/screen.ts";
 import type { Screen } from "../lib/screen.ts";
 import { setStats } from "../lib/stats.ts";
 import { drillPaceRows, verifyPaceRows } from "../lib/timed-stats.ts";
+import type { createCross } from "./cross.ts";
 import type { createFlashcard } from "./flashcard.ts";
 import type { createGallery } from "./gallery.ts";
 import type { createHelp } from "./help.ts";
@@ -27,6 +28,7 @@ type Parts = {
   prefBar: ReturnType<typeof createPrefBar>;
   flashcard: ReturnType<typeof createFlashcard>;
   verify: ReturnType<typeof createVerify>;
+  cross: ReturnType<typeof createCross>;
   summary: ReturnType<typeof createSummary>;
   gallery: ReturnType<typeof createGallery>;
 };
@@ -34,7 +36,7 @@ type Parts = {
 // Brings every part of the page in line with the state: which screen shows,
 // and what each part on it says.
 export function renderApp(
-  { topbar, menu, help, home, intro, prefBar, flashcard, verify, summary, gallery }: Parts,
+  { topbar, menu, help, home, intro, prefBar, flashcard, verify, cross, summary, gallery }: Parts,
   progress: Progress,
   screen: Screen,
 ): void {
@@ -55,7 +57,7 @@ export function renderApp(
   if (onHome) {
     home.render({
       mode: progress.prefs.mode,
-      selected: progress.prefs.sets[progress.prefs.mode],
+      selected: progress.prefs.mode === "cross" ? [] : progress.prefs.sets[progress.prefs.mode],
       shuffle: progress.prefs.shuffle,
       rotation: progress.prefs.randomRotation,
       stats: setStats(ALL_CASES, progress.cards, Date.now()),
@@ -71,6 +73,9 @@ export function renderApp(
   const view = cardView(screen);
   const verifying = verifyView(screen);
   const result = resultText(screen);
+  const crossing = crossView(screen);
+  cross.element.hidden = crossing === null;
+  cross.render(crossing, progress.prefs);
   flashcard.element.hidden = view === null;
   verify.element.hidden = verifying === null;
   summary.element.hidden = result === null;

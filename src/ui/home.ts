@@ -31,7 +31,7 @@ export type HomeView = {
   verifyPace: readonly PaceRow[];
 };
 
-const LABEL: Record<Mode, string> = { learn: "Learn", drill: "Drill", verify: "Verify", gallery: "Gallery" };
+const LABEL: Record<Mode, string> = { learn: "Learn", cross: "Cross", drill: "Drill", verify: "Verify", gallery: "Gallery" };
 
 // The id "F2L" keys stored prefs, so only its label says which F2L set it is.
 const SET_LABEL: Record<CaseSet, string> = {
@@ -137,12 +137,17 @@ export function createHome({ modes, sets, onMode, onSet, onShuffle, onRotation, 
         button.setAttribute("aria-pressed", String(selected.includes(set)));
         // prefs.sets.verify can never include an F2L set, so those toggles are
         // disabled rather than hidden, staying legible as "not offered here".
-        if (SET_GROUP[set] === "F2L") button.disabled = mode === "verify";
+        // Cross draws from no sets, so every set toggle is greyed the same way.
+        button.disabled = mode === "cross" || (SET_GROUP[set] === "F2L" && mode === "verify");
       }
-      start.node.disabled = selected.length === 0;
-      // A gallery has no order to shuffle and no AUF to turn.
+      const crossing = mode === "cross";
+      start.node.disabled = !crossing && selected.length === 0;
+      // A gallery has no order to shuffle and no AUF to turn; Cross has neither
+      // to choose.
       shuffle.hidden = mode === "gallery";
       rotation.hidden = mode === "gallery";
+      shuffle.disabled = crossing;
+      rotation.disabled = crossing;
       shuffle.setAttribute("aria-pressed", String(shuffled));
       rotation.setAttribute("aria-pressed", String(randomAuf));
       stats.replaceChildren(
