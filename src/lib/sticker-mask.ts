@@ -7,7 +7,9 @@ import type { Mask } from "../data/algorithms.ts";
 // identities, so the verdict below still never reads a position.
 export type ShownMask =
   | Exclude<Mask, { kind: "f2l" }>
-  | { kind: "f2l"; slot: "FR" | "FL"; displaced: readonly (readonly Color[])[] };
+  | { kind: "f2l"; slot: "FR" | "FL"; displaced: readonly (readonly Color[])[] }
+  // Cross mode has no Case, so this is not a data-file Mask.
+  | { kind: "cross" };
 
 // Whether a sticker shows its real color under `mask` (false means gray),
 // from the sticker's own color and its whole piece's current colors —
@@ -67,6 +69,10 @@ export function isKeptSticker(mask: ShownMask, pieceColors: readonly Color[], st
         mask.displaced.some((colors) => hasExactColors(pieceColors, colors))
       );
     }
+    // The D center and the four D-layer edges, both stickers of each. A corner
+    // holding D is not part of the cross.
+    case "cross":
+      return pieceColors.includes("D") && pieceColors.length <= 2;
     case "oll-edges":
       return isLastLayerPiece && !isCorner && stickerColor === "U";
     case "oll-full":

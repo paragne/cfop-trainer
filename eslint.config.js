@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 const STORAGE_ONLY = "localStorage is touched only in src/lib/storage.ts.";
 
 export default tseslint.config(
-  { ignores: ["dist/", "node_modules/", ".claude/"] },
+  { ignores: ["dist/", "node_modules/", ".claude/", "reference/"] },
   js.configs.recommended,
   tseslint.configs.recommended,
   {

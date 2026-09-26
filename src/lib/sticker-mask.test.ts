@@ -128,3 +128,23 @@ describe("isKeptSticker: oll/pll", () => {
     expect(isKeptSticker(mask, ["D", "F", "R"], "F")).toBe(false);
   });
 });
+
+describe("isKeptSticker: cross", () => {
+  const cross: ShownMask = { kind: "cross" };
+
+  it("keeps the D center and both stickers of every D-layer edge", () => {
+    expect(isKeptSticker(cross, ["D"], "D")).toBe(true);
+    for (const side of ["F", "R", "B", "L"] as const) {
+      expect(isKeptSticker(cross, ["D", side], "D")).toBe(true);
+      expect(isKeptSticker(cross, ["D", side], side)).toBe(true);
+    }
+  });
+
+  it("greys the other centers, the rest of the edges and every corner, D corners included", () => {
+    expect(isKeptSticker(cross, ["F"], "F")).toBe(false);
+    expect(isKeptSticker(cross, ["U"], "U")).toBe(false);
+    expect(isKeptSticker(cross, ["U", "F"], "U")).toBe(false);
+    expect(isKeptSticker(cross, ["F", "R"], "F")).toBe(false);
+    expect(isKeptSticker(cross, ["D", "F", "R"], "D")).toBe(false);
+  });
+});
