@@ -18,7 +18,7 @@
  */
 import { LOGO_HALF, STICKER_INSET, STICKER_MIN_RADIUS } from "../../lib/aesthetic.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
-import { CURVE_RADIUS } from "./piece-mesh.ts";
+import { CURVE_RADIUS, SHELL_DEPTH } from "./piece-shape.ts";
 
 export const VERTEX_SHADER = `#version 300 es
 uniform mat4 uProjection;
@@ -70,6 +70,8 @@ const float STICKER_INSET = ${STICKER_INSET.toFixed(3)};
 const float STICKER_MIN_RADIUS = ${STICKER_MIN_RADIUS.toFixed(3)};
 const float CURVE_RADIUS = ${CURVE_RADIUS.toFixed(3)};
 const float BEVEL_RADIUS = ${BEVEL_RADIUS.toFixed(3)};
+const float SHELL_DEPTH = ${SHELL_DEPTH.toFixed(3)};
+const float SHELL_BLEND = 0.02;
 const float LOGO_HALF = ${LOGO_HALF.toFixed(3)};
 const float STICKER_MATTE = 0.7;
 const float AMBIENT = 0.6;
@@ -123,14 +125,26 @@ void main() {
   } else {
     // Black internals: only the face the point is on can show color, and a
     // stickered cube only inside the sticker outline, softened over one pixel.
+    // A stickerless piece's rolled edge turns to face the gap but is still its
+    // face's colored shell, down to SHELL_DEPTH; only the wall below is body.
     float on = uFaceVisible[face];
+    vec3 color = uFaceColor[face];
+    if (on < 0.5 && uStickered < 0.5) {
+      for (int k = 0; k < 6; k++) {
+        float shell = smoothstep(SHELL_DEPTH - SHELL_BLEND, SHELL_DEPTH, dot(vLocalPosition, AXES[k]));
+        if (uFaceVisible[k] > 0.5 && shell > on) {
+          on = shell;
+          color = uFaceColor[k];
+        }
+      }
+    }
     if (uStickered > 0.5) {
       float d = stickerDistance(inPlane, face / 2);
       float w = fwidth(d);
       on *= 1.0 - smoothstep(-w, w, d);
       sticker = on;
     }
-    base = mix(uBody, uFaceColor[face], on);
+    base = mix(uBody, color, on);
   }
 
   // The logo lives on one cubie's one flat face, so it cannot reach another

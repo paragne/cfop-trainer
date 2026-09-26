@@ -13,38 +13,36 @@
  * cube's silhouette stay square. Where four pieces meet the rounding opens a
  * notch, and the internals show through it.
  *
+ * Each outer face also gets a rolled cap (see piece-shape.ts) that the body is
+ * cut down to, which rounds its edge into the gap around the face's center.
+ *
  * Each point of the flat unit-cube surface is projected toward the origin onto
- * that shape. The shape is convex and holds the origin, so every direction
- * crosses it once, and two faces' independently-generated grids agree exactly
+ * that shape. The shape holds the origin and every direction crosses it once, and two faces' independently-generated grids agree exactly
  * on their shared edge, so the mesh has no seams to stitch.
  */
 import { ALL_AXES, perpendicularBasis } from "../../lib/physical-cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
 import type { MeshVertex } from "./cubie-mesh.ts";
-
-// The one radius every piece rounds its inward-pointing corners by (corner,
-// edge and center alike), as a fraction of a tile's width, so the curves of
-// neighbouring pieces line up and the dark gap around a center is one width.
-export const CURVE_RADIUS = 0.25;
-
-// How far a flat face sits inside the cell boundary. Adjacent pieces each leave
-// this much, so a seam reads as a hairline twice this wide.
-export const FACE_INSET = 0.005;
+import { capDistance, CURVE_RADIUS, FACE_INSET, INNER_FILLET_RADIUS } from "./piece-shape.ts";
 
 // Samples along each axis of a face: fine across the band the rounded corners
-// live in, coarse across the flat middle. Grid lines land exactly on where a
-// straight side turns into an arc, so that boundary is a grid line and not a
-// staircase across cells.
-const BAND_SEGMENTS = 12;
+// live in, finer still across the rolled edge at its outer end, coarse across
+// the flat middle. Grid lines land exactly on where a straight side turns into
+// an arc, so that boundary is a grid line and not a staircase across cells.
+const BAND_SEGMENTS = 6;
+const ROLL_SEGMENTS = 8;
 const MIDDLE_SEGMENTS = 2;
 const evenSteps = (lo: number, hi: number, steps: number) =>
   Array.from({ length: steps + 1 }, (_, i) => lo + ((hi - lo) * i) / steps);
 const STRAIGHT = 0.5 - CURVE_RADIUS;
+const ROLL = 0.5 - INNER_FILLET_RADIUS;
 const SAMPLES = [
-  ...evenSteps(-0.5, -STRAIGHT, BAND_SEGMENTS),
+  ...evenSteps(-0.5, -ROLL, ROLL_SEGMENTS),
+  ...evenSteps(-ROLL, -STRAIGHT, BAND_SEGMENTS).slice(1),
   ...evenSteps(-STRAIGHT, STRAIGHT, MIDDLE_SEGMENTS).slice(1, -1),
-  ...evenSteps(STRAIGHT, 0.5, BAND_SEGMENTS),
+  ...evenSteps(STRAIGHT, ROLL, BAND_SEGMENTS),
+  ...evenSteps(ROLL, 0.5, ROLL_SEGMENTS).slice(1),
 ];
 const SEGMENTS = SAMPLES.length - 1;
 
@@ -87,6 +85,44 @@ function radiusOf(home: Vec, a: number, b: number) {
 // have between them.
 const MERGE = FACE_INSET / Math.LN2;
 
+const scaled = (v: Vec, t: number): Vec => [v[0] * t, v[1] * t, v[2] * t];
+
+// The deepest cut of any outer face's cap at p: positive where a cap removes it.
+function caps(p: Vec, home: Vec): number {
+  let worst = -Infinity;
+  for (let axis = 0; axis < 3; axis++) if (home[axis] !== 0) worst = Math.max(worst, capDistance(p, home, axis));
+  return worst;
+}
+
+const BISECTIONS = 20;
+// A cap never cuts deeper than this share of the way along a ray, so the
+// search starts there instead of at the origin.
+const DEEPEST_CUT = 0.85;
+const GRADIENT_STEP = 1e-5;
+
+// Where the ray leaves the body cut down by the caps: the body's own exit if no
+// cap reaches it, otherwise the caps' surface, found by bisection (the origin is
+// inside every cap) and lit by the caps' gradient.
+function cutByCaps(direction: Vec, home: Vec, body: MeshVertex, bodyT: number): MeshVertex {
+  if (caps(body.position, home) <= 1e-9) return body;
+  let lo = caps(scaled(direction, bodyT * DEEPEST_CUT), home) <= 0 ? bodyT * DEEPEST_CUT : 0;
+  let hi = bodyT;
+  for (let i = 0; i < BISECTIONS; i++) {
+    const mid = (lo + hi) / 2;
+    if (caps(scaled(direction, mid), home) > 0) hi = mid;
+    else lo = mid;
+  }
+  const position = scaled(direction, (lo + hi) / 2);
+  const nudged = (k: number, by: number): Vec => [
+    position[0] + (k === 0 ? by : 0),
+    position[1] + (k === 1 ? by : 0),
+    position[2] + (k === 2 ? by : 0),
+  ];
+  const slope = [0, 1, 2].map((k) => caps(nudged(k, GRADIENT_STEP), home) - caps(nudged(k, -GRADIENT_STEP), home));
+  const length = Math.hypot(...slope);
+  return { position, normal: [slope[0] / length, slope[1] / length, slope[2] / length] };
+}
+
 function project(direction: Vec, home: Vec): MeshVertex {
   const exits = [0, 1, 2].map((axis) => {
     const a = (axis + 1) % 3;
@@ -103,14 +139,18 @@ function project(direction: Vec, home: Vec): MeshVertex {
   const t = nearest - MERGE * Math.log(total);
   const blended = [0, 1, 2].map((k) => exits.reduce((sum, e, i) => sum + (weights[i] / total) * e.normal[k], 0));
   const length = Math.hypot(...blended);
-  return {
-    position: [direction[0] * t, direction[1] * t, direction[2] * t],
-    normal: [blended[0] / length, blended[1] / length, blended[2] / length],
-  };
+  const body: MeshVertex = { position: scaled(direction, t), normal: [blended[0] / length, blended[1] / length, blended[2] / length] };
+  return cutByCaps(direction, home, body, t);
 }
 
+// Built once per piece and kept, since a 3D view is opened many times a session.
+const built = new Map<string, readonly MeshVertex[]>();
+
 // `home` is the piece's position in the solved cube, each coordinate -1, 0 or 1.
-export function pieceVertices(home: Vec): MeshVertex[] {
+export function pieceVertices(home: Vec): readonly MeshVertex[] {
+  const key = home.join();
+  const cached = built.get(key);
+  if (cached !== undefined) return cached;
   const vertices: MeshVertex[] = [];
   for (const normal of ALL_AXES) {
     const { column, row } = perpendicularBasis(normal);
@@ -131,5 +171,6 @@ export function pieceVertices(home: Vec): MeshVertex[] {
       }
     }
   }
+  built.set(key, vertices);
   return vertices;
 }

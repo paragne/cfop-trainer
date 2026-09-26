@@ -34,6 +34,16 @@ describe("shadeSurface", () => {
     expect(shadeSurface([0.47, 0.47, 0.1], [0.6, 0.8, 0], CORNER, PROFILES.gan, HOME)).toBe("U");
   });
 
+  it("GAN keeps a face's color down its rolled edge into the gap, and only the wall below is body", () => {
+    const facingGap: Vec = [-0.7, -0.7, 0.2];
+    expect(shadeSurface([-0.42, -0.42, 0.45], facingGap, CORNER, PROFILES.gan, HOME)).toBe("F");
+    expect(shadeSurface([-0.42, -0.42, 0.3], facingGap, CORNER, PROFILES.gan, HOME)).toBe("body");
+  });
+
+  it("Rubik's leaves the rolled edge black: it is plastic outside the sticker", () => {
+    expect(shadeSurface([-0.42, -0.42, 0.45], [-0.7, -0.7, 0.2], CORNER, PROFILES.rubiks, HOME)).toBe("body");
+  });
+
   it("Rubik's colors only inside the sticker, which follows the piece outline", () => {
     expect(shadeSurface([0.5, 0.1, -0.2], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("R");
     expect(shadeSurface([0.5, 0.47, 0.0], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("body");

@@ -81,3 +81,38 @@ describe("the curve of a speedcube's pieces", () => {
     for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) expect(diagonalReach(CENTER, sx, sy)).toBeLessThan(ROUND);
   });
 });
+
+// Height of a piece's +z face at (x, y), read off the nearest vertex that faces
+// mostly up.
+function heightAt(home: Vec, x: number, y: number): number {
+  const up = pieceVertices(home).filter((v) => v.normal[2] > 0.5);
+  const nearest = up.reduce((best, v) =>
+    Math.hypot(v.position[0] - x, v.position[1] - y) < Math.hypot(best.position[0] - x, best.position[1] - y) ? v : best,
+  );
+  return nearest.position[2];
+}
+
+// 0.04 in from the outline: inside a 0.08 roll (about 0.01 down) but past a
+// 0.03 bevel (flat).
+const IN = 0.455;
+const ROLLED = 0.49;
+const FLAT = 0.494;
+
+describe("the rolled edge into the gap around a center", () => {
+  it("rolls an edge piece's side that faces the center, not its sides that face corners", () => {
+    expect(heightAt(EDGE, 0, -IN)).toBeLessThan(ROLLED);
+    expect(heightAt(EDGE, IN, 0)).toBeGreaterThan(FLAT);
+    expect(heightAt(EDGE, -IN, 0)).toBeGreaterThan(FLAT);
+  });
+
+  it("rolls a center's whole perimeter", () => {
+    for (const [x, y] of [[IN, 0], [-IN, 0], [0, IN], [0, -IN]]) expect(heightAt(CENTER, x, y)).toBeLessThan(ROLLED);
+  });
+
+  it("rolls a corner piece's curved corner, not its straight inner sides, which face edges", () => {
+    const d = 0.5 - 0.25 + (0.25 - 0.04) * Math.SQRT1_2;
+    expect(heightAt(CORNER, -d, -d)).toBeLessThan(ROLLED);
+    expect(heightAt(CORNER, -IN, 0.3)).toBeGreaterThan(FLAT);
+    expect(heightAt(CORNER, 0.3, -IN)).toBeGreaterThan(FLAT);
+  });
+});
