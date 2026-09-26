@@ -12,6 +12,13 @@ const CORNER = [
 
 // The piece at the up-right-front corner of the solved cube.
 const HOME: Vec = [1, 1, 1];
+
+// The up-right edge: U and R stickered.
+const EDGE_HOME: Vec = [1, 1, 0];
+const EDGE_FACES = [
+  { normal: [0, 1, 0] as Vec, color: "U" as const },
+  { normal: [1, 0, 0] as Vec, color: "R" as const },
+];
 const RIGHT: Vec = [1, 0, 0];
 
 describe("shadeSurface", () => {
@@ -40,6 +47,12 @@ describe("shadeSurface", () => {
     expect(shadeSurface([-0.42, -0.42, 0.3], facingGap, CORNER, PROFILES.gan, HOME)).toBe("body");
   });
 
+  it("GAN mitres two faces' shells where they overlap on an inner wall: the nearer face wins", () => {
+    const innerWall: Vec = [-1, 0, 0];
+    expect(shadeSurface([-0.5, 0.47, 0.45], innerWall, CORNER, PROFILES.gan, HOME)).toBe("U");
+    expect(shadeSurface([-0.5, 0.45, 0.47], innerWall, CORNER, PROFILES.gan, HOME)).toBe("F");
+  });
+
   it("Rubik's leaves the rolled edge black: it is plastic outside the sticker", () => {
     expect(shadeSurface([-0.42, -0.42, 0.45], [-0.7, -0.7, 0.2], CORNER, PROFILES.rubiks, HOME)).toBe("body");
   });
@@ -48,8 +61,11 @@ describe("shadeSurface", () => {
     expect(shadeSurface([0.5, 0.1, -0.2], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("R");
     expect(shadeSurface([0.5, 0.47, 0.0], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("body");
     // The same offset from a corner: the outer corner is square, so it is still
-    // sticker; the corner that points to the middle of the face is rounded off.
+    // sticker.
     expect(shadeSurface([0.5, 0.42, 0.42], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("R");
-    expect(shadeSurface([0.5, -0.42, -0.42], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("body");
+    // Barely cut on a corner piece, so the same offset is still sticker; an edge
+    // piece's inward corner is cut back hard, so there it is plastic.
+    expect(shadeSurface([0.5, -0.42, -0.42], RIGHT, CORNER, PROFILES.rubiks, HOME)).toBe("R");
+    expect(shadeSurface([0.5, -0.42, -0.42], RIGHT, EDGE_FACES, PROFILES.rubiks, EDGE_HOME)).toBe("body");
   });
 });

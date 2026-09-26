@@ -24,25 +24,27 @@ import { ALL_AXES, perpendicularBasis } from "../../lib/physical-cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
 import type { MeshVertex } from "./cubie-mesh.ts";
-import { capDistance, CURVE_RADIUS, FACE_INSET, INNER_FILLET_RADIUS } from "./piece-shape.ts";
+import { capDistance, CENTER_CORNER_RADIUS, CORNER_CURVE_RADIUS, CURVE_RADIUS, FACE_INSET, inwardRadius, shellDistance } from "./piece-shape.ts";
 
 // Samples along each axis of a face: fine across the band the rounded corners
-// live in, finer still across the rolled edge at its outer end, coarse across
-// the flat middle. Grid lines land exactly on where a straight side turns into
-// an arc, so that boundary is a grid line and not a staircase across cells.
+// live in, finer still across the outermost band, where a corner piece's small
+// arc and the cube's outer edges lie, coarse across the flat middle. Grid lines
+// land exactly on where a straight side turns into an arc, for an edge piece's
+// large arc and a corner piece's small one, so neither boundary is a staircase
+// across cells.
 const BAND_SEGMENTS = 6;
-const ROLL_SEGMENTS = 8;
-const MIDDLE_SEGMENTS = 2;
+const OUTER_SEGMENTS = 8;
+const MIDDLE_SEGMENTS = 6;
 const evenSteps = (lo: number, hi: number, steps: number) =>
   Array.from({ length: steps + 1 }, (_, i) => lo + ((hi - lo) * i) / steps);
 const STRAIGHT = 0.5 - CURVE_RADIUS;
-const ROLL = 0.5 - INNER_FILLET_RADIUS;
+const CORNER_STRAIGHT = 0.5 - CORNER_CURVE_RADIUS;
 const SAMPLES = [
-  ...evenSteps(-0.5, -ROLL, ROLL_SEGMENTS),
-  ...evenSteps(-ROLL, -STRAIGHT, BAND_SEGMENTS).slice(1),
+  ...evenSteps(-0.5, -CORNER_STRAIGHT, OUTER_SEGMENTS),
+  ...evenSteps(-CORNER_STRAIGHT, -STRAIGHT, BAND_SEGMENTS).slice(1),
   ...evenSteps(-STRAIGHT, STRAIGHT, MIDDLE_SEGMENTS).slice(1, -1),
-  ...evenSteps(STRAIGHT, ROLL, BAND_SEGMENTS),
-  ...evenSteps(ROLL, 0.5, ROLL_SEGMENTS).slice(1),
+  ...evenSteps(STRAIGHT, CORNER_STRAIGHT, BAND_SEGMENTS),
+  ...evenSteps(CORNER_STRAIGHT, 0.5, OUTER_SEGMENTS).slice(1),
 ];
 const SEGMENTS = SAMPLES.length - 1;
 
@@ -73,8 +75,11 @@ function leaveRoundedSquare(dx: number, dy: number, radiusAt: (sx: number, sy: n
 // The prism along `axis` rounds its corner (sa, sb) heavily unless that corner
 // is on the cube's outer boundary: the piece sits at the extreme in that
 // direction along either of the other two axes.
+// A center has no notches: its prism along the face's axis is the full-tile
+// footprint, with only a small corner radius.
 function radiusOf(home: Vec, a: number, b: number) {
-  return (sa: number, sb: number) => (home[a] !== sa && home[b] !== sb ? CURVE_RADIUS : BEVEL_RADIUS);
+  if (home[a] === 0 && home[b] === 0) return () => CENTER_CORNER_RADIUS;
+  return (sa: number, sb: number) => (home[a] !== sa && home[b] !== sb ? inwardRadius(home) : BEVEL_RADIUS);
 }
 
 // The three prisms are joined by a smooth minimum rather than a hard one, so
@@ -87,14 +92,15 @@ const MERGE = FACE_INSET / Math.LN2;
 
 const scaled = (v: Vec, t: number): Vec => [v[0] * t, v[1] * t, v[2] * t];
 
-// The deepest cut of any outer face's cap at p: positive where a cap removes it.
+// The deepest cut at p of any outer face's cap or of the whole cube's rounded
+// box: positive where one removes it.
 function caps(p: Vec, home: Vec): number {
-  let worst = -Infinity;
+  let worst = shellDistance(p, home);
   for (let axis = 0; axis < 3; axis++) if (home[axis] !== 0) worst = Math.max(worst, capDistance(p, home, axis));
   return worst;
 }
 
-const BISECTIONS = 20;
+const BISECTIONS = 16;
 // A cap never cuts deeper than this share of the way along a ray, so the
 // search starts there instead of at the origin.
 const DEEPEST_CUT = 0.85;
@@ -104,12 +110,13 @@ const GRADIENT_STEP = 1e-5;
 // cap reaches it, otherwise the caps' surface, found by bisection (the origin is
 // inside every cap) and lit by the caps' gradient.
 function cutByCaps(direction: Vec, home: Vec, body: MeshVertex, bodyT: number): MeshVertex {
-  if (caps(body.position, home) <= 1e-9) return body;
-  let lo = caps(scaled(direction, bodyT * DEEPEST_CUT), home) <= 0 ? bodyT * DEEPEST_CUT : 0;
+  const cut = (p: Vec) => caps(p, home);
+  if (cut(body.position) <= 1e-9) return body;
+  let lo = cut(scaled(direction, bodyT * DEEPEST_CUT)) <= 0 ? bodyT * DEEPEST_CUT : 0;
   let hi = bodyT;
   for (let i = 0; i < BISECTIONS; i++) {
     const mid = (lo + hi) / 2;
-    if (caps(scaled(direction, mid), home) > 0) hi = mid;
+    if (cut(scaled(direction, mid)) > 0) hi = mid;
     else lo = mid;
   }
   const position = scaled(direction, (lo + hi) / 2);
@@ -118,7 +125,7 @@ function cutByCaps(direction: Vec, home: Vec, body: MeshVertex, bodyT: number): 
     position[1] + (k === 1 ? by : 0),
     position[2] + (k === 2 ? by : 0),
   ];
-  const slope = [0, 1, 2].map((k) => caps(nudged(k, GRADIENT_STEP), home) - caps(nudged(k, -GRADIENT_STEP), home));
+  const slope = [0, 1, 2].map((k) => cut(nudged(k, GRADIENT_STEP)) - cut(nudged(k, -GRADIENT_STEP)));
   const length = Math.hypot(...slope);
   return { position, normal: [slope[0] / length, slope[1] / length, slope[2] / length] };
 }

@@ -9,9 +9,8 @@
  * one of that coincident pair visible per view direction, instead of the
  * two z-fighting in the depth buffer.
  */
-import { unitCubeVertices } from "./cubie-mesh.ts";
-import { pieceVertices } from "./piece-mesh.ts";
-import { link, requireAttrib, requireUniform } from "./gl-program.ts";
+import { buildGeometry } from "./gl-geometry.ts";
+import { link, requireUniform } from "./gl-program.ts";
 import { coreFaceColorUniforms, faceColorUniforms } from "./face-uniforms.ts";
 import { animatedModelMatrix, bakedModelMatrix } from "./cubie-model.ts";
 import type { InFlight } from "./player.ts";
@@ -44,40 +43,6 @@ export type GlScene = {
 // black keeps the bevels readable under the lighting.
 const BODY = toRgb("#0d0d0d");
 
-const FLOATS_PER_VERTEX = 6; // position(3) + normal(3)
-
-// Every piece has its own shape (see piece-mesh.ts), so the buffer holds them
-// end to end, and `ranges` says where each cubie's begins. The core, hidden
-// in the middle, is the plain rounded box.
-function buildVertexArray(
-  gl: WebGL2RenderingContext,
-  program: WebGLProgram,
-  homeCubies: readonly PhysicalCubie[],
-  coreIndex: number,
-): { first: number; count: number }[] {
-  const meshes = homeCubies.map((cubie, i) => (i === coreIndex ? unitCubeVertices() : pieceVertices(cubie.position)));
-  const data = new Float32Array(meshes.reduce((sum, m) => sum + m.length, 0) * FLOATS_PER_VERTEX);
-  let vertex = 0;
-  const ranges = meshes.map((mesh) => {
-    const first = vertex;
-    for (const v of mesh) data.set([...v.position, ...v.normal], vertex++ * FLOATS_PER_VERTEX);
-    return { first, count: mesh.length };
-  });
-  const buffer = gl.createBuffer();
-  if (buffer === null) throw new Error("createBuffer failed");
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-
-  const stride = FLOATS_PER_VERTEX * 4;
-  const aPosition = requireAttrib(gl, program, "aPosition");
-  const aNormal = requireAttrib(gl, program, "aNormal");
-  gl.enableVertexAttribArray(aPosition);
-  gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, stride, 0);
-  gl.enableVertexAttribArray(aNormal);
-  gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, stride, 3 * 4);
-  return ranges;
-}
-
 const add = (a: Vec, b: Vec): Vec => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const scale = (v: Vec, k: number): Vec => [v[0] * k, v[1] * k, v[2] * k];
 const cross = (a: Vec, b: Vec): Vec => [
@@ -107,11 +72,7 @@ export function createGlScene(
   onLogoReady: () => void,
 ): GlScene {
   const program = link(gl);
-  const vao = gl.createVertexArray();
-  if (vao === null) throw new Error("createVertexArray failed");
-  gl.bindVertexArray(vao);
-  const ranges = buildVertexArray(gl, program, homeCubies, coreIndex);
-  gl.bindVertexArray(null);
+  const { vao, ranges } = buildGeometry(gl, program, homeCubies, coreIndex);
 
   const uProjection = requireUniform(gl, program, "uProjection");
   const uView = requireUniform(gl, program, "uView");

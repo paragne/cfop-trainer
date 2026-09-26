@@ -20,7 +20,7 @@ import type { Profile } from "../../lib/aesthetic.ts";
 import type { Color, Vec } from "../../lib/cube.ts";
 import { ALL_AXES } from "../../lib/physical-cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
-import { CURVE_RADIUS, SHELL_DEPTH } from "./piece-shape.ts";
+import { inwardRadius, SHELL_DEPTH } from "./piece-shape.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -49,7 +49,7 @@ function stickerDistance(local: Vec, axis: number, home: Vec): number {
   const b = (axis + 2) % 3;
   const sa = local[a] < 0 ? -1 : 1;
   const sb = local[b] < 0 ? -1 : 1;
-  const outline = home[a] !== sa && home[b] !== sb ? CURVE_RADIUS : BEVEL_RADIUS;
+  const outline = home[a] !== sa && home[b] !== sb ? inwardRadius(home) : BEVEL_RADIUS;
   const r = Math.max(outline - STICKER_INSET, STICKER_MIN_RADIUS);
   const dx = Math.abs(local[a]) - (0.5 - STICKER_INSET - r);
   const dy = Math.abs(local[b]) - (0.5 - STICKER_INSET - r);
@@ -61,8 +61,9 @@ function stickerDistance(local: Vec, axis: number, home: Vec): number {
 // shows that face's color only if the cubie has a sticker there (and, for a
 // stickered profile, only inside the sticker's outline), otherwise body. A
 // stickerless piece's rolled edge, facing the gap, keeps the color of the outer
-// face whose shell it is part of. The shader softens both edges; this takes
-// each as a hard cut, the shell's at SHELL_DEPTH. `home` is the piece's
+// face whose shell it is part of: the nearest visible face, so two shells that
+// overlap on an inner wall meet on an even mitre. The shader softens both
+// edges; this takes each as a hard cut, the shell's at SHELL_DEPTH. `home` is the piece's
 // position in the solved cube.
 export function shadeSurface(
   localPosition: Vec,
@@ -83,8 +84,9 @@ export function shadeSurface(
   });
   const face = visibleFaces.find((f) => dot(f.normal, ALL_AXES[faceIndex]) === 1);
   if (face === undefined) {
-    const shell = profile.stickered ? undefined : visibleFaces.find((f) => dot(f.normal, localPosition) >= SHELL_DEPTH);
-    return shell === undefined ? "body" : shell.color;
+    if (profile.stickered) return "body";
+    const nearest = visibleFaces.reduce((best, f) => (dot(f.normal, localPosition) > dot(best.normal, localPosition) ? f : best));
+    return dot(nearest.normal, localPosition) >= SHELL_DEPTH ? nearest.color : "body";
   }
   if (profile.stickered && stickerDistance(localPosition, Math.floor(faceIndex / 2), home) > 0) return "body";
   return face.color;

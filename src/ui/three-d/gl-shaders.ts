@@ -18,7 +18,7 @@
  */
 import { LOGO_HALF, STICKER_INSET, STICKER_MIN_RADIUS } from "../../lib/aesthetic.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
-import { CURVE_RADIUS, SHELL_DEPTH } from "./piece-shape.ts";
+import { CORNER_CURVE_RADIUS, CURVE_RADIUS, SHELL_DEPTH } from "./piece-shape.ts";
 
 export const VERTEX_SHADER = `#version 300 es
 uniform mat4 uProjection;
@@ -69,6 +69,7 @@ const vec3 AXES[6] = vec3[6](
 const float STICKER_INSET = ${STICKER_INSET.toFixed(3)};
 const float STICKER_MIN_RADIUS = ${STICKER_MIN_RADIUS.toFixed(3)};
 const float CURVE_RADIUS = ${CURVE_RADIUS.toFixed(3)};
+const float CORNER_CURVE_RADIUS = ${CORNER_CURVE_RADIUS.toFixed(3)};
 const float BEVEL_RADIUS = ${BEVEL_RADIUS.toFixed(3)};
 const float SHELL_DEPTH = ${SHELL_DEPTH.toFixed(3)};
 const float SHELL_BLEND = 0.02;
@@ -87,7 +88,8 @@ float stickerDistance(vec3 inPlane, int k) {
   float sa = inPlane[a] < 0.0 ? -1.0 : 1.0;
   float sb = inPlane[b] < 0.0 ? -1.0 : 1.0;
   bool inward = uHome[a] != sa && uHome[b] != sb;
-  float r = max((inward ? CURVE_RADIUS : BEVEL_RADIUS) - STICKER_INSET, STICKER_MIN_RADIUS);
+  bool isCorner = uHome.x != 0.0 && uHome.y != 0.0 && uHome.z != 0.0;
+  float r = max((inward ? (isCorner ? CORNER_CURVE_RADIUS : CURVE_RADIUS) : BEVEL_RADIUS) - STICKER_INSET, STICKER_MIN_RADIUS);
   vec2 d = abs(vec2(inPlane[a], inPlane[b])) - (0.5 - STICKER_INSET - r);
   return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
 }
@@ -129,14 +131,19 @@ void main() {
     // face's colored shell, down to SHELL_DEPTH; only the wall below is body.
     float on = uFaceVisible[face];
     vec3 color = uFaceColor[face];
+    // Where two faces' shells overlap (an edge or corner piece's inner wall,
+    // seen mid-turn), the nearer face owns the point, so the two bands meet
+    // on an even mitre instead of whichever face the loop reached first.
     if (on < 0.5 && uStickered < 0.5) {
+      float nearest = -1.0;
       for (int k = 0; k < 6; k++) {
-        float shell = smoothstep(SHELL_DEPTH - SHELL_BLEND, SHELL_DEPTH, dot(vLocalPosition, AXES[k]));
-        if (uFaceVisible[k] > 0.5 && shell > on) {
-          on = shell;
+        float depth = dot(vLocalPosition, AXES[k]);
+        if (uFaceVisible[k] > 0.5 && depth > nearest) {
+          nearest = depth;
           color = uFaceColor[k];
         }
       }
+      on = smoothstep(SHELL_DEPTH - SHELL_BLEND, SHELL_DEPTH, nearest);
     }
     if (uStickered > 0.5) {
       float d = stickerDistance(inPlane, face / 2);
