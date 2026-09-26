@@ -78,6 +78,14 @@ describe("the center", () => {
   });
 });
 
+describe("a corner piece's face", () => {
+  it("is flat right up to the corner that points at the junction", () => {
+    for (const [x, y] of [[-0.4, -0.4], [-0.44, -0.3], [-0.3, -0.44], [0, 0]]) {
+      expect(heightAt(CORNER, x, y)).toBeCloseTo(TOP, 3);
+    }
+  });
+});
+
 describe("the cube's outer edges", () => {
   // 0.03 in from a face's edge: inside a 0.06 outer roll, past a 0.03 seam bevel.
   const IN = 0.465;

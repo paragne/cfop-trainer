@@ -20,7 +20,7 @@ import type { Profile } from "../../lib/aesthetic.ts";
 import type { Color, Vec } from "../../lib/cube.ts";
 import { ALL_AXES } from "../../lib/physical-cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
-import { inwardRadius, SHELL_DEPTH } from "./piece-shape.ts";
+import { CURVE_RADIUS, cutsCorner, SHELL_DEPTH } from "./piece-shape.ts";
 
 const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -49,7 +49,7 @@ function stickerDistance(local: Vec, axis: number, home: Vec): number {
   const b = (axis + 2) % 3;
   const sa = local[a] < 0 ? -1 : 1;
   const sb = local[b] < 0 ? -1 : 1;
-  const outline = home[a] !== sa && home[b] !== sb ? inwardRadius(home) : BEVEL_RADIUS;
+  const outline = cutsCorner(home, a, b, sa, sb) ? CURVE_RADIUS : BEVEL_RADIUS;
   const r = Math.max(outline - STICKER_INSET, STICKER_MIN_RADIUS);
   const dx = Math.abs(local[a]) - (0.5 - STICKER_INSET - r);
   const dy = Math.abs(local[b]) - (0.5 - STICKER_INSET - r);

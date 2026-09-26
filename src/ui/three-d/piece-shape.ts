@@ -25,17 +25,16 @@
 import type { Vec } from "../../lib/cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
 
-// The radius edge pieces round their inward-pointing corners by, as a fraction
+// The radius an edge piece rounds its inward-pointing corners by, as a fraction
 // of a tile's width. A center's ramp and the gaps around it are built on it.
 export const CURVE_RADIUS = 0.25;
 
-// A corner piece's inward-pointing corner is barely cut back at all, on every
-// speedcube: its face stays almost square.
-export const CORNER_CURVE_RADIUS = 0.08;
-
-// The radius the piece at `home` rounds an inward-pointing corner by.
-export function inwardRadius(home: Vec): number {
-  return home[0] !== 0 && home[1] !== 0 && home[2] !== 0 ? CORNER_CURVE_RADIUS : CURVE_RADIUS;
+// Whether the piece at `home` cuts back its face's corner (sa, sb) in the plane
+// of axes a and b: the ones pointing toward the middle of the cube face. A
+// corner piece cuts none, on every speedcube; its face stays square.
+export function cutsCorner(home: Vec, a: number, b: number, sa: number, sb: number): boolean {
+  const isCornerPiece = home[0] !== 0 && home[1] !== 0 && home[2] !== 0;
+  return !isCornerPiece && home[a] !== sa && home[b] !== sb;
 }
 
 // How far a flat face sits inside the cell boundary. Adjacent pieces each leave
@@ -58,9 +57,6 @@ export const CENTER_CORNER_RADIUS = 0.06;
 // where the roll is wanted, the rolled edge holds its full radius before
 // tapering to BEVEL_RADIUS.
 const FILLET_TAPER = 0.5;
-
-// The largest share of an arc's own radius its rim may take.
-const RIM_SHARE = 0.4;
 
 // Depth of the outer shell a face's color covers: the flat face and its whole
 // rolled edge. Below this a piece's wall is internals.
@@ -130,12 +126,15 @@ export function capDistance(p: Vec, home: Vec, axis: number): number {
   const a = (axis + 1) % 3;
   const b = (axis + 2) % 3;
   const isCenter = home[a] === 0 && home[b] === 0;
-  const depth = rampDepth(p[a] + home[a], p[b] + home[b]);
+  // A corner piece's face is flat to its very corner: the ramp mirrored out
+  // from the center would otherwise dip the tip that points at the junction.
+  const isCornerPiece = home[0] !== 0 && home[1] !== 0 && home[2] !== 0;
+  const depth = isCornerPiece ? 0 : rampDepth(p[a] + home[a], p[b] + home[b]);
   const height = home[axis] * p[axis] - (HALF - depth);
   const sa = p[a] < 0 ? -1 : 1;
   const sb = p[b] < 0 ? -1 : 1;
-  const inward = home[a] !== sa && home[b] !== sb;
-  const corner = isCenter ? FOOT_CORNER : (inward ? inwardRadius(home) : BEVEL_RADIUS) - FACE_INSET;
+  const inward = cutsCorner(home, a, b, sa, sb);
+  const corner = isCenter ? FOOT_CORNER : (inward ? CURVE_RADIUS : BEVEL_RADIUS) - FACE_INSET;
   const qa = Math.abs(p[a]) - (HALF - corner);
   const qb = Math.abs(p[b]) - (HALF - corner);
   const outline = Math.hypot(Math.max(qa, 0), Math.max(qb, 0)) + Math.min(Math.max(qa, qb), 0) - corner;
@@ -151,9 +150,7 @@ export function capDistance(p: Vec, home: Vec, axis: number): number {
   else nb = sb;
 
   const weight = roll(isCenter, inward, na, nb);
-  // The rim can never be rounder than the arc it runs round: a corner piece's
-  // tiny arc would fold over on itself under the full swell.
-  const r = Math.min(BEVEL_RADIUS + (INNER_FILLET_RADIUS - BEVEL_RADIUS) * weight, inward && !isCenter ? RIM_SHARE * corner : Infinity);
+  const r = BEVEL_RADIUS + (INNER_FILLET_RADIUS - BEVEL_RADIUS) * weight;
 
   const ea = outline + r;
   const eb = height + r;

@@ -24,27 +24,26 @@ import { ALL_AXES, perpendicularBasis } from "../../lib/physical-cube.ts";
 import type { Vec } from "../../lib/cube.ts";
 import { BEVEL_RADIUS } from "./cubie-mesh.ts";
 import type { MeshVertex } from "./cubie-mesh.ts";
-import { capDistance, CENTER_CORNER_RADIUS, CORNER_CURVE_RADIUS, CURVE_RADIUS, FACE_INSET, inwardRadius, shellDistance } from "./piece-shape.ts";
+import { capDistance, CENTER_CORNER_RADIUS, CURVE_RADIUS, cutsCorner, FACE_INSET, OUTER_EDGE_RADIUS, shellDistance } from "./piece-shape.ts";
 
-// Samples along each axis of a face: fine across the band the rounded corners
-// live in, finer still across the outermost band, where a corner piece's small
-// arc and the cube's outer edges lie, coarse across the flat middle. Grid lines
-// land exactly on where a straight side turns into an arc, for an edge piece's
-// large arc and a corner piece's small one, so neither boundary is a staircase
-// across cells.
+// Samples along each axis of a face: fine across the outermost band, where the
+// cube's outer edges lie, finer than across the band an edge piece's large arc
+// lives in, coarse across the flat middle. Grid lines land exactly on where a
+// straight side turns into that arc, so the boundary is a grid line and not a
+// staircase across cells.
 const BAND_SEGMENTS = 6;
 const OUTER_SEGMENTS = 8;
 const MIDDLE_SEGMENTS = 6;
 const evenSteps = (lo: number, hi: number, steps: number) =>
   Array.from({ length: steps + 1 }, (_, i) => lo + ((hi - lo) * i) / steps);
 const STRAIGHT = 0.5 - CURVE_RADIUS;
-const CORNER_STRAIGHT = 0.5 - CORNER_CURVE_RADIUS;
+const OUTER = 0.5 - OUTER_EDGE_RADIUS;
 const SAMPLES = [
-  ...evenSteps(-0.5, -CORNER_STRAIGHT, OUTER_SEGMENTS),
-  ...evenSteps(-CORNER_STRAIGHT, -STRAIGHT, BAND_SEGMENTS).slice(1),
+  ...evenSteps(-0.5, -OUTER, OUTER_SEGMENTS),
+  ...evenSteps(-OUTER, -STRAIGHT, BAND_SEGMENTS).slice(1),
   ...evenSteps(-STRAIGHT, STRAIGHT, MIDDLE_SEGMENTS).slice(1, -1),
-  ...evenSteps(STRAIGHT, CORNER_STRAIGHT, BAND_SEGMENTS),
-  ...evenSteps(CORNER_STRAIGHT, 0.5, OUTER_SEGMENTS).slice(1),
+  ...evenSteps(STRAIGHT, OUTER, BAND_SEGMENTS),
+  ...evenSteps(OUTER, 0.5, OUTER_SEGMENTS).slice(1),
 ];
 const SEGMENTS = SAMPLES.length - 1;
 
@@ -79,7 +78,7 @@ function leaveRoundedSquare(dx: number, dy: number, radiusAt: (sx: number, sy: n
 // footprint, with only a small corner radius.
 function radiusOf(home: Vec, a: number, b: number) {
   if (home[a] === 0 && home[b] === 0) return () => CENTER_CORNER_RADIUS;
-  return (sa: number, sb: number) => (home[a] !== sa && home[b] !== sb ? inwardRadius(home) : BEVEL_RADIUS);
+  return (sa: number, sb: number) => (cutsCorner(home, a, b, sa, sb) ? CURVE_RADIUS : BEVEL_RADIUS);
 }
 
 // The three prisms are joined by a smooth minimum rather than a hard one, so
